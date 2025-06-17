@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Shield, 
   Users, 
@@ -31,9 +32,11 @@ const AdminPanel = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false);
 
   // Mock data para usuários
-  const users = [
+  const [users, setUsers] = useState([
     {
       id: 1,
       name: 'João Silva',
@@ -43,7 +46,10 @@ const AdminPanel = () => {
       totalRaised: 45000,
       status: 'active',
       joinDate: '2024-01-15',
-      avatar: '/placeholder.svg'
+      avatar: '/placeholder.svg',
+      phone: '+55 11 99999-9999',
+      bio: 'Empreendedor apaixonado por tecnologia e inovação.',
+      lastLogin: '2024-02-20'
     },
     {
       id: 2,
@@ -54,7 +60,10 @@ const AdminPanel = () => {
       totalRaised: 18500,
       status: 'active',
       joinDate: '2024-02-01',
-      avatar: '/placeholder.svg'
+      avatar: '/placeholder.svg',
+      phone: '+55 11 88888-8888',
+      bio: 'Designer focada em soluções sustentáveis.',
+      lastLogin: '2024-02-19'
     },
     {
       id: 3,
@@ -65,9 +74,12 @@ const AdminPanel = () => {
       totalRaised: 0,
       status: 'suspended',
       joinDate: '2024-01-20',
-      avatar: '/placeholder.svg'
+      avatar: '/placeholder.svg',
+      phone: '+55 11 77777-7777',
+      bio: 'Desenvolvedor de software.',
+      lastLogin: '2024-01-25'
     }
-  ];
+  ]);
 
   // Mock data para projetos em análise
   const pendingProjects = [
@@ -94,10 +106,25 @@ const AdminPanel = () => {
   ];
 
   const handleUserAction = (userId: number, action: string) => {
+    setUsers(prevUsers => 
+      prevUsers.map(user => 
+        user.id === userId 
+          ? { ...user, status: action === 'suspend' ? 'suspended' : 'active' }
+          : user
+      )
+    );
+    
     toast({
       title: `Ação realizada`,
       description: `Usuário ${action === 'suspend' ? 'suspenso' : 'ativado'} com sucesso.`,
     });
+    
+    setIsUserDetailModalOpen(false);
+  };
+
+  const handleViewUserDetails = (user) => {
+    setSelectedUser(user);
+    setIsUserDetailModalOpen(true);
   };
 
   const handleProjectAction = (projectId: number, action: string) => {
@@ -263,7 +290,7 @@ const AdminPanel = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewUserDetails(user)}>
                               <Eye className="w-4 h-4 mr-2" />
                               Ver Detalhes
                             </DropdownMenuItem>
@@ -404,6 +431,103 @@ const AdminPanel = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* User Details Modal */}
+      <Dialog open={isUserDetailModalOpen} onOpenChange={setIsUserDetailModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Usuário</DialogTitle>
+            <DialogDescription>
+              Visualize e gerencie as informações do usuário
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-6">
+              {/* User Header */}
+              <div className="flex items-center space-x-4 p-4 bg-raiz-light rounded-lg">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={selectedUser.avatar} alt={selectedUser.name} />
+                  <AvatarFallback className="text-lg">{selectedUser.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-raiz-dark">{selectedUser.name}</h3>
+                  <p className="text-raiz-secondary">{selectedUser.email}</p>
+                  <Badge variant={selectedUser.status === 'active' ? 'default' : 'destructive'} className="mt-2">
+                    {selectedUser.status === 'active' ? 'Ativo' : 'Suspenso'}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* User Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-raiz-secondary">Telefone</label>
+                    <p className="text-raiz-dark">{selectedUser.phone}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-raiz-secondary">Data de Cadastro</label>
+                    <p className="text-raiz-dark">{selectedUser.joinDate}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-raiz-secondary">Último Login</label>
+                    <p className="text-raiz-dark">{selectedUser.lastLogin}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-raiz-secondary">Tokens</label>
+                    <p className="text-raiz-dark font-semibold">{selectedUser.tokens}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-raiz-secondary">Projetos</label>
+                    <p className="text-raiz-dark font-semibold">{selectedUser.projects}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-raiz-secondary">Total Arrecadado</label>
+                    <p className="text-raiz-dark font-semibold">R$ {selectedUser.totalRaised.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="text-sm font-medium text-raiz-secondary">Bio</label>
+                <p className="text-raiz-dark mt-1">{selectedUser.bio}</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setIsUserDetailModalOpen(false)}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  variant={selectedUser.status === 'active' ? 'destructive' : 'default'}
+                  className="flex-1"
+                  onClick={() => handleUserAction(selectedUser.id, selectedUser.status === 'active' ? 'suspend' : 'activate')}
+                >
+                  {selectedUser.status === 'active' ? (
+                    <>
+                      <UserX className="w-4 h-4 mr-2" />
+                      Suspender Usuário
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Ativar Usuário
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
