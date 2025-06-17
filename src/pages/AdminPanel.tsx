@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +26,8 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
 
 const AdminPanel = () => {
   const { toast } = useToast();
@@ -34,6 +35,17 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      bio: '',
+      tokens: 0,
+    }
+  });
 
   // Mock data para usuários
   const [users, setUsers] = useState([
@@ -125,6 +137,43 @@ const AdminPanel = () => {
   const handleViewUserDetails = (user) => {
     setSelectedUser(user);
     setIsUserDetailModalOpen(true);
+  };
+
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    form.reset({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      bio: user.bio,
+      tokens: user.tokens,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (data) => {
+    setUsers(prevUsers => 
+      prevUsers.map(user => 
+        user.id === selectedUser.id 
+          ? { 
+              ...user, 
+              name: data.name, 
+              email: data.email, 
+              phone: data.phone, 
+              bio: data.bio, 
+              tokens: data.tokens 
+            }
+          : user
+      )
+    );
+    
+    toast({
+      title: "Usuário atualizado",
+      description: "As informações do usuário foram atualizadas com sucesso.",
+    });
+    
+    setIsEditModalOpen(false);
+    setSelectedUser(null);
   };
 
   const handleProjectAction = (projectId: number, action: string) => {
@@ -294,7 +343,7 @@ const AdminPanel = () => {
                               <Eye className="w-4 h-4 mr-2" />
                               Ver Detalhes
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditUser(user)}>
                               <Edit className="w-4 h-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
@@ -525,6 +574,115 @@ const AdminPanel = () => {
                 </Button>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>
+              Modifique as informações do usuário
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSaveEdit)} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="tokens"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tokens</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="number" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                  >
+                    Salvar Alterações
+                  </Button>
+                </div>
+              </form>
+            </Form>
           )}
         </DialogContent>
       </Dialog>
