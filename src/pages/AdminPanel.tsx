@@ -1,40 +1,19 @@
+
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { 
-  Shield, 
-  Users, 
-  FolderOpen, 
-  Coins, 
-  Search, 
-  Filter, 
-  MoreVertical,
-  Eye,
-  Edit,
-  Trash2,
-  Check,
-  X,
-  UserCheck,
-  UserX,
-  AlertTriangle
-} from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
+import AdminHeader from '@/components/admin/AdminHeader';
+import AdminStats from '@/components/admin/AdminStats';
+import UsersTab from '@/components/admin/UsersTab';
+import ProjectsTab from '@/components/admin/ProjectsTab';
+import TokensTab from '@/components/admin/TokensTab';
+import UserDetailModal from '@/components/admin/UserDetailModal';
+import EditUserModal from '@/components/admin/EditUserModal';
+import RejectProjectModal from '@/components/admin/RejectProjectModal';
 
 const AdminPanel = () => {
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false);
@@ -224,6 +203,12 @@ const AdminPanel = () => {
     setIsRejectModalOpen(true);
   };
 
+  const handleCancelReject = () => {
+    setIsRejectModalOpen(false);
+    setRejectionReason('');
+    setSelectedProject(null);
+  };
+
   const stats = {
     totalUsers: 1247,
     activeProjects: 89,
@@ -233,68 +218,10 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-raiz-light">
-      {/* Header */}
-      <div className="bg-white border-b border-raiz-accent/20 py-6">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center space-x-3 mb-4">
-            <Shield className="w-8 h-8 text-raiz-primary" />
-            <h1 className="text-3xl font-bold text-raiz-dark">Painel Administrativo</h1>
-          </div>
-          <p className="text-raiz-secondary">Gerencie usuários, projetos e tokens da plataforma</p>
-        </div>
-      </div>
+      <AdminHeader />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Total de Usuários</p>
-                  <p className="text-2xl font-bold text-raiz-dark">{stats.totalUsers}</p>
-                </div>
-                <Users className="w-8 h-8 text-raiz-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Projetos Ativos</p>
-                  <p className="text-2xl font-bold text-raiz-primary">{stats.activeProjects}</p>
-                </div>
-                <FolderOpen className="w-8 h-8 text-raiz-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Aguardando Aprovação</p>
-                  <p className="text-2xl font-bold text-raiz-gold">{stats.pendingApproval}</p>
-                </div>
-                <AlertTriangle className="w-8 h-8 text-raiz-gold" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Tokens Circulando</p>
-                  <p className="text-2xl font-bold text-raiz-accent">{stats.totalTokens.toLocaleString()}</p>
-                </div>
-                <Coins className="w-8 h-8 text-raiz-accent" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <AdminStats stats={stats} />
 
         {/* Main Content */}
         <Tabs defaultValue="users" className="space-y-6">
@@ -304,476 +231,53 @@ const AdminPanel = () => {
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
           </TabsList>
 
-          {/* Users Tab */}
           <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                  <div>
-                    <CardTitle>Gerenciar Usuários</CardTitle>
-                    <CardDescription>Visualize e gerencie todos os usuários da plataforma</CardDescription>
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
-                      <Input
-                        placeholder="Buscar usuários..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-full sm:w-64"
-                      />
-                    </div>
-                    
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full sm:w-40">
-                        <Filter className="w-4 h-4 mr-2" />
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="active">Ativos</SelectItem>
-                        <SelectItem value="suspended">Suspensos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border border-raiz-accent/20 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <Avatar>
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-semibold text-raiz-dark">{user.name}</div>
-                          <div className="text-sm text-raiz-secondary">{user.email}</div>
-                          <div className="text-xs text-raiz-secondary">Membro desde {user.joinDate}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-6">
-                        <div className="text-center">
-                          <div className="font-semibold text-raiz-dark">{user.tokens}</div>
-                          <div className="text-xs text-raiz-secondary">Tokens</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-raiz-dark">{user.projects}</div>
-                          <div className="text-xs text-raiz-secondary">Projetos</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-raiz-dark">R$ {user.totalRaised.toLocaleString()}</div>
-                          <div className="text-xs text-raiz-secondary">Arrecadado</div>
-                        </div>
-                        
-                        <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                          {user.status === 'active' ? 'Ativo' : 'Suspenso'}
-                        </Badge>
-                        
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewUserDetails(user)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              Ver Detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleUserAction(user.id, user.status === 'active' ? 'suspend' : 'activate')}
-                            >
-                              {user.status === 'active' ? (
-                                <>
-                                  <UserX className="w-4 h-4 mr-2" />
-                                  Suspender
-                                </>
-                              ) : (
-                                <>
-                                  <UserCheck className="w-4 h-4 mr-2" />
-                                  Ativar
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <UsersTab 
+              users={users}
+              onUserAction={handleUserAction}
+              onViewUserDetails={handleViewUserDetails}
+              onEditUser={handleEditUser}
+            />
           </TabsContent>
 
-          {/* Projects Tab */}
           <TabsContent value="projects">
-            <Card>
-              <CardHeader>
-                <CardTitle>Projetos Aguardando Aprovação</CardTitle>
-                <CardDescription>Analise e aprove novos projetos submetidos à plataforma</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {pendingProjects.map((project) => (
-                    <div key={project.id} className="border border-raiz-accent/20 rounded-lg p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-raiz-dark mb-2">{project.title}</h3>
-                          <p className="text-raiz-secondary mb-2">{project.description}</p>
-                          <div className="flex items-center space-x-4 text-sm text-raiz-secondary">
-                            <span>Por: {project.author}</span>
-                            <Badge variant="outline">{project.category}</Badge>
-                            <span>Meta: R$ {project.goal.toLocaleString()}</span>
-                            <span>Submetido em: {project.submittedDate}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-3">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="flex-1"
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Ver Detalhes
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                          onClick={() => handleProjectAction(project.id, 'approve')}
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Aprovar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          className="flex-1"
-                          onClick={() => handleRejectProject(project)}
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Rejeitar
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <ProjectsTab 
+              pendingProjects={pendingProjects}
+              onProjectAction={handleProjectAction}
+              onRejectProject={handleRejectProject}
+            />
           </TabsContent>
 
-          {/* Tokens Tab */}
           <TabsContent value="tokens">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciamento de Tokens</CardTitle>
-                <CardDescription>Monitore e gerencie a economia de tokens da plataforma</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-raiz-dark">Estatísticas de Tokens</h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between p-3 bg-raiz-accent/10 rounded-lg">
-                        <span>Tokens em Circulação</span>
-                        <span className="font-semibold">{stats.totalTokens.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between p-3 bg-raiz-gold/10 rounded-lg">
-                        <span>Tokens Vendidos (Mês)</span>
-                        <span className="font-semibold">15.430</span>
-                      </div>
-                      <div className="flex justify-between p-3 bg-raiz-primary/10 rounded-lg">
-                        <span>Tokens Gastos (Mês)</span>
-                        <span className="font-semibold">8.920</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-raiz-dark">Ações Administrativas</h4>
-                    <div className="space-y-3">
-                      <Button variant="outline" className="w-full justify-start">
-                        <Coins className="w-4 h-4 mr-2" />
-                        Ajustar Preços dos Tokens
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start">
-                        <Users className="w-4 h-4 mr-2" />
-                        Conceder Tokens Promocionais
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start">
-                        <FolderOpen className="w-4 h-4 mr-2" />
-                        Relatório de Transações
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <TokensTab stats={stats} />
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* User Details Modal */}
-      <Dialog open={isUserDetailModalOpen} onOpenChange={setIsUserDetailModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Usuário</DialogTitle>
-            <DialogDescription>
-              Visualize e gerencie as informações do usuário
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedUser && (
-            <div className="space-y-6">
-              {/* User Header */}
-              <div className="flex items-center space-x-4 p-4 bg-raiz-light rounded-lg">
-                <Avatar className="w-16 h-16">
-                  <AvatarImage src={selectedUser.avatar} alt={selectedUser.name} />
-                  <AvatarFallback className="text-lg">{selectedUser.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-raiz-dark">{selectedUser.name}</h3>
-                  <p className="text-raiz-secondary">{selectedUser.email}</p>
-                  <Badge variant={selectedUser.status === 'active' ? 'default' : 'destructive'} className="mt-2">
-                    {selectedUser.status === 'active' ? 'Ativo' : 'Suspenso'}
-                  </Badge>
-                </div>
-              </div>
+      <UserDetailModal 
+        isOpen={isUserDetailModalOpen}
+        onOpenChange={setIsUserDetailModalOpen}
+        selectedUser={selectedUser}
+        onUserAction={handleUserAction}
+      />
 
-              {/* User Info Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-raiz-secondary">Telefone</label>
-                    <p className="text-raiz-dark">{selectedUser.phone}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-raiz-secondary">Data de Cadastro</label>
-                    <p className="text-raiz-dark">{selectedUser.joinDate}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-raiz-secondary">Último Login</label>
-                    <p className="text-raiz-dark">{selectedUser.lastLogin}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-raiz-secondary">Tokens</label>
-                    <p className="text-raiz-dark font-semibold">{selectedUser.tokens}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-raiz-secondary">Projetos</label>
-                    <p className="text-raiz-dark font-semibold">{selectedUser.projects}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-raiz-secondary">Total Arrecadado</label>
-                    <p className="text-raiz-dark font-semibold">R$ {selectedUser.totalRaised.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
+      <EditUserModal 
+        isOpen={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        selectedUser={selectedUser}
+        form={form}
+        onSaveEdit={handleSaveEdit}
+      />
 
-              {/* Bio */}
-              <div>
-                <label className="text-sm font-medium text-raiz-secondary">Bio</label>
-                <p className="text-raiz-dark mt-1">{selectedUser.bio}</p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setIsUserDetailModalOpen(false)}
-                >
-                  Fechar
-                </Button>
-                <Button
-                  variant={selectedUser.status === 'active' ? 'destructive' : 'default'}
-                  className="flex-1"
-                  onClick={() => handleUserAction(selectedUser.id, selectedUser.status === 'active' ? 'suspend' : 'activate')}
-                >
-                  {selectedUser.status === 'active' ? (
-                    <>
-                      <UserX className="w-4 h-4 mr-2" />
-                      Suspender Usuário
-                    </>
-                  ) : (
-                    <>
-                      <UserCheck className="w-4 h-4 mr-2" />
-                      Ativar Usuário
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit User Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>
-              Modifique as informações do usuário
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedUser && (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSaveEdit)} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Telefone</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="tokens"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tokens</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="number" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-3 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setIsEditModalOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1"
-                  >
-                    Salvar Alterações
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Reject Project Modal */}
-      <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Rejeitar Projeto</DialogTitle>
-            <DialogDescription>
-              Informe o motivo da rejeição do projeto "{selectedProject?.title}"
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rejection-reason">Motivo da Rejeição *</Label>
-              <Textarea
-                id="rejection-reason"
-                placeholder="Explique o motivo da rejeição do projeto..."
-                rows={4}
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="flex gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setIsRejectModalOpen(false);
-                  setRejectionReason('');
-                  setSelectedProject(null);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={() => handleProjectAction(selectedProject?.id, 'reject', rejectionReason)}
-              >
-                Confirmar Rejeição
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RejectProjectModal 
+        isOpen={isRejectModalOpen}
+        onOpenChange={setIsRejectModalOpen}
+        selectedProject={selectedProject}
+        rejectionReason={rejectionReason}
+        setRejectionReason={setRejectionReason}
+        onRejectProject={handleProjectAction}
+        onCancel={handleCancelReject}
+      />
     </div>
   );
 };
