@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { 
   Shield, 
   Users, 
@@ -34,8 +36,11 @@ const AdminPanel = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const form = useForm({
     defaultValues: {
@@ -99,6 +104,7 @@ const AdminPanel = () => {
       id: 1,
       title: 'App Inovador de Saúde',
       author: 'Ana Lima',
+      authorEmail: 'ana.lima@email.com',
       category: 'Saúde',
       goal: 75000,
       description: 'Aplicativo para monitoramento de saúde preventiva',
@@ -109,6 +115,7 @@ const AdminPanel = () => {
       id: 2,
       title: 'Plataforma de Educação Digital',
       author: 'Carlos Roberto',
+      authorEmail: 'carlos.roberto@email.com',
       category: 'Educação',
       goal: 30000,
       description: 'Sistema de ensino à distância para comunidades rurais',
@@ -176,11 +183,45 @@ const AdminPanel = () => {
     setSelectedUser(null);
   };
 
-  const handleProjectAction = (projectId: number, action: string) => {
-    toast({
-      title: `Projeto ${action === 'approve' ? 'aprovado' : 'rejeitado'}`,
-      description: `O projeto foi ${action === 'approve' ? 'aprovado e está disponível' : 'rejeitado'}.`,
-    });
+  const handleProjectAction = (projectId: number, action: string, reason?: string) => {
+    const project = pendingProjects.find(p => p.id === projectId);
+    
+    if (action === 'approve') {
+      toast({
+        title: "Projeto aprovado",
+        description: `O projeto foi aprovado e está disponível na plataforma.`,
+      });
+      
+      // Simular notificação para o criador
+      console.log(`Notificação enviada para ${project?.authorEmail}: Seu projeto "${project?.title}" foi aprovado!`);
+      
+    } else if (action === 'reject') {
+      if (!reason || reason.trim() === '') {
+        toast({
+          title: "Erro",
+          description: "É obrigatório informar o motivo da rejeição.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      toast({
+        title: "Projeto rejeitado",
+        description: `O projeto foi rejeitado e o criador foi notificado.`,
+      });
+      
+      // Simular notificação para o criador
+      console.log(`Notificação enviada para ${project?.authorEmail}: Seu projeto "${project?.title}" foi rejeitado. Motivo: ${reason}`);
+      
+      setIsRejectModalOpen(false);
+      setRejectionReason('');
+      setSelectedProject(null);
+    }
+  };
+
+  const handleRejectProject = (project) => {
+    setSelectedProject(project);
+    setIsRejectModalOpen(true);
   };
 
   const stats = {
@@ -417,7 +458,7 @@ const AdminPanel = () => {
                           size="sm" 
                           variant="destructive"
                           className="flex-1"
-                          onClick={() => handleProjectAction(project.id, 'reject')}
+                          onClick={() => handleRejectProject(project)}
                         >
                           <X className="w-4 h-4 mr-2" />
                           Rejeitar
@@ -684,6 +725,53 @@ const AdminPanel = () => {
               </form>
             </Form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Project Modal */}
+      <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rejeitar Projeto</DialogTitle>
+            <DialogDescription>
+              Informe o motivo da rejeição do projeto "{selectedProject?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejection-reason">Motivo da Rejeição *</Label>
+              <Textarea
+                id="rejection-reason"
+                placeholder="Explique o motivo da rejeição do projeto..."
+                rows={4}
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="flex gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setIsRejectModalOpen(false);
+                  setRejectionReason('');
+                  setSelectedProject(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => handleProjectAction(selectedProject?.id, 'reject', rejectionReason)}
+              >
+                Confirmar Rejeição
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,10 +43,21 @@ const CreateProject = () => {
     event.preventDefault();
     
     // Validação básica
-    if (!formData.title || !formData.description || !formData.category || !formData.goal) {
+    if (!formData.title || !formData.description || !formData.category || !formData.goal || !formData.youtubeUrl) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        description: "Por favor, preencha todos os campos obrigatórios, incluindo o link do YouTube.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validação do YouTube URL
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+    if (!youtubeRegex.test(formData.youtubeUrl)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira um link válido do YouTube.",
         variant: "destructive"
       });
       return;
@@ -276,7 +286,7 @@ const CreateProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="youtube">Link do YouTube (opcional)</Label>
+                  <Label htmlFor="youtube">Link do YouTube *</Label>
                   <div className="relative">
                     <Youtube className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
                     <Input
@@ -285,10 +295,12 @@ const CreateProject = () => {
                       className="pl-10"
                       value={formData.youtubeUrl}
                       onChange={(e) => handleInputChange('youtubeUrl', e.target.value)}
+                      required
                     />
                   </div>
                   <p className="text-sm text-raiz-secondary/70">
-                    Um vídeo pode aumentar significativamente as chances de sucesso do seu projeto
+                    <strong>Obrigatório:</strong> Grave um vídeo se apresentando e falando sobre seu projeto. 
+                    Explique quem você é, qual problema seu projeto resolve e como pretende executá-lo.
                   </p>
                 </div>
               </CardContent>
