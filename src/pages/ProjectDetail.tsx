@@ -1,340 +1,320 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
-  Heart, 
-  Share2, 
-  Calendar, 
-  Users, 
-  TrendingUp, 
-  Play,
-  MessageCircle,
-  DollarSign
-} from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, MapPin, Youtube, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  goal: number;
+  status: string;
+  created_at: string;
+  deadline?: string;
+  youtube_url: string;
+  endereco?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  user_id: string;
+}
+
+interface Profile {
+  nome: string;
+  sobrenome: string;
+  email: string;
+}
+
 const ProjectDetail = () => {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [supportAmount, setSupportAmount] = useState('');
-  const [isLiked, setIsLiked] = useState(false);
+  const navigate = useNavigate();
+  const [project, setProject] = useState<Project | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data do projeto
-  const project = {
-    id: 1,
-    title: 'EcoTech Sustentável - Revolucionando a Energia Verde',
-    description: 'Desenvolvimento de tecnologia verde inovadora para redução significativa de carbono e criação de soluções energéticas sustentáveis para o futuro do planeta.',
-    fullDescription: `
-      Este projeto visa desenvolver uma tecnologia revolucionária de captação e armazenamento de energia renovável, 
-      combinando painéis solares de última geração com sistemas de armazenamento inteligente.
-      
-      Nossa solução permitirá que residências e empresas reduzam em até 80% sua dependência da rede elétrica tradicional,
-      contribuindo significativamente para a redução das emissões de carbono.
-      
-      O projeto inclui:
-      - Desenvolvimento de painéis solares 40% mais eficientes
-      - Sistema de bateria inteligente com IA
-      - App de monitoramento em tempo real
-      - Instalação e manutenção gratuita por 2 anos
-    `,
-    category: 'Tecnologia',
-    goal: 50000,
-    raised: 39200,
-    supporters: 156,
-    daysLeft: 15,
-    image: '/placeholder.svg',
-    youtubeUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    creator: {
-      name: 'João Silva',
-      avatar: '/placeholder.svg',
-      bio: 'Engenheiro Ambiental com 15 anos de experiência em energia renovável'
-    },
-    updates: [
-      {
-        id: 1,
-        date: '2024-02-10',
-        title: 'Protótipo finalizado!',
-        content: 'Acabamos de finalizar o primeiro protótipo funcional do nosso sistema.'
-      },
-      {
-        id: 2,
-        date: '2024-02-05',
-        title: 'Parceria estratégica',
-        content: 'Firmamos parceria com a GreenEnergy para distribuição nacional.'
+  useEffect(() => {
+    if (id) {
+      fetchProject();
+    }
+  }, [id]);
+
+  const fetchProject = async () => {
+    try {
+      const { data: project, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching project:', error);
+        toast({
+          title: "Erro",
+          description: "Projeto não encontrado.",
+          variant: "destructive"
+        });
+        navigate('/dashboard');
+        return;
       }
-    ],
-    rewards: [
-      { amount: 25, title: 'Apoiador Bronze', description: 'Acesso antecipado ao app + E-book exclusivo', backers: 45 },
-      { amount: 100, title: 'Apoiador Prata', description: 'Todos os benefícios anteriores + Consulta gratuita', backers: 78 },
-      { amount: 500, title: 'Apoiador Ouro', description: 'Todos os benefícios + Kit de energia solar residencial', backers: 23 },
-      { amount: 1000, title: 'Apoiador Diamante', description: 'Todos os benefícios + Instalação gratuita completa', backers: 10 }
-    ]
-  };
 
-  const progressPercentage = Math.min((project.raised / project.goal) * 100, 100);
+      setProject(project);
 
-  const handleSupport = () => {
-    if (!supportAmount || parseFloat(supportAmount) < 10) {
+      // Fetch project owner profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('nome, sobrenome, email')
+        .eq('id', project.user_id)
+        .single();
+
+      if (!profileError) {
+        setProfile(profile);
+      }
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
-        title: "Valor inválido",
-        description: "O valor mínimo de apoio é R$ 10,00",
+        title: "Erro",
+        description: "Erro inesperado ao carregar projeto.",
         variant: "destructive"
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: "Apoio registrado!",
-      description: `Obrigado por apoiar com R$ ${supportAmount}!`,
-    });
-    setSupportAmount('');
   };
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    toast({
-      title: isLiked ? "Removido dos favoritos" : "Adicionado aos favoritos",
-      description: isLiked ? "Projeto removido da sua lista" : "Projeto salvo na sua lista de favoritos",
-    });
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejeitado</Badge>;
+      default:
+        return <Badge variant="secondary">Pendente</Badge>;
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-raiz-light">
-      {/* Hero Section */}
-      <div className="bg-white border-b border-raiz-accent/20">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Coluna Principal */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="space-y-4">
-                <Badge variant="secondary" className="bg-raiz-accent/10 text-raiz-primary">
-                  {project.category}
-                </Badge>
-                <h1 className="text-3xl lg:text-4xl font-bold text-raiz-dark leading-tight">
-                  {project.title}
-                </h1>
-                <p className="text-lg text-raiz-secondary">
-                  {project.description}
-                </p>
-              </div>
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
-              {/* Vídeo/Imagem */}
-              <div className="aspect-video bg-raiz-accent/10 rounded-lg overflow-hidden">
-                {project.youtubeUrl ? (
-                  <iframe
-                    src={project.youtubeUrl}
-                    className="w-full h-full"
-                    allowFullScreen
-                    title="Vídeo do projeto"
-                  />
-                ) : (
-                  <div className="relative w-full h-full">
-                    <img 
-                      src={project.image} 
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <Button size="lg" className="bg-white/20 hover:bg-white/30 backdrop-blur-sm">
-                        <Play className="w-6 h-6 mr-2" />
-                        Assistir Vídeo
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
 
-              {/* Ações */}
-              <div className="flex items-center space-x-4">
-                <Button 
-                  variant="outline" 
-                  onClick={handleLike}
-                  className={isLiked ? "text-red-500 border-red-500" : ""}
-                >
-                  <Heart className={`w-4 h-4 mr-2 ${isLiked ? "fill-current" : ""}`} />
-                  {isLiked ? "Curtido" : "Curtir"}
-                </Button>
-                <Button variant="outline">
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Compartilhar
-                </Button>
-                <Button variant="outline">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Comentários
-                </Button>
-              </div>
-            </div>
+  const getYouTubeEmbedUrl = (url: string) => {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  };
 
-            {/* Sidebar de Apoio */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl font-bold text-raiz-primary">
-                    R$ {project.raised.toLocaleString()}
-                  </CardTitle>
-                  <CardDescription>
-                    de R$ {project.goal.toLocaleString()} (meta)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Progress value={progressPercentage} className="h-3" />
-                  
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-raiz-dark">{progressPercentage.toFixed(0)}%</div>
-                      <div className="text-sm text-raiz-secondary">Atingido</div>
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-raiz-dark">{project.supporters}</div>
-                      <div className="text-sm text-raiz-secondary">Apoiadores</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-center space-x-2 text-raiz-secondary">
-                    <Calendar className="w-4 h-4" />
-                    <span>{project.daysLeft} dias restantes</span>
-                  </div>
-                  
-                  <div className="space-y-3 pt-4 border-t">
-                    <Label htmlFor="support-amount">Valor do apoio (R$)</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
-                      <Input
-                        id="support-amount"
-                        type="number"
-                        placeholder="100"
-                        className="pl-10"
-                        value={supportAmount}
-                        onChange={(e) => setSupportAmount(e.target.value)}
-                      />
-                    </div>
-                    <Button 
-                      onClick={handleSupport} 
-                      className="w-full bg-raiz-gold hover:bg-raiz-gold/90 text-raiz-dark font-semibold"
-                      size="lg"
-                    >
-                      Apoiar Projeto
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+  const isOwner = user?.id === project?.user_id;
 
-              {/* Informações do Criador */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Criador do Projeto</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarImage src={project.creator.avatar} />
-                      <AvatarFallback>{project.creator.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-semibold text-raiz-dark">{project.creator.name}</h4>
-                      <p className="text-sm text-raiz-secondary">{project.creator.bio}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-raiz-primary"></div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-raiz-dark mb-2">Projeto não encontrado</h2>
+          <Button onClick={() => navigate('/dashboard')}>Voltar ao Dashboard</Button>
         </div>
       </div>
+    );
+  }
 
-      {/* Conteúdo Principal */}
+  const embedUrl = getYouTubeEmbedUrl(project.youtube_url);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="description" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="description">Descrição</TabsTrigger>
-                <TabsTrigger value="updates">Atualizações</TabsTrigger>
-                <TabsTrigger value="comments">Comentários</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="description" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Sobre o Projeto</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="prose max-w-none">
-                      {project.fullDescription.split('\n\n').map((paragraph, index) => (
-                        <p key={index} className="mb-4 text-raiz-secondary leading-relaxed">
-                          {paragraph.trim()}
-                        </p>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="updates" className="space-y-4">
-                {project.updates.map((update) => (
-                  <Card key={update.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{update.title}</CardTitle>
-                        <span className="text-sm text-raiz-secondary">{update.date}</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-raiz-secondary">{update.content}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-              
-              <TabsContent value="comments">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-center py-8">
-                      <MessageCircle className="w-12 h-12 text-raiz-accent mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-raiz-dark mb-2">
-                        Sistema de comentários em desenvolvimento
-                      </h3>
-                      <p className="text-raiz-secondary">
-                        Em breve você poderá interagir com outros apoiadores
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/meus-projetos')}
+            className="flex items-center space-x-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Voltar</span>
+          </Button>
+          {getStatusBadge(project.status)}
+        </div>
 
-          {/* Recompensas */}
-          <div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Project Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Recompensas</CardTitle>
-                <CardDescription>
-                  Escolha sua recompensa e apoie o projeto
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {project.rewards.map((reward, index) => (
-                  <div 
-                    key={index} 
-                    className="border border-raiz-accent/20 rounded-lg p-4 hover:border-raiz-accent/40 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-raiz-dark">R$ {reward.amount}</h4>
-                      <span className="text-sm text-raiz-secondary">{reward.backers} apoiadores</span>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-2xl mb-2">{project.title}</CardTitle>
+                    <div className="flex items-center space-x-2 mb-4">
+                      <Badge variant="outline">{project.category}</Badge>
+                      {profile && (
+                        <div className="flex items-center space-x-1 text-sm text-raiz-secondary">
+                          <User className="w-4 h-4" />
+                          <span>por {profile.nome} {profile.sobrenome}</span>
+                        </div>
+                      )}
                     </div>
-                    <h5 className="font-medium text-raiz-primary mb-2">{reward.title}</h5>
-                    <p className="text-sm text-raiz-secondary">{reward.description}</p>
                   </div>
-                ))}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-raiz-secondary leading-relaxed">
+                  {project.description}
+                </p>
               </CardContent>
             </Card>
+
+            {/* Video */}
+            {embedUrl && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Youtube className="w-5 h-5" />
+                    <span>Vídeo do Projeto</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="aspect-video">
+                    <iframe
+                      src={embedUrl}
+                      title="Project Video"
+                      className="w-full h-full rounded-lg"
+                      allowFullScreen
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Location */}
+            {(project.endereco || project.cidade || project.estado) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <MapPin className="w-5 h-5" />
+                    <span>Localização</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-raiz-secondary">
+                    {project.endereco && (
+                      <p>
+                        {project.endereco}
+                        {project.numero && `, ${project.numero}`}
+                        {project.complemento && `, ${project.complemento}`}
+                      </p>
+                    )}
+                    {project.bairro && <p>{project.bairro}</p>}
+                    {(project.cidade || project.estado) && (
+                      <p>
+                        {project.cidade}
+                        {project.estado && `, ${project.estado}`}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Project Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Detalhes do Projeto</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="w-4 h-4 text-raiz-secondary" />
+                    <span className="text-sm text-raiz-secondary">Meta:</span>
+                  </div>
+                  <span className="font-semibold">{formatCurrency(project.goal)}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-raiz-secondary" />
+                    <span className="text-sm text-raiz-secondary">Criado:</span>
+                  </div>
+                  <span>{formatDate(project.created_at)}</span>
+                </div>
+
+                {project.deadline && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="w-4 h-4 text-raiz-secondary" />
+                      <span className="text-sm text-raiz-secondary">Prazo:</span>
+                    </div>
+                    <span>{formatDate(project.deadline)}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Actions */}
+            {isOwner && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ações</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {project.status === 'pending' && (
+                    <Button variant="outline" className="w-full">
+                      Editar Projeto
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(project.youtube_url, '_blank')}
+                    className="w-full flex items-center space-x-2"
+                  >
+                    <Youtube className="w-4 h-4" />
+                    <span>Ver no YouTube</span>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Contact */}
+            {profile && !isOwner && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contato</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="font-medium">{profile.nome} {profile.sobrenome}</p>
+                    <p className="text-sm text-raiz-secondary">{profile.email}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

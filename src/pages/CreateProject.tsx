@@ -1,16 +1,22 @@
+
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Youtube, DollarSign, Calendar, Target, MapPin, Home } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, DollarSign, FileText, MapPin, Youtube, Building, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const CreateProject = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -18,8 +24,6 @@ const CreateProject = () => {
     goal: '',
     deadline: '',
     youtubeUrl: '',
-    image: null as File | null,
-    // Endereço do projeto
     endereco: '',
     numero: '',
     complemento: '',
@@ -28,135 +32,232 @@ const CreateProject = () => {
     estado: ''
   });
 
+  const categories = [
+    'Tecnologia',
+    'Arte e Cultura',
+    'Meio Ambiente',
+    'Educação',
+    'Saúde',
+    'Esportes',
+    'Negócios',
+    'Outros'
+  ];
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, image: file }));
-    }
+  const validateYouTubeUrl = (url: string) => {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+    return youtubeRegex.test(url);
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const sanitizeInput = (input: string) => {
+    return input.trim().replace(/[<>'"]/g, '');
+  };
+
+  const validateForm = () => {
+    const requiredFields = ['title', 'description', 'category', 'goal', 'youtubeUrl'];
+    const emptyFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    
+    if (emptyFields.length > 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!validateYouTubeUrl(formData.youtubeUrl)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite uma URL válida do YouTube.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const goalValue = parseFloat(formData.goal);
+    if (isNaN(goalValue) || goalValue <= 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite um valor de meta válido.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (formData.deadline && new Date(formData.deadline) <= new Date()) {
+      toast({
+        title: "Erro",
+        description: "A data limite deve ser futura.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    // Validação básica
-    if (!formData.title || !formData.description || !formData.category || !formData.goal || !formData.youtubeUrl) {
+    if (!user) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios, incluindo o link do YouTube.",
+        description: "Você precisa estar logado para criar um projeto.",
         variant: "destructive"
       });
       return;
     }
 
-    // Validação do YouTube URL
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
-    if (!youtubeRegex.test(formData.youtubeUrl)) {
-      toast({
-        title: "Erro",
-        description: "Por favor, insira um link válido do YouTube.",
-        variant: "destructive"
-      });
+    if (!validateForm()) {
       return;
     }
 
-    // Simular envio
-    toast({
-      title: "Projeto criado com sucesso!",
-      description: "Seu projeto foi enviado para análise e estará disponível em breve.",
-    });
-    
-    console.log('Dados do projeto:', formData);
+    setLoading(true);
+
+    try {
+      // Sanitize all text inputs
+      const sanitizedData = {
+        title: sanitizeInput(formData.title),
+        description: sanitizeInput(formData.description),
+        category: formData.category,
+        goal: parseFloat(formData.goal),
+        deadline: formData.deadline || null,
+        youtube_url: formData.youtubeUrl.trim(),
+        endereco: formData.endereco ? sanitizeInput(formData.endereco) : null,
+        numero: formData.numero ? sanitizeInput(formData.numero) : null,
+        complemento: formData.complemento ? sanitizeInput(formData.complemento) : null,
+        bairro: formData.bairro ? sanitizeInput(formData.bairro) : null,
+        cidade: formData.cidade ? sanitizeInput(formData.cidade) : null,
+        estado: formData.estado ? sanitizeInput(formData.estado) : null,
+        user_id: user.id,
+        status: 'pending'
+      };
+
+      const { error } = await supabase
+        .from('projects')
+        .insert([sanitizedData]);
+
+      if (error) {
+        console.error('Project creation error:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar projeto. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Sucesso!",
+        description: "Projeto criado com sucesso. Aguarde aprovação.",
+      });
+
+      navigate('/meus-projetos');
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-raiz-light">
-      <Header />
-      <div className="py-8">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-raiz-dark mb-2">Criar Novo Projeto</h1>
-            <p className="text-raiz-secondary">
-              Transforme sua ideia em realidade. Preencha os dados do seu projeto para começar sua campanha.
-            </p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20 py-8">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-raiz-dark mb-2">Criar Novo Projeto</h1>
+          <p className="text-raiz-secondary">Compartilhe sua ideia e encontre apoiadores</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Informações Básicas */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Target className="w-5 h-5" />
-                  <span>Informações Básicas</span>
-                </CardTitle>
-                <CardDescription>
-                  Dados fundamentais do seu projeto
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Informações do Projeto */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="w-5 h-5" />
+                <span>Informações do Projeto</span>
+              </CardTitle>
+              <CardDescription>
+                Descreva seu projeto de forma clara e atrativa
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              
+              <div className="space-y-2">
+                <Label htmlFor="title">Título do Projeto *</Label>
+                <Input
+                  id="title"
+                  placeholder="Digite o título do seu projeto"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  required
+                  disabled={loading}
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição *</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Descreva seu projeto, seus objetivos e como pretende utilizá-lo"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  required
+                  disabled={loading}
+                  rows={4}
+                  maxLength={2000}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Título do Projeto *</Label>
-                  <Input
-                    id="title"
-                    placeholder="Ex: App revolucionário para educação"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    required
-                  />
+                  <Label htmlFor="category">Categoria *</Label>
+                  <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)} disabled={loading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrição *</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Descreva seu projeto de forma detalhada. Explique o problema que resolve, como funciona e qual o impacto esperado..."
-                    rows={6}
-                    value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Categoria *</Label>
-                    <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="tecnologia">Tecnologia</SelectItem>
-                        <SelectItem value="educacao">Educação</SelectItem>
-                        <SelectItem value="sustentabilidade">Sustentabilidade</SelectItem>
-                        <SelectItem value="saude">Saúde</SelectItem>
-                        <SelectItem value="arte-cultura">Arte e Cultura</SelectItem>
-                        <SelectItem value="social">Social</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <Label htmlFor="goal">Meta de Arrecadação (R$) *</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
+                    <Input
+                      id="goal"
+                      type="number"
+                      placeholder="10000"
+                      className="pl-10"
+                      value={formData.goal}
+                      onChange={(e) => handleInputChange('goal', e.target.value)}
+                      required
+                      disabled={loading}
+                      min="1"
+                      step="0.01"
+                    />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="goal">Meta de Arrecadação (R$) *</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
-                      <Input
-                        id="goal"
-                        type="number"
-                        placeholder="50000"
-                        className="pl-10"
-                        value={formData.goal}
-                        onChange={(e) => handleInputChange('goal', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="deadline">Data Limite da Campanha</Label>
+                  <Label htmlFor="deadline">Data Limite (Opcional)</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
                     <Input
@@ -165,158 +266,149 @@ const CreateProject = () => {
                       className="pl-10"
                       value={formData.deadline}
                       onChange={(e) => handleInputChange('deadline', e.target.value)}
+                      disabled={loading}
+                      min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Localização do Projeto */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <MapPin className="w-5 h-5" />
-                  <span>Localização do Projeto</span>
-                </CardTitle>
-                <CardDescription>
-                  Informe onde o projeto será desenvolvido/executado
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
                 <div className="space-y-2">
+                  <Label htmlFor="youtubeUrl">URL do Vídeo (YouTube) *</Label>
+                  <div className="relative">
+                    <Youtube className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
+                    <Input
+                      id="youtubeUrl"
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="pl-10"
+                      value={formData.youtubeUrl}
+                      onChange={(e) => handleInputChange('youtubeUrl', e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Localização */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MapPin className="w-5 h-5" />
+                <span>Localização (Opcional)</span>
+              </CardTitle>
+              <CardDescription>
+                Informe onde o projeto será desenvolvido
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="endereco">Endereço</Label>
                   <div className="relative">
-                    <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
+                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
                     <Input
                       id="endereco"
                       placeholder="Rua das Flores"
                       className="pl-10"
                       value={formData.endereco}
                       onChange={(e) => handleInputChange('endereco', e.target.value)}
+                      disabled={loading}
+                      maxLength={100}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="numero">Número</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="numero">Número</Label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
                     <Input
                       id="numero"
                       placeholder="123"
+                      className="pl-10"
                       value={formData.numero}
                       onChange={(e) => handleInputChange('numero', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="complemento">Complemento</Label>
-                    <Input
-                      id="complemento"
-                      placeholder="Sala 101, Andar 2"
-                      value={formData.complemento}
-                      onChange={(e) => handleInputChange('complemento', e.target.value)}
+                      disabled={loading}
+                      maxLength={10}
                     />
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="bairro">Bairro</Label>
-                    <Input
-                      id="bairro"
-                      placeholder="Centro"
-                      value={formData.bairro}
-                      onChange={(e) => handleInputChange('bairro', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cidade">Cidade</Label>
-                    <Input
-                      id="cidade"
-                      placeholder="São Paulo"
-                      value={formData.cidade}
-                      onChange={(e) => handleInputChange('cidade', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="estado">Estado</Label>
-                    <Input
-                      id="estado"
-                      placeholder="SP"
-                      maxLength={2}
-                      value={formData.estado}
-                      onChange={(e) => handleInputChange('estado', e.target.value.toUpperCase())}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="space-y-2">
+                <Label htmlFor="complemento">Complemento</Label>
+                <Input
+                  id="complemento"
+                  placeholder="Apartamento 101, Bloco A"
+                  value={formData.complemento}
+                  onChange={(e) => handleInputChange('complemento', e.target.value)}
+                  disabled={loading}
+                  maxLength={50}
+                />
+              </div>
 
-            {/* Mídia e Conteúdo */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Upload className="w-5 h-5" />
-                  <span>Mídia e Conteúdo</span>
-                </CardTitle>
-                <CardDescription>
-                  Adicione imagens e vídeos para tornar seu projeto mais atrativo
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="image">Imagem Principal</Label>
-                  <div className="border-2 border-dashed border-raiz-accent/30 rounded-lg p-8 text-center hover:border-raiz-accent/50 transition-colors">
-                    <input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <label htmlFor="image" className="cursor-pointer">
-                      <Upload className="w-12 h-12 text-raiz-accent mx-auto mb-4" />
-                      <p className="text-raiz-secondary mb-2">
-                        {formData.image ? formData.image.name : 'Clique para enviar uma imagem'}
-                      </p>
-                      <p className="text-sm text-raiz-secondary/70">
-                        Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
-                      </p>
-                    </label>
-                  </div>
+                  <Label htmlFor="bairro">Bairro</Label>
+                  <Input
+                    id="bairro"
+                    placeholder="Centro"
+                    value={formData.bairro}
+                    onChange={(e) => handleInputChange('bairro', e.target.value)}
+                    disabled={loading}
+                    maxLength={50}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="youtube">Link do YouTube *</Label>
-                  <div className="relative">
-                    <Youtube className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
-                    <Input
-                      id="youtube"
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      className="pl-10"
-                      value={formData.youtubeUrl}
-                      onChange={(e) => handleInputChange('youtubeUrl', e.target.value)}
-                      required
-                    />
-                  </div>
-                  <p className="text-sm text-raiz-secondary/70">
-                    <strong>Obrigatório:</strong> Grave um vídeo se apresentando e falando sobre seu projeto. 
-                    Explique quem você é, qual problema seu projeto resolve e como pretende executá-lo.
-                  </p>
+                  <Label htmlFor="cidade">Cidade</Label>
+                  <Input
+                    id="cidade"
+                    placeholder="São Paulo"
+                    value={formData.cidade}
+                    onChange={(e) => handleInputChange('cidade', e.target.value)}
+                    disabled={loading}
+                    maxLength={50}
+                  />
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Botões de Ação */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-end">
-              <Button variant="outline" type="button" className="sm:w-auto">
-                Salvar Rascunho
-              </Button>
-              <Button type="submit" className="bg-raiz-primary hover:bg-raiz-primary/90 sm:w-auto">
-                Criar Projeto
-              </Button>
-            </div>
-          </form>
-        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estado">Estado</Label>
+                  <Input
+                    id="estado"
+                    placeholder="SP"
+                    maxLength={2}
+                    value={formData.estado}
+                    onChange={(e) => handleInputChange('estado', e.target.value.toUpperCase())}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Botões de Ação */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              type="submit" 
+              className="bg-raiz-primary hover:bg-raiz-primary/90 px-8"
+              disabled={loading}
+            >
+              {loading ? 'Criando Projeto...' : 'Criar Projeto'}
+            </Button>
+            <Button 
+              variant="outline" 
+              type="button" 
+              onClick={() => navigate('/dashboard')}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

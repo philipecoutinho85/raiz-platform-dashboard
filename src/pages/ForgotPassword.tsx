@@ -7,13 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, ArrowLeft, Sprout } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const ForgotPassword = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
     if (!email) {
@@ -25,14 +31,45 @@ const ForgotPassword = () => {
       return;
     }
 
-    // Simular envio de e-mail
-    setIsSubmitted(true);
-    toast({
-      title: "E-mail enviado!",
-      description: "Verifique sua caixa de entrada para redefinir sua senha.",
-    });
-    
-    console.log('Reset password for:', email);
+    if (!validateEmail(email)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite um e-mail válido.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao enviar e-mail. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setIsSubmitted(true);
+      toast({
+        title: "E-mail enviado!",
+        description: "Verifique sua caixa de entrada para redefinir sua senha.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (isSubmitted) {
@@ -109,12 +146,17 @@ const ForgotPassword = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-raiz-primary hover:bg-raiz-primary/90">
-                Enviar Link de Redefinição
+              <Button 
+                type="submit" 
+                className="w-full bg-raiz-primary hover:bg-raiz-primary/90"
+                disabled={loading}
+              >
+                {loading ? 'Enviando...' : 'Enviar Link de Redefinição'}
               </Button>
 
               <div className="text-center">

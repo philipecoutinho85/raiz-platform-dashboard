@@ -1,299 +1,304 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Eye, TrendingUp, Users, Clock, MoreVertical } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Search, Filter, Eye, Edit, Calendar, DollarSign } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  goal: number;
+  status: string;
+  created_at: string;
+  deadline?: string;
+}
 
 const MyProjects = () => {
-  const [activeTab, setActiveTab] = useState('all');
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
-  // Mock data dos projetos do usuário
-  const userProjects = [
-    {
-      id: 1,
-      title: 'EcoTech Sustentável',
-      description: 'Desenvolvimento de tecnologia verde para redução de carbono',
-      category: 'Tecnologia',
-      goal: 50000,
-      raised: 39200,
-      supporters: 156,
-      daysLeft: 15,
-      status: 'active',
-      views: 2340,
-      image: '/placeholder.svg',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 2,
-      title: 'App de Educação Rural',
-      description: 'Aplicativo educacional para comunidades rurais',
-      category: 'Educação',
-      goal: 25000,
-      raised: 8500,
-      supporters: 42,
-      daysLeft: 30,
-      status: 'active',
-      views: 890,
-      image: '/placeholder.svg',
-      createdAt: '2024-02-01'
-    },
-    {
-      id: 3,
-      title: 'Projeto Finalizado',
-      description: 'Projeto que atingiu a meta com sucesso',
-      category: 'Social',
-      goal: 15000,
-      raised: 18750,
-      supporters: 134,
-      daysLeft: 0,
-      status: 'funded',
-      views: 3450,
-      image: '/placeholder.svg',
-      createdAt: '2023-12-10'
-    },
-    {
-      id: 4,
-      title: 'Projeto em Análise',
-      description: 'Aguardando aprovação da equipe',
-      category: 'Tecnologia',
-      goal: 30000,
-      raised: 0,
-      supporters: 0,
-      daysLeft: 0,
-      status: 'pending',
-      views: 0,
-      image: '/placeholder.svg',
-      createdAt: '2024-02-10'
-    }
+  const categories = [
+    'Tecnologia',
+    'Arte e Cultura',
+    'Meio Ambiente',
+    'Educação',
+    'Saúde',
+    'Esportes',
+    'Negócios',
+    'Outros'
   ];
 
+  useEffect(() => {
+    if (user) {
+      fetchUserProjects();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    filterProjects();
+  }, [projects, searchTerm, statusFilter, categoryFilter]);
+
+  const fetchUserProjects = async () => {
+    try {
+      const { data: projects, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching projects:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar projetos.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setProjects(projects || []);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao carregar projetos.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterProjects = () => {
+    let filtered = projects;
+
+    if (searchTerm) {
+      filtered = filtered.filter(project =>
+        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(project => project.status === statusFilter);
+    }
+
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(project => project.category === categoryFilter);
+    }
+
+    setFilteredProjects(filtered);
+  };
+
   const getStatusBadge = (status: string) => {
-    const statusMap = {
-      active: { label: 'Ativo', variant: 'default' as const },
-      funded: { label: 'Financiado', variant: 'secondary' as const },
-      expired: { label: 'Expirado', variant: 'destructive' as const },
-      pending: { label: 'Em Análise', variant: 'outline' as const }
-    };
-    
-    return statusMap[status as keyof typeof statusMap] || statusMap.pending;
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejeitado</Badge>;
+      default:
+        return <Badge variant="secondary">Pendente</Badge>;
+    }
   };
 
-  const getProgressPercentage = (raised: number, goal: number) => {
-    return Math.min((raised / goal) * 100, 100);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
-  const filteredProjects = userProjects.filter(project => {
-    if (activeTab === 'all') return true;
-    return project.status === activeTab;
-  });
-
-  const stats = {
-    total: userProjects.length,
-    active: userProjects.filter(p => p.status === 'active').length,
-    funded: userProjects.filter(p => p.status === 'funded').length,
-    totalRaised: userProjects.reduce((sum, p) => sum + p.raised, 0)
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-raiz-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-raiz-light">
-      {/* Header */}
-      <div className="bg-white border-b border-raiz-accent/20 py-6">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-raiz-dark mb-2">Meus Projetos</h1>
-              <p className="text-raiz-secondary">Gerencie todos os seus projetos em um só lugar</p>
-            </div>
-            
-            <Button className="bg-raiz-primary hover:bg-raiz-primary/90">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Projeto
-            </Button>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20">
       <div className="container mx-auto px-4 py-8">
-        {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Total de Projetos</p>
-                  <p className="text-2xl font-bold text-raiz-dark">{stats.total}</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-raiz-accent" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Projetos Ativos</p>
-                  <p className="text-2xl font-bold text-raiz-primary">{stats.active}</p>
-                </div>
-                <Clock className="w-8 h-8 text-raiz-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Financiados</p>
-                  <p className="text-2xl font-bold text-raiz-gold">{stats.funded}</p>
-                </div>
-                <Users className="w-8 h-8 text-raiz-gold" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-raiz-secondary">Total Arrecadado</p>
-                  <p className="text-2xl font-bold text-raiz-accent">R$ {stats.totalRaised.toLocaleString()}</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-raiz-accent" />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-raiz-dark mb-2">Meus Projetos</h1>
+            <p className="text-raiz-secondary">
+              Gerencie e acompanhe todos os seus projetos
+            </p>
+          </div>
+          <Button asChild className="bg-raiz-primary hover:bg-raiz-primary/90">
+            <Link to="/criar-projeto" className="flex items-center space-x-2">
+              <Plus className="w-4 h-4" />
+              <span>Novo Projeto</span>
+            </Link>
+          </Button>
         </div>
 
-        {/* Filtros por Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-none">
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="active">Ativos</TabsTrigger>
-            <TabsTrigger value="funded">Financiados</TabsTrigger>
-            <TabsTrigger value="expired">Expirados</TabsTrigger>
-            <TabsTrigger value="pending">Pendentes</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
+                <Input
+                  placeholder="Buscar projetos..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
 
-        {/* Lista de Projetos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredProjects.map((project) => {
-            const statusBadge = getStatusBadge(project.status);
-            
-            return (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="approved">Aprovado</SelectItem>
+                  <SelectItem value="rejected">Rejeitado</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Categorias</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                  setCategoryFilter('all');
+                }}
+                className="flex items-center space-x-2"
+              >
+                <Filter className="w-4 h-4" />
+                <span>Limpar</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Projects List */}
+        {filteredProjects.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <div className="w-16 h-16 bg-raiz-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Plus className="w-8 h-8 text-raiz-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-raiz-dark mb-2">
+                {projects.length === 0 ? 'Nenhum projeto criado' : 'Nenhum projeto encontrado'}
+              </h3>
+              <p className="text-raiz-secondary mb-6">
+                {projects.length === 0
+                  ? 'Crie seu primeiro projeto e comece a arrecadar fundos para suas ideias.'
+                  : 'Tente ajustar os filtros ou criar um novo projeto.'
+                }
+              </p>
+              <Button asChild className="bg-raiz-primary hover:bg-raiz-primary/90">
+                <Link to="/criar-projeto">Criar Projeto</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => (
               <Card key={project.id} className="hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-raiz-accent/10 rounded-t-lg overflow-hidden">
-                  <img 
-                    src={project.image} 
-                    alt={project.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                
-                <CardHeader className="pb-3">
+                <CardHeader>
                   <div className="flex items-start justify-between">
-                    <Badge variant={statusBadge.variant}>
-                      {statusBadge.label}
-                    </Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Ver Detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex-1">
+                      <CardTitle className="text-lg mb-2 line-clamp-2">
+                        {project.title}
+                      </CardTitle>
+                      <div className="flex items-center space-x-2 mb-2">
+                        {getStatusBadge(project.status)}
+                        <Badge variant="outline">{project.category}</Badge>
+                      </div>
+                    </div>
                   </div>
-                  <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
+                  <CardDescription className="line-clamp-3">
                     {project.description}
                   </CardDescription>
                 </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {project.status === 'active' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-raiz-secondary">Meta: R$ {project.goal.toLocaleString()}</span>
-                        <span className="font-semibold text-raiz-primary">
-                          {getProgressPercentage(project.raised, project.goal).toFixed(0)}%
-                        </span>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-1 text-raiz-secondary">
+                        <DollarSign className="w-4 h-4" />
+                        <span>Meta:</span>
                       </div>
-                      <div className="w-full bg-raiz-accent/20 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-gold h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${getProgressPercentage(project.raised, project.goal)}%` }}
-                        />
+                      <span className="font-semibold">{formatCurrency(project.goal)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-1 text-raiz-secondary">
+                        <Calendar className="w-4 h-4" />
+                        <span>Criado:</span>
                       </div>
+                      <span>{formatDate(project.created_at)}</span>
                     </div>
-                  )}
-                  
-                  <div className="text-lg font-bold text-raiz-primary">
-                    R$ {project.raised.toLocaleString()} arrecadados
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4 text-sm text-raiz-secondary">
-                    <div className="text-center">
-                      <div className="font-semibold text-raiz-dark">{project.supporters}</div>
-                      <div>Apoiadores</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-raiz-dark">{project.views}</div>
-                      <div>Visualizações</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-raiz-dark">
-                        {project.daysLeft > 0 ? project.daysLeft : 0}
+
+                    {project.deadline && (
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-1 text-raiz-secondary">
+                          <Calendar className="w-4 h-4" />
+                          <span>Prazo:</span>
+                        </div>
+                        <span>{formatDate(project.deadline)}</span>
                       </div>
-                      <div>Dias restantes</div>
+                    )}
+
+                    <div className="flex space-x-2 pt-2">
+                      <Button variant="outline" size="sm" asChild className="flex-1">
+                        <Link to={`/projeto/${project.id}`} className="flex items-center space-x-1">
+                          <Eye className="w-4 h-4" />
+                          <span>Ver</span>
+                        </Link>
+                      </Button>
+                      {project.status === 'pending' && (
+                        <Button variant="outline" size="sm" asChild className="flex-1">
+                          <Link to={`/editar-projeto/${project.id}`} className="flex items-center space-x-1">
+                            <Edit className="w-4 h-4" />
+                            <span>Editar</span>
+                          </Link>
+                        </Button>
+                      )}
                     </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1">
-                      <Eye className="w-4 h-4 mr-2" />
-                      Ver
-                    </Button>
-                    <Button variant="outline" className="flex-1">
-                      <Edit className="w-4 h-4 mr-2" />
-                      Editar
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-        
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <TrendingUp className="w-16 h-16 text-raiz-accent mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-raiz-dark mb-2">
-              Nenhum projeto encontrado
-            </h3>
-            <p className="text-raiz-secondary mb-4">
-              {activeTab === 'all' 
-                ? 'Você ainda não criou nenhum projeto' 
-                : `Você não tem projetos com status "${activeTab}"`
-              }
-            </p>
-            <Button className="bg-raiz-primary hover:bg-raiz-primary/90">
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeiro Projeto
-            </Button>
+            ))}
           </div>
         )}
       </div>
