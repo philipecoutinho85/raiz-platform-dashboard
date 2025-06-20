@@ -1,12 +1,29 @@
 
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play, Sprout, TrendingUp, Users } from 'lucide-react';
+import { ArrowRight, Play, Sprout, TrendingUp, Users, LogIn, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen bg-gradient-hero overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23%238FBC8F%22%20fill-opacity%3D%220.1%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+      
+      {/* Login/Register buttons in top right */}
+      <div className="absolute top-6 right-6 z-20 flex gap-3">
+        <Button variant="outline" size="sm" asChild className="border-raiz-accent text-raiz-accent hover:bg-raiz-accent hover:text-raiz-dark">
+          <Link to="/login" className="flex items-center space-x-2">
+            <LogIn className="w-4 h-4" />
+            <span>Entrar</span>
+          </Link>
+        </Button>
+        <Button size="sm" asChild className="bg-raiz-gold hover:bg-raiz-gold/90 text-raiz-dark">
+          <Link to="/registro" className="flex items-center space-x-2">
+            <UserPlus className="w-4 h-4" />
+            <span>Cadastrar</span>
+          </Link>
+        </Button>
+      </div>
       
       <div className="container mx-auto px-4 pt-20 pb-16 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
@@ -29,9 +46,11 @@ const HeroSection = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Button size="lg" className="bg-raiz-gold hover:bg-raiz-gold/90 text-raiz-dark text-lg px-8 py-6 h-auto">
-                Criar Meu Projeto
-                <ArrowRight className="ml-2 w-5 h-5" />
+              <Button size="lg" asChild className="bg-raiz-gold hover:bg-raiz-gold/90 text-raiz-dark text-lg px-8 py-6 h-auto">
+                <Link to="/registro" className="flex items-center space-x-2">
+                  <span>Criar Meu Projeto</span>
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
               </Button>
               <Button 
                 size="lg" 
