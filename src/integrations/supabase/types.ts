@@ -9,16 +9,138 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          celular: string
+          cpf: string
+          created_at: string
+          data_nascimento: string
+          email: string
+          id: string
+          nome: string
+          sobrenome: string
+          updated_at: string
+        }
+        Insert: {
+          celular: string
+          cpf: string
+          created_at?: string
+          data_nascimento: string
+          email: string
+          id: string
+          nome: string
+          sobrenome: string
+          updated_at?: string
+        }
+        Update: {
+          celular?: string
+          cpf?: string
+          created_at?: string
+          data_nascimento?: string
+          email?: string
+          id?: string
+          nome?: string
+          sobrenome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          bairro: string | null
+          category: string
+          cidade: string | null
+          complemento: string | null
+          created_at: string
+          deadline: string | null
+          description: string
+          endereco: string | null
+          estado: string | null
+          goal: number
+          id: string
+          numero: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          youtube_url: string
+        }
+        Insert: {
+          bairro?: string | null
+          category: string
+          cidade?: string | null
+          complemento?: string | null
+          created_at?: string
+          deadline?: string | null
+          description: string
+          endereco?: string | null
+          estado?: string | null
+          goal: number
+          id?: string
+          numero?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+          youtube_url: string
+        }
+        Update: {
+          bairro?: string | null
+          category?: string
+          cidade?: string | null
+          complemento?: string | null
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          endereco?: string | null
+          estado?: string | null
+          goal?: number
+          id?: string
+          numero?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          youtube_url?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +255,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

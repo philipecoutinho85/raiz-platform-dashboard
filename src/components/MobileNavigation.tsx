@@ -2,14 +2,16 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, FolderPlus, Folder, User, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MobileNavigation = () => {
   const location = useLocation();
-  
-  // Mock user data - em produção viria de um contexto de autenticação
-  const user = {
-    isAdmin: true
-  };
+  const { user, isAdmin } = useAuth();
+
+  // Don't show navigation on auth pages or if user is not authenticated
+  if (['/login', '/registro', '/esqueci-senha'].includes(location.pathname) || !user) {
+    return null;
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -18,8 +20,8 @@ const MobileNavigation = () => {
     { name: 'Perfil', href: '/perfil', icon: User },
   ];
 
-  // Adicionar admin se o usuário for admin
-  if (user.isAdmin) {
+  // Add admin if the user is admin
+  if (isAdmin) {
     navigation.push({ name: 'Admin', href: '/admin', icon: Shield });
   }
 

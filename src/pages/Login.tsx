@@ -1,26 +1,41 @@
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Mail, Lock, Sprout } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
   const { toast } = useToast();
+  const { signIn, user } = useAuth();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
     if (!formData.email || !formData.password) {
@@ -32,13 +47,46 @@ const Login = () => {
       return;
     }
 
-    // Simular login
-    toast({
-      title: "Login realizado com sucesso!",
-      description: "Redirecionando para o dashboard...",
-    });
+    if (!validateEmail(formData.email)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite um e-mail válido.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
     
-    console.log('Login:', formData);
+    try {
+      const { error } = await signIn(formData.email, formData.password);
+      
+      if (error) {
+        let errorMessage = "Erro ao fazer login. Tente novamente.";
+        
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = "E-mail ou senha incorretos.";
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = "Por favor, confirme seu e-mail antes de fazer login.";
+        }
+        
+        toast({
+          title: "Erro no Login",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,6 +122,7 @@ const Login = () => {
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -90,11 +139,13 @@ const Login = () => {
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     required
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary hover:text-raiz-primary"
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -110,8 +161,12 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full bg-raiz-primary hover:bg-raiz-primary/90">
-                Entrar
+              <Button 
+                type="submit" 
+                className="w-full bg-raiz-primary hover:bg-raiz-primary/90"
+                disabled={loading}
+              >
+                {loading ? 'Entrando...' : 'Entrar'}
               </Button>
 
               <div className="text-center text-sm text-raiz-secondary">

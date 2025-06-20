@@ -6,18 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sprout, Menu, X, Home, FolderPlus, Folder, User, Shield, Coins, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  
-  // Mock user data - em produção viria de um contexto de autenticação
-  const user = {
-    name: 'João Silva',
-    avatar: '/placeholder.svg',
-    tokens: 1250,
-    isAdmin: true // Simula se o usuário é admin
-  };
+  const { user, signOut, isAdmin } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -27,12 +21,26 @@ const Header = () => {
 
   const isCurrentPath = (path: string) => location.pathname === path;
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  // Don't show header on auth pages
+  if (['/login', '/registro', '/esqueci-senha'].includes(location.pathname)) {
+    return null;
+  }
+
+  // Don't show header if user is not authenticated
+  if (!user) {
+    return null;
+  }
+
   return (
     <header className="bg-white/95 backdrop-blur-sm border-b border-raiz-accent/20 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+          <Link to="/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-raiz-primary rounded-lg flex items-center justify-center">
               <Sprout className="w-5 h-5 text-white" />
             </div>
@@ -59,10 +67,10 @@ const Header = () => {
 
           {/* User Menu & Mobile Toggle */}
           <div className="flex items-center space-x-4">
-            {/* Token Counter */}
+            {/* Token Counter - Mock for now */}
             <div className="hidden sm:flex items-center space-x-2 bg-raiz-gold/10 text-raiz-gold px-3 py-1 rounded-full">
               <Coins className="w-4 h-4" />
-              <span className="text-sm font-semibold">{user.tokens}</span>
+              <span className="text-sm font-semibold">1250</span>
             </div>
 
             {/* User Dropdown */}
@@ -70,18 +78,20 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src="/placeholder.svg" alt={user.email || ''} />
+                    <AvatarFallback>
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user.name}</p>
+                    <p className="font-medium">{user.email}</p>
                     <div className="flex items-center space-x-2">
                       <Coins className="w-3 h-3 text-raiz-gold" />
-                      <span className="text-xs text-muted-foreground">{user.tokens} tokens</span>
+                      <span className="text-xs text-muted-foreground">1250 tokens</span>
                     </div>
                   </div>
                 </div>
@@ -92,7 +102,7 @@ const Header = () => {
                     <span>Perfil</span>
                   </Link>
                 </DropdownMenuItem>
-                {user.isAdmin && (
+                {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="flex items-center">
                       <Shield className="mr-2 h-4 w-4" />
@@ -102,7 +112,7 @@ const Header = () => {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sair</span>
                 </DropdownMenuItem>
@@ -147,7 +157,7 @@ const Header = () => {
               <div className="px-3 py-2 border-t border-raiz-accent/20 mt-4 pt-4">
                 <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
                   <Coins className="w-4 h-4 text-raiz-gold" />
-                  <span>{user.tokens} tokens disponíveis</span>
+                  <span>1250 tokens disponíveis</span>
                 </div>
               </div>
             </nav>
