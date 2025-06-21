@@ -8,8 +8,8 @@ const MobileNavigation = () => {
   const location = useLocation();
   const { user, isAdmin } = useAuth();
 
-  // Don't show navigation on auth pages or if user is not authenticated
-  if (['/login', '/registro', '/esqueci-senha'].includes(location.pathname) || !user) {
+  // Don't show navigation on auth pages, home page, or if user is not authenticated
+  if (['/login', '/registro', '/esqueci-senha', '/'].includes(location.pathname) || !user) {
     return null;
   }
 

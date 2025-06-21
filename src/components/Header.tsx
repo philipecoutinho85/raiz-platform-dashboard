@@ -7,11 +7,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sprout, Menu, X, Home, FolderPlus, Folder, User, Shield, Coins, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTokens } from '@/hooks/useTokens';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { user, signOut, isAdmin } = useAuth();
+  const { tokens, loading: tokensLoading } = useTokens();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -25,8 +27,8 @@ const Header = () => {
     await signOut();
   };
 
-  // Don't show header on auth pages
-  if (['/login', '/registro', '/esqueci-senha'].includes(location.pathname)) {
+  // Don't show header on auth pages or home page
+  if (['/login', '/registro', '/esqueci-senha', '/'].includes(location.pathname)) {
     return null;
   }
 
@@ -67,10 +69,12 @@ const Header = () => {
 
           {/* User Menu & Mobile Toggle */}
           <div className="flex items-center space-x-4">
-            {/* Token Counter - Mock for now */}
+            {/* Token Counter */}
             <div className="hidden sm:flex items-center space-x-2 bg-raiz-gold/10 text-raiz-gold px-3 py-1 rounded-full">
               <Coins className="w-4 h-4" />
-              <span className="text-sm font-semibold">1250</span>
+              <span className="text-sm font-semibold">
+                {tokensLoading ? '...' : tokens.toLocaleString()}
+              </span>
             </div>
 
             {/* User Dropdown */}
@@ -91,7 +95,9 @@ const Header = () => {
                     <p className="font-medium">{user.email}</p>
                     <div className="flex items-center space-x-2">
                       <Coins className="w-3 h-3 text-raiz-gold" />
-                      <span className="text-xs text-muted-foreground">1250 tokens</span>
+                      <span className="text-xs text-muted-foreground">
+                        {tokensLoading ? '...' : `${tokens.toLocaleString()} tokens`}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -157,7 +163,9 @@ const Header = () => {
               <div className="px-3 py-2 border-t border-raiz-accent/20 mt-4 pt-4">
                 <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
                   <Coins className="w-4 h-4 text-raiz-gold" />
-                  <span>1250 tokens disponíveis</span>
+                  <span>
+                    {tokensLoading ? '...' : `${tokens.toLocaleString()} tokens disponíveis`}
+                  </span>
                 </div>
               </div>
             </nav>
