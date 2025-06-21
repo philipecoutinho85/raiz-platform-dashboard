@@ -35,26 +35,47 @@ const ProjectContributors = ({ projectId }: ProjectContributorsProps) => {
           id,
           amount,
           created_at,
-          profiles!inner(nome, sobrenome)
+          user_id
         `)
         .eq('project_id', projectId)
         .eq('status', 'completed')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching contributors:', error);
+        console.error('Error fetching contributions:', error);
         return;
       }
 
-      const formattedContributors = data?.map(contribution => ({
-        id: contribution.id,
-        amount: contribution.amount,
-        created_at: contribution.created_at,
-        user: {
-          nome: contribution.profiles.nome,
-          sobrenome: contribution.profiles.sobrenome
-        }
-      })) || [];
+      if (!data || data.length === 0) {
+        setContributors([]);
+        return;
+      }
+
+      // Buscar perfis dos usuários separadamente
+      const userIds = data.map(contribution => contribution.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, nome, sobrenome')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return;
+      }
+
+      // Combinar dados das contribuições com perfis
+      const formattedContributors = data?.map(contribution => {
+        const profile = profiles?.find(p => p.id === contribution.user_id);
+        return {
+          id: contribution.id,
+          amount: contribution.amount,
+          created_at: contribution.created_at,
+          user: {
+            nome: profile?.nome || 'Usuário',
+            sobrenome: profile?.sobrenome || 'Anônimo'
+          }
+        };
+      }) || [];
 
       setContributors(formattedContributors);
     } catch (error) {
