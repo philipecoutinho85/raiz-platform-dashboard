@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
 interface Project {
-  id: number;
+  id: string;
   title: string;
   author: string;
   authorEmail: string;
@@ -14,6 +14,7 @@ interface Project {
   description: string;
   submittedDate: string;
   status: string;
+  user_id: string;
 }
 
 interface RejectProjectModalProps {
@@ -22,7 +23,7 @@ interface RejectProjectModalProps {
   selectedProject: Project | null;
   rejectionReason: string;
   setRejectionReason: (reason: string) => void;
-  onRejectProject: (projectId: number, action: string, reason?: string) => void;
+  onRejectProject: (projectId: string, action: string, reason?: string) => void;
   onCancel: () => void;
 }
 
@@ -69,7 +70,7 @@ const RejectProjectModal = ({
             <Button
               variant="destructive"
               className="flex-1"
-              onClick={() => onRejectProject(selectedProject?.id || 0, 'reject', rejectionReason)}
+              onClick={() => onRejectProject(selectedProject?.id || '', 'reject', rejectionReason)}
             >
               Confirmar Rejeição
             </Button>

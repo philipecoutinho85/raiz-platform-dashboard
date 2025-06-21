@@ -1,8 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStats from '@/components/admin/AdminStats';
 import UsersTab from '@/components/admin/UsersTab';
@@ -12,14 +14,52 @@ import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
 
+interface Project {
+  id: string;
+  title: string;
+  author: string;
+  authorEmail: string;
+  category: string;
+  goal: number;
+  description: string;
+  submittedDate: string;
+  status: string;
+  user_id: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  tokens: number;
+  projects: number;
+  totalRaised: number;
+  status: string;
+  joinDate: string;
+  avatar: string;
+  phone: string;
+  bio: string;
+  lastLogin: string;
+}
+
 const AdminPanel = () => {
   const { toast } = useToast();
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const { user } = useAuth();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [pendingProjects, setPendingProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeProjects: 0,
+    pendingApproval: 0,
+    totalTokens: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   const form = useForm({
     defaultValues: {
@@ -31,87 +71,88 @@ const AdminPanel = () => {
     }
   });
 
-  // Mock data para usuários
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'João Silva',
-      email: 'joao.silva@email.com',
-      tokens: 1250,
-      projects: 3,
-      totalRaised: 45000,
-      status: 'active',
-      joinDate: '2024-01-15',
-      avatar: '/placeholder.svg',
-      phone: '+55 11 99999-9999',
-      bio: 'Empreendedor apaixonado por tecnologia e inovação.',
-      lastLogin: '2024-02-20'
-    },
-    {
-      id: 2,
-      name: 'Maria Santos',
-      email: 'maria.santos@email.com',
-      tokens: 850,
-      projects: 1,
-      totalRaised: 18500,
-      status: 'active',
-      joinDate: '2024-02-01',
-      avatar: '/placeholder.svg',
-      phone: '+55 11 88888-8888',
-      bio: 'Designer focada em soluções sustentáveis.',
-      lastLogin: '2024-02-19'
-    },
-    {
-      id: 3,
-      name: 'Pedro Costa',
-      email: 'pedro.costa@email.com',
-      tokens: 0,
-      projects: 0,
-      totalRaised: 0,
-      status: 'suspended',
-      joinDate: '2024-01-20',
-      avatar: '/placeholder.svg',
-      phone: '+55 11 77777-7777',
-      bio: 'Desenvolvedor de software.',
-      lastLogin: '2024-01-25'
-    }
-  ]);
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
 
-  // Mock data para projetos em análise
-  const pendingProjects = [
-    {
-      id: 1,
-      title: 'App Inovador de Saúde',
-      author: 'Ana Lima',
-      authorEmail: 'ana.lima@email.com',
-      category: 'Saúde',
-      goal: 75000,
-      description: 'Aplicativo para monitoramento de saúde preventiva',
-      submittedDate: '2024-02-15',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      title: 'Plataforma de Educação Digital',
-      author: 'Carlos Roberto',
-      authorEmail: 'carlos.roberto@email.com',
-      category: 'Educação',
-      goal: 30000,
-      description: 'Sistema de ensino à distância para comunidades rurais',
-      submittedDate: '2024-02-12',
-      status: 'pending'
+  const fetchAdminData = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar projetos pendentes
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select(`
+          id,
+          title,
+          description,
+          category,
+          goal,
+          status,
+          created_at,
+          user_id,
+          profiles!inner(nome, sobrenome, email)
+        `)
+        .eq('status', 'pending');
+
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
+      } else {
+        const formattedProjects = projectsData?.map(project => ({
+          id: project.id,
+          title: project.title,
+          author: `${project.profiles.nome} ${project.profiles.sobrenome}`,
+          authorEmail: project.profiles.email,
+          category: project.category,
+          goal: project.goal,
+          description: project.description,
+          submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
+          status: project.status,
+          user_id: project.user_id
+        })) || [];
+        
+        setPendingProjects(formattedProjects);
+      }
+
+      // Buscar estatísticas
+      const { data: allProjects } = await supabase
+        .from('projects')
+        .select('status');
+
+      const { data: allUsers } = await supabase
+        .from('profiles')
+        .select('id');
+
+      const { data: totalTokensData } = await supabase
+        .from('user_tokens')
+        .select('balance');
+
+      const activeProjectsCount = allProjects?.filter(p => p.status === 'approved').length || 0;
+      const pendingProjectsCount = allProjects?.filter(p => p.status === 'pending').length || 0;
+      const totalUsersCount = allUsers?.length || 0;
+      const totalTokens = totalTokensData?.reduce((sum, user) => sum + user.balance, 0) || 0;
+
+      setStats({
+        totalUsers: totalUsersCount,
+        activeProjects: activeProjectsCount,
+        pendingApproval: pendingProjectsCount,
+        totalTokens
+      });
+
+    } catch (error) {
+      console.error('Error fetching admin data:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados administrativos.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const handleUserAction = (userId: number, action: string) => {
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        user.id === userId 
-          ? { ...user, status: action === 'suspend' ? 'suspended' : 'active' }
-          : user
-      )
-    );
-    
+    // Mock implementation - manter a funcionalidade existente para usuários
     toast({
       title: `Ação realizada`,
       description: `Usuário ${action === 'suspend' ? 'suspenso' : 'ativado'} com sucesso.`,
@@ -120,12 +161,12 @@ const AdminPanel = () => {
     setIsUserDetailModalOpen(false);
   };
 
-  const handleViewUserDetails = (user) => {
+  const handleViewUserDetails = (user: User) => {
     setSelectedUser(user);
     setIsUserDetailModalOpen(true);
   };
 
-  const handleEditUser = (user) => {
+  const handleEditUser = (user: User) => {
     setSelectedUser(user);
     form.reset({
       name: user.name,
@@ -137,22 +178,8 @@ const AdminPanel = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEdit = (data) => {
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        user.id === selectedUser.id 
-          ? { 
-              ...user, 
-              name: data.name, 
-              email: data.email, 
-              phone: data.phone, 
-              bio: data.bio, 
-              tokens: data.tokens 
-            }
-          : user
-      )
-    );
-    
+  const handleSaveEdit = (data: any) => {
+    // Mock implementation - manter a funcionalidade existente
     toast({
       title: "Usuário atualizado",
       description: "As informações do usuário foram atualizadas com sucesso.",
@@ -162,43 +189,83 @@ const AdminPanel = () => {
     setSelectedUser(null);
   };
 
-  const handleProjectAction = (projectId: number, action: string, reason?: string) => {
-    const project = pendingProjects.find(p => p.id === projectId);
-    
-    if (action === 'approve') {
-      toast({
-        title: "Projeto aprovado",
-        description: `O projeto foi aprovado e está disponível na plataforma.`,
-      });
+  const handleProjectAction = async (projectId: string, action: string, reason?: string) => {
+    try {
+      const project = pendingProjects.find(p => p.id === projectId);
       
-      // Simular notificação para o criador
-      console.log(`Notificação enviada para ${project?.authorEmail}: Seu projeto "${project?.title}" foi aprovado!`);
-      
-    } else if (action === 'reject') {
-      if (!reason || reason.trim() === '') {
+      if (action === 'approve') {
+        const { error } = await supabase
+          .from('projects')
+          .update({
+            status: 'approved',
+            reviewed_at: new Date().toISOString(),
+            reviewed_by: user?.id
+          })
+          .eq('id', projectId);
+
+        if (error) {
+          throw error;
+        }
+
         toast({
-          title: "Erro",
-          description: "É obrigatório informar o motivo da rejeição.",
-          variant: "destructive"
+          title: "Projeto aprovado",
+          description: `O projeto foi aprovado e está disponível na plataforma.`,
         });
-        return;
+        
+        // Remover projeto da lista de pendentes
+        setPendingProjects(prev => prev.filter(p => p.id !== projectId));
+        
+      } else if (action === 'reject') {
+        if (!reason || reason.trim() === '') {
+          toast({
+            title: "Erro",
+            description: "É obrigatório informar o motivo da rejeição.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        const { error } = await supabase
+          .from('projects')
+          .update({
+            status: 'rejected',
+            reviewed_at: new Date().toISOString(),
+            reviewed_by: user?.id,
+            admin_notes: reason
+          })
+          .eq('id', projectId);
+
+        if (error) {
+          throw error;
+        }
+        
+        toast({
+          title: "Projeto rejeitado",
+          description: `O projeto foi rejeitado e o criador foi notificado.`,
+        });
+        
+        // Remover projeto da lista de pendentes
+        setPendingProjects(prev => prev.filter(p => p.id !== projectId));
+        
+        setIsRejectModalOpen(false);
+        setRejectionReason('');
+        setSelectedProject(null);
       }
-      
+
+      // Atualizar estatísticas
+      await fetchAdminData();
+
+    } catch (error) {
+      console.error('Error updating project:', error);
       toast({
-        title: "Projeto rejeitado",
-        description: `O projeto foi rejeitado e o criador foi notificado.`,
+        title: "Erro",
+        description: "Erro ao atualizar projeto.",
+        variant: "destructive"
       });
-      
-      // Simular notificação para o criador
-      console.log(`Notificação enviada para ${project?.authorEmail}: Seu projeto "${project?.title}" foi rejeitado. Motivo: ${reason}`);
-      
-      setIsRejectModalOpen(false);
-      setRejectionReason('');
-      setSelectedProject(null);
     }
   };
 
-  const handleRejectProject = (project) => {
+  const handleRejectProject = (project: Project) => {
     setSelectedProject(project);
     setIsRejectModalOpen(true);
   };
@@ -209,12 +276,13 @@ const AdminPanel = () => {
     setSelectedProject(null);
   };
 
-  const stats = {
-    totalUsers: 1247,
-    activeProjects: 89,
-    pendingApproval: 15,
-    totalTokens: 125000
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-raiz-light flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-raiz-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-raiz-light">
@@ -224,12 +292,20 @@ const AdminPanel = () => {
         <AdminStats stats={stats} />
 
         {/* Main Content */}
-        <Tabs defaultValue="users" className="space-y-6">
+        <Tabs defaultValue="projects" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 lg:w-auto">
-            <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="projects">Projetos</TabsTrigger>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="projects">
+            <ProjectsTab 
+              pendingProjects={pendingProjects}
+              onProjectAction={handleProjectAction}
+              onRejectProject={handleRejectProject}
+            />
+          </TabsContent>
 
           <TabsContent value="users">
             <UsersTab 
@@ -237,14 +313,6 @@ const AdminPanel = () => {
               onUserAction={handleUserAction}
               onViewUserDetails={handleViewUserDetails}
               onEditUser={handleEditUser}
-            />
-          </TabsContent>
-
-          <TabsContent value="projects">
-            <ProjectsTab 
-              pendingProjects={pendingProjects}
-              onProjectAction={handleProjectAction}
-              onRejectProject={handleRejectProject}
             />
           </TabsContent>
 

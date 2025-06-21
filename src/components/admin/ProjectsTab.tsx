@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, Check, X } from 'lucide-react';
 
 interface Project {
-  id: number;
+  id: string;
   title: string;
   author: string;
   authorEmail: string;
@@ -14,19 +14,36 @@ interface Project {
   description: string;
   submittedDate: string;
   status: string;
+  user_id: string;
 }
 
 interface ProjectsTabProps {
   pendingProjects: Project[];
-  onProjectAction: (projectId: number, action: string, reason?: string) => void;
+  onProjectAction: (projectId: string, action: string, reason?: string) => void;
   onRejectProject: (project: Project) => void;
 }
 
 const ProjectsTab = ({ pendingProjects, onProjectAction, onRejectProject }: ProjectsTabProps) => {
+  if (pendingProjects.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Projetos Aguardando Aprovação</CardTitle>
+          <CardDescription>Analise e aprove novos projetos submetidos à plataforma</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-raiz-secondary">Nenhum projeto aguardando aprovação.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Projetos Aguardando Aprovação</CardTitle>
+        <CardTitle>Projetos Aguardando Aprovação ({pendingProjects.length})</CardTitle>
         <CardDescription>Analise e aprove novos projetos submetidos à plataforma</CardDescription>
       </CardHeader>
       <CardContent>
@@ -36,7 +53,7 @@ const ProjectsTab = ({ pendingProjects, onProjectAction, onRejectProject }: Proj
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-raiz-dark mb-2">{project.title}</h3>
-                  <p className="text-raiz-secondary mb-2">{project.description}</p>
+                  <p className="text-raiz-secondary mb-2 line-clamp-2">{project.description}</p>
                   <div className="flex items-center space-x-4 text-sm text-raiz-secondary">
                     <span>Por: {project.author}</span>
                     <Badge variant="outline">{project.category}</Badge>

@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          avatar_url: string | null
           celular: string
           cpf: string
           created_at: string
@@ -22,6 +23,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           celular: string
           cpf: string
           created_at?: string
@@ -33,6 +35,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           celular?: string
           cpf?: string
           created_at?: string
@@ -114,6 +117,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          admin_notes: string | null
           backers_count: number
           bairro: string | null
           category: string
@@ -128,6 +132,8 @@ export type Database = {
           id: string
           numero: string | null
           raised_amount: number
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           title: string
           updated_at: string
@@ -135,6 +141,7 @@ export type Database = {
           youtube_url: string
         }
         Insert: {
+          admin_notes?: string | null
           backers_count?: number
           bairro?: string | null
           category: string
@@ -149,6 +156,8 @@ export type Database = {
           id?: string
           numero?: string | null
           raised_amount?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -156,6 +165,7 @@ export type Database = {
           youtube_url: string
         }
         Update: {
+          admin_notes?: string | null
           backers_count?: number
           bairro?: string | null
           category?: string
@@ -170,6 +180,8 @@ export type Database = {
           id?: string
           numero?: string | null
           raised_amount?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           title?: string
           updated_at?: string

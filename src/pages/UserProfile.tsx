@@ -1,303 +1,298 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Wallet, CreditCard, Edit, Camera, Coins, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { User, Camera } from 'lucide-react';
+
+interface ProfileFormData {
+  nome: string;
+  sobrenome: string;
+  email: string;
+  celular: string;
+  cpf: string;
+  data_nascimento: string;
+}
 
 const UserProfile = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [profileData, setProfileData] = useState({
-    name: 'João Silva',
-    email: 'joao.silva@email.com',
-    bio: 'Empreendedor apaixonado por tecnologia e sustentabilidade',
-    avatar: '/placeholder.svg',
-    tokens: 1250,
-    phone: '(11) 99999-9999',
-    location: 'São Paulo, SP'
-  });
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [profile, setProfile] = useState<any>(null);
 
-  const [isEditing, setIsEditing] = useState(false);
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileFormData>();
 
-  const handleProfileUpdate = () => {
-    toast({
-      title: "Perfil atualizado!",
-      description: "Suas informações foram salvas com sucesso.",
-    });
-    setIsEditing(false);
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setProfile(data);
+        setValue('nome', data.nome || '');
+        setValue('sobrenome', data.sobrenome || '');
+        setValue('email', data.email || '');
+        setValue('celular', data.celular || '');
+        setValue('cpf', data.cpf || '');
+        setValue('data_nascimento', data.data_nascimento || '');
+        setAvatarUrl(data.avatar_url || '');
+      }
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao carregar perfil.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleTokenPurchase = (amount: number, price: number) => {
-    toast({
-      title: "Compra realizada!",
-      description: `Você adquiriu ${amount} tokens por R$ ${price}.`,
-    });
-    setProfileData(prev => ({ ...prev, tokens: prev.tokens + amount }));
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      
+      if (!event.target.files || event.target.files.length === 0) {
+        return;
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}/${Math.random()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: data.publicUrl })
+        .eq('id', user?.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(data.publicUrl);
+      toast({
+        title: 'Sucesso',
+        description: 'Avatar atualizado com sucesso!',
+      });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao fazer upload do avatar.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const tokenPackages = [
-    { amount: 100, price: 10, popular: false },
-    { amount: 500, price: 45, popular: true },
-    { amount: 1000, price: 80, popular: false },
-    { amount: 2500, price: 190, popular: false }
-  ];
+  const onSubmit = async (data: ProfileFormData) => {
+    try {
+      setLoading(true);
 
-  const transactionHistory = [
-    { id: 1, type: 'purchase', amount: 500, value: 45, date: '2024-02-15', description: 'Compra de tokens' },
-    { id: 2, type: 'spent', amount: -50, value: 0, date: '2024-02-10', description: 'Apoio ao projeto EcoTech' },
-    { id: 3, type: 'spent', amount: -25, value: 0, date: '2024-02-08', description: 'Apoio ao projeto App Educação' }
-  ];
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          nome: data.nome,
+          sobrenome: data.sobrenome,
+          celular: data.celular,
+          cpf: data.cpf,
+          data_nascimento: data.data_nascimento,
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Perfil atualizado',
+        description: 'Suas informações foram atualizadas com sucesso.',
+      });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar perfil.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInitials = (nome: string, sobrenome: string) => {
+    return `${nome?.charAt(0) || ''}${sobrenome?.charAt(0) || ''}`.toUpperCase();
+  };
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-raiz-light flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-raiz-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-raiz-light py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
+      <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-raiz-dark mb-2">Meu Perfil</h1>
-          <p className="text-raiz-secondary">Gerencie suas informações pessoais e tokens</p>
+          <p className="text-raiz-secondary">
+            Gerencie suas informações pessoais e preferências.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Card */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader className="text-center">
-                <div className="relative mx-auto mb-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <User className="w-5 h-5" />
+              <span>Informações Pessoais</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Avatar Section */}
+              <div className="flex items-center space-x-6">
+                <div className="relative">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={profileData.avatar} alt={profileData.name} />
-                    <AvatarFallback>{profileData.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={avatarUrl} alt="Avatar" />
+                    <AvatarFallback className="bg-raiz-primary text-white text-xl">
+                      {getInitials(profile.nome, profile.sobrenome)}
+                    </AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full"
+                  <label
+                    htmlFor="avatar-upload"
+                    className="absolute bottom-0 right-0 bg-raiz-primary text-white p-2 rounded-full cursor-pointer hover:bg-raiz-primary/80 transition-colors"
                   >
                     <Camera className="w-4 h-4" />
-                  </Button>
+                  </label>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
                 </div>
-                <CardTitle>{profileData.name}</CardTitle>
-                <CardDescription>{profileData.email}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-raiz-gold/10 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Coins className="w-5 h-5 text-raiz-gold" />
-                    <span className="font-semibold">Saldo de Tokens</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-raiz-gold/20 text-raiz-gold">
-                    {profileData.tokens} tokens
-                  </Badge>
+                <div>
+                  <h3 className="text-lg font-semibold text-raiz-dark">
+                    {profile.nome} {profile.sobrenome}
+                  </h3>
+                  <p className="text-raiz-secondary">{profile.email}</p>
+                  <p className="text-sm text-raiz-secondary mt-1">
+                    {uploading ? 'Uploading...' : 'Clique no ícone para alterar a foto'}
+                  </p>
                 </div>
-                <p className="text-sm text-raiz-secondary">{profileData.bio}</p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
 
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="profile" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="profile">Perfil</TabsTrigger>
-                <TabsTrigger value="tokens">Tokens</TabsTrigger>
-                <TabsTrigger value="history">Histórico</TabsTrigger>
-              </TabsList>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome *</Label>
+                  <Input
+                    id="nome"
+                    {...register('nome', { required: 'Nome é obrigatório' })}
+                  />
+                  {errors.nome && (
+                    <p className="text-red-500 text-sm">{errors.nome.message}</p>
+                  )}
+                </div>
 
-              {/* Profile Tab */}
-              <TabsContent value="profile">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center space-x-2">
-                        <User className="w-5 h-5" />
-                        <span>Informações Pessoais</span>
-                      </CardTitle>
-                      <CardDescription>Atualize seus dados pessoais</CardDescription>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      {isEditing ? 'Cancelar' : 'Editar'}
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nome Completo</Label>
-                        <Input
-                          id="name"
-                          value={profileData.name}
-                          onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={profileData.email}
-                          onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Telefone</Label>
-                        <Input
-                          id="phone"
-                          value={profileData.phone}
-                          onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location">Localização</Label>
-                        <Input
-                          id="location"
-                          value={profileData.location}
-                          onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Biografia</Label>
-                      <Input
-                        id="bio"
-                        value={profileData.bio}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    {isEditing && (
-                      <Button onClick={handleProfileUpdate} className="bg-raiz-primary hover:bg-raiz-primary/90">
-                        Salvar Alterações
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                <div className="space-y-2">
+                  <Label htmlFor="sobrenome">Sobrenome *</Label>
+                  <Input
+                    id="sobrenome"
+                    {...register('sobrenome', { required: 'Sobrenome é obrigatório' })}
+                  />
+                  {errors.sobrenome && (
+                    <p className="text-red-500 text-sm">{errors.sobrenome.message}</p>
+                  )}
+                </div>
+              </div>
 
-              {/* Tokens Tab */}
-              <TabsContent value="tokens">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Wallet className="w-5 h-5" />
-                      <span>Comprar Tokens</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Use tokens para apoiar projetos na plataforma
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {tokenPackages.map((pkg, index) => (
-                        <div
-                          key={index}
-                          className={`relative border rounded-lg p-6 ${
-                            pkg.popular 
-                              ? 'border-raiz-gold bg-raiz-gold/5' 
-                              : 'border-raiz-accent/20'
-                          }`}
-                        >
-                          {pkg.popular && (
-                            <Badge className="absolute -top-2 left-4 bg-raiz-gold text-raiz-dark">
-                              Mais Popular
-                            </Badge>
-                          )}
-                          <div className="text-center space-y-4">
-                            <div>
-                              <div className="text-2xl font-bold text-raiz-dark">
-                                {pkg.amount} tokens
-                              </div>
-                              <div className="text-lg text-raiz-primary">
-                                R$ {pkg.price}
-                              </div>
-                              <div className="text-sm text-raiz-secondary">
-                                R$ {(pkg.price / pkg.amount).toFixed(3)} por token
-                              </div>
-                            </div>
-                            <Button
-                              className="w-full"
-                              variant={pkg.popular ? 'default' : 'outline'}
-                              onClick={() => handleTokenPurchase(pkg.amount, pkg.price)}
-                            >
-                              <CreditCard className="w-4 h-4 mr-2" />
-                              Comprar
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  disabled
+                  className="bg-gray-100"
+                  {...register('email')}
+                />
+                <p className="text-sm text-raiz-secondary">
+                  O email não pode ser alterado
+                </p>
+              </div>
 
-              {/* History Tab */}
-              <TabsContent value="history">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <History className="w-5 h-5" />
-                      <span>Histórico de Transações</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Acompanhe suas compras e gastos de tokens
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {transactionHistory.map((transaction) => (
-                        <div
-                          key={transaction.id}
-                          className="flex items-center justify-between p-4 border border-raiz-accent/20 rounded-lg"
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              transaction.type === 'purchase' 
-                                ? 'bg-green-100 text-green-600' 
-                                : 'bg-red-100 text-red-600'
-                            }`}>
-                              {transaction.type === 'purchase' ? '+' : '-'}
-                            </div>
-                            <div>
-                              <div className="font-semibold text-raiz-dark">
-                                {transaction.description}
-                              </div>
-                              <div className="text-sm text-raiz-secondary">
-                                {transaction.date}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`font-semibold ${
-                              transaction.type === 'purchase' 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }`}>
-                              {transaction.amount > 0 ? '+' : ''}{transaction.amount} tokens
-                            </div>
-                            {transaction.value > 0 && (
-                              <div className="text-sm text-raiz-secondary">
-                                R$ {transaction.value}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="celular">Celular *</Label>
+                  <Input
+                    id="celular"
+                    {...register('celular', { required: 'Celular é obrigatório' })}
+                    placeholder="(11) 99999-9999"
+                  />
+                  {errors.celular && (
+                    <p className="text-red-500 text-sm">{errors.celular.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cpf">CPF *</Label>
+                  <Input
+                    id="cpf"
+                    {...register('cpf', { required: 'CPF é obrigatório' })}
+                    placeholder="000.000.000-00"
+                  />
+                  {errors.cpf && (
+                    <p className="text-red-500 text-sm">{errors.cpf.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="data_nascimento">Data de Nascimento *</Label>
+                <Input
+                  id="data_nascimento"
+                  type="date"
+                  {...register('data_nascimento', { required: 'Data de nascimento é obrigatória' })}
+                />
+                {errors.data_nascimento && (
+                  <p className="text-red-500 text-sm">{errors.data_nascimento.message}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end">
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

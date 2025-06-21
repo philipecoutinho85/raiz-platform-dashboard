@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Heart } from 'lucide-react';
@@ -10,8 +11,10 @@ interface Contributor {
   amount: number;
   created_at: string;
   user: {
+    id: string;
     nome: string;
     sobrenome: string;
+    avatar_url?: string;
   };
 }
 
@@ -55,7 +58,7 @@ const ProjectContributors = ({ projectId }: ProjectContributorsProps) => {
       const userIds = data.map(contribution => contribution.user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, nome, sobrenome')
+        .select('id, nome, sobrenome, avatar_url')
         .in('id', userIds);
 
       if (profilesError) {
@@ -71,8 +74,10 @@ const ProjectContributors = ({ projectId }: ProjectContributorsProps) => {
           amount: contribution.amount,
           created_at: contribution.created_at,
           user: {
+            id: contribution.user_id,
             nome: profile?.nome || 'Usuário',
-            sobrenome: profile?.sobrenome || 'Anônimo'
+            sobrenome: profile?.sobrenome || 'Anônimo',
+            avatar_url: profile?.avatar_url
           }
         };
       }) || [];
@@ -159,16 +164,28 @@ const ProjectContributors = ({ projectId }: ProjectContributorsProps) => {
           {contributors.map((contributor) => (
             <div key={contributor.id} className="flex items-center justify-between p-3 bg-raiz-accent/10 rounded-lg">
               <div className="flex items-center space-x-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${contributor.user.nome} ${contributor.user.sobrenome}`} />
-                  <AvatarFallback className="bg-raiz-primary text-white">
-                    {getInitials(contributor.user.nome, contributor.user.sobrenome)}
-                  </AvatarFallback>
-                </Avatar>
+                <Link 
+                  to={`/usuario/${contributor.user.id}`}
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage 
+                      src={contributor.user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${contributor.user.nome} ${contributor.user.sobrenome}`} 
+                    />
+                    <AvatarFallback className="bg-raiz-primary text-white">
+                      {getInitials(contributor.user.nome, contributor.user.sobrenome)}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
                 <div>
-                  <p className="font-medium text-raiz-dark">
-                    {contributor.user.nome} {contributor.user.sobrenome}
-                  </p>
+                  <Link 
+                    to={`/usuario/${contributor.user.id}`}
+                    className="hover:text-raiz-primary transition-colors"
+                  >
+                    <p className="font-medium text-raiz-dark">
+                      {contributor.user.nome} {contributor.user.sobrenome}
+                    </p>
+                  </Link>
                   <p className="text-xs text-raiz-secondary">
                     {formatDate(contributor.created_at)}
                   </p>

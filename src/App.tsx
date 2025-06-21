@@ -14,6 +14,7 @@ import CreateProject from "./pages/CreateProject";
 import MyProjects from "./pages/MyProjects";
 import ProjectDetail from "./pages/ProjectDetail";
 import UserProfile from "./pages/UserProfile";
+import PublicProfile from "./pages/PublicProfile";
 import AdminPanel from "./pages/AdminPanel";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -73,6 +74,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <UserProfile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/usuario/:userId" 
+                element={
+                  <ProtectedRoute>
+                    <PublicProfile />
                   </ProtectedRoute>
                 } 
               />
