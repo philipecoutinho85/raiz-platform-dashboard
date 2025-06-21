@@ -7,16 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, DollarSign, FileText, MapPin, Youtube, Building, Hash } from 'lucide-react';
+import { Calendar, DollarSign, FileText, MapPin, Youtube, Building, Hash, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import ImageUpload from '@/components/ImageUpload';
 
 const CreateProject = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -64,6 +66,15 @@ const CreateProject = () => {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (images.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, adicione pelo menos uma imagem de destaque.",
         variant: "destructive"
       });
       return false;
@@ -137,9 +148,11 @@ const CreateProject = () => {
         status: 'pending'
       };
 
-      const { error } = await supabase
+      const { data: project, error } = await supabase
         .from('projects')
-        .insert([sanitizedData]);
+        .insert([sanitizedData])
+        .select()
+        .single();
 
       if (error) {
         console.error('Project creation error:', error);
@@ -149,6 +162,23 @@ const CreateProject = () => {
           variant: "destructive"
         });
         return;
+      }
+
+      // Salvar imagens do projeto
+      if (images.length > 0) {
+        const imageRecords = images.map((url, index) => ({
+          project_id: project.id,
+          image_url: url,
+          is_featured: index === 0 // primeira imagem é a destaque
+        }));
+
+        const { error: imageError } = await supabase
+          .from('project_images')
+          .insert(imageRecords);
+
+        if (imageError) {
+          console.error('Image save error:', imageError);
+        }
       }
 
       toast({
@@ -288,6 +318,26 @@ const CreateProject = () => {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Imagens do Projeto */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Image className="w-5 h-5" />
+                <span>Imagens do Projeto *</span>
+              </CardTitle>
+              <CardDescription>
+                Adicione imagens atrativas do seu projeto. A primeira será a imagem de destaque.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ImageUpload
+                onImagesChange={setImages}
+                maxImages={5}
+                label="Imagens do Projeto (máximo 5)"
+              />
             </CardContent>
           </Card>
 

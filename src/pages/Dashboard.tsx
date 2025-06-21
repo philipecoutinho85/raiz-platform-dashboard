@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Folder, Eye, Calendar, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Plus, Folder, Eye, Calendar, DollarSign, Users, TrendingUp, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +16,8 @@ interface Project {
   description: string;
   category: string;
   goal: number;
+  raised_amount: number;
+  backers_count: number;
   status: string;
   created_at: string;
   deadline?: string;
@@ -25,6 +28,7 @@ interface DashboardStats {
   pendingProjects: number;
   approvedProjects: number;
   totalGoal: number;
+  totalRaised: number;
 }
 
 const Dashboard = () => {
@@ -35,7 +39,8 @@ const Dashboard = () => {
     totalProjects: 0,
     pendingProjects: 0,
     approvedProjects: 0,
-    totalGoal: 0
+    totalGoal: 0,
+    totalRaised: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -71,12 +76,14 @@ const Dashboard = () => {
       const pendingProjects = projects?.filter(p => p.status === 'pending').length || 0;
       const approvedProjects = projects?.filter(p => p.status === 'approved').length || 0;
       const totalGoal = projects?.reduce((sum, p) => sum + (p.goal || 0), 0) || 0;
+      const totalRaised = projects?.reduce((sum, p) => sum + (p.raised_amount || 0), 0) || 0;
 
       setStats({
         totalProjects,
         pendingProjects,
         approvedProjects,
-        totalGoal
+        totalGoal,
+        totalRaised
       });
 
     } catch (error) {
@@ -113,6 +120,10 @@ const Dashboard = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const getProgressPercentage = (raised: number, goal: number) => {
+    return Math.min((raised / goal) * 100, 100);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -135,7 +146,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Projetos</CardTitle>
@@ -169,10 +180,20 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Meta Total</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-bold">{formatCurrency(stats.totalGoal)}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Arrecadado</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalGoal)}</div>
+              <div className="text-lg font-bold">{formatCurrency(stats.totalRaised)}</div>
             </CardContent>
           </Card>
         </div>
@@ -213,7 +234,8 @@ const Dashboard = () => {
               <ul className="space-y-2 text-sm text-raiz-secondary">
                 <li>• Use um título claro e atrativo</li>
                 <li>• Descreva detalhadamente seu projeto</li>
-                <li>• Inclua um vídeo explicativo de qualidade</li>
+                <li>• Inclua imagens de qualidade</li>
+                <li>• Adicione um vídeo explicativo</li>
                 <li>• Defina metas realistas</li>
                 <li>• Seja transparente sobre o uso dos recursos</li>
               </ul>
@@ -248,32 +270,57 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {projects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-raiz-accent/10 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-raiz-dark">{project.title}</h3>
-                      <p className="text-sm text-raiz-secondary mb-2 line-clamp-2">
-                        {project.description}
-                      </p>
-                      <div className="flex items-center space-x-4 text-xs text-raiz-secondary">
-                        <span>Categoria: {project.category}</span>
-                        <span>Meta: {formatCurrency(project.goal)}</span>
-                        <span>Criado: {formatDate(project.created_at)}</span>
+                {projects.map((project) => {
+                  const progressPercentage = getProgressPercentage(project.raised_amount, project.goal);
+                  
+                  return (
+                    <div
+                      key={project.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-raiz-accent/10 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-raiz-dark">{project.title}</h3>
+                          {getStatusBadge(project.status)}
+                        </div>
+                        
+                        <p className="text-sm text-raiz-secondary mb-3 line-clamp-2">
+                          {project.description}
+                        </p>
+                        
+                        {project.status === 'approved' && (
+                          <div className="space-y-2 mb-3">
+                            <div className="flex justify-between text-xs">
+                              <span>{formatCurrency(project.raised_amount)} de {formatCurrency(project.goal)}</span>
+                              <span className="font-medium">{Math.round(progressPercentage)}%</span>
+                            </div>
+                            <Progress value={progressPercentage} className="h-2" />
+                            <div className="flex items-center space-x-4 text-xs text-raiz-secondary">
+                              <div className="flex items-center space-x-1">
+                                <Users className="w-3 h-3" />
+                                <span>{project.backers_count} apoiadores</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center space-x-4 text-xs text-raiz-secondary">
+                          <span>Categoria: {project.category}</span>
+                          <span>Meta: {formatCurrency(project.goal)}</span>
+                          <span>Criado: {formatDate(project.created_at)}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3 ml-4">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/projeto/${project.id}`}>
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      {getStatusBadge(project.status)}
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/projeto/${project.id}`}>
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

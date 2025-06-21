@@ -45,8 +45,76 @@ export type Database = {
         }
         Relationships: []
       }
+      project_contributions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          project_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          project_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          project_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_contributions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          is_featured: boolean
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          is_featured?: boolean
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_featured?: boolean
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_images_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
+          backers_count: number
           bairro: string | null
           category: string
           cidade: string | null
@@ -59,6 +127,7 @@ export type Database = {
           goal: number
           id: string
           numero: string | null
+          raised_amount: number
           status: string
           title: string
           updated_at: string
@@ -66,6 +135,7 @@ export type Database = {
           youtube_url: string
         }
         Insert: {
+          backers_count?: number
           bairro?: string | null
           category: string
           cidade?: string | null
@@ -78,6 +148,7 @@ export type Database = {
           goal: number
           id?: string
           numero?: string | null
+          raised_amount?: number
           status?: string
           title: string
           updated_at?: string
@@ -85,6 +156,7 @@ export type Database = {
           youtube_url: string
         }
         Update: {
+          backers_count?: number
           bairro?: string | null
           category?: string
           cidade?: string | null
@@ -97,6 +169,7 @@ export type Database = {
           goal?: number
           id?: string
           numero?: string | null
+          raised_amount?: number
           status?: string
           title?: string
           updated_at?: string
