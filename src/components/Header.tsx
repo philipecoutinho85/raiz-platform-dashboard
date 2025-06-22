@@ -12,7 +12,7 @@ import { useTokens } from '@/hooks/useTokens';
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut, isAdmin, profile } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { tokens, loading: tokensLoading } = useTokens();
 
   const navigation = [
@@ -83,9 +83,9 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} alt={profile?.nome || user.email || ''} />
+                    <AvatarImage src="/placeholder.svg" alt={user.email || ''} />
                     <AvatarFallback>
-                      {profile?.nome?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                      {user.email?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -93,7 +93,7 @@ const Header = () => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{profile?.nome ? `${profile.nome} ${profile.sobrenome}` : user.email}</p>
+                    <p className="font-medium">{user.email}</p>
                     <div className="flex items-center space-x-2">
                       <Coins className="w-3 h-3 text-raiz-gold" />
                       <span className="text-xs text-muted-foreground">
