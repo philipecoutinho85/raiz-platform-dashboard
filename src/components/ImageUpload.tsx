@@ -9,12 +9,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface ImageUploadProps {
-  onImagesChange: (images: string[]) => void;
+  onImagesChange?: (images: string[]) => void;
+  onImageUploaded?: (imageUrl: string) => void;
   maxImages?: number;
-  label: string;
+  label?: string;
+  bucket?: string;
+  className?: string;
 }
 
-const ImageUpload = ({ onImagesChange, maxImages = 5, label }: ImageUploadProps) => {
+const ImageUpload = ({ 
+  onImagesChange, 
+  onImageUploaded, 
+  maxImages = 5, 
+  label = "Upload de Imagens",
+  bucket = "project-images",
+  className = ""
+}: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const { toast } = useToast();
@@ -28,7 +38,7 @@ const ImageUpload = ({ onImagesChange, maxImages = 5, label }: ImageUploadProps)
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('project-images')
+        .from(bucket)
         .upload(filePath, file);
 
       if (uploadError) {
@@ -36,12 +46,18 @@ const ImageUpload = ({ onImagesChange, maxImages = 5, label }: ImageUploadProps)
       }
 
       const { data } = supabase.storage
-        .from('project-images')
+        .from(bucket)
         .getPublicUrl(filePath);
 
-      const newImages = [...images, data.publicUrl];
-      setImages(newImages);
-      onImagesChange(newImages);
+      if (onImageUploaded) {
+        onImageUploaded(data.publicUrl);
+      } else {
+        const newImages = [...images, data.publicUrl];
+        setImages(newImages);
+        if (onImagesChange) {
+          onImagesChange(newImages);
+        }
+      }
 
       toast({
         title: "Sucesso!",
@@ -62,21 +78,23 @@ const ImageUpload = ({ onImagesChange, maxImages = 5, label }: ImageUploadProps)
   const removeImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     setImages(newImages);
-    onImagesChange(newImages);
+    if (onImagesChange) {
+      onImagesChange(newImages);
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && images.length < maxImages) {
+    if (file && (onImageUploaded || images.length < maxImages)) {
       uploadImage(file);
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${className}`}>
       <Label>{label}</Label>
       
-      {images.length < maxImages && (
+      {(onImageUploaded || images.length < maxImages) && (
         <div className="border-2 border-dashed border-raiz-accent/30 rounded-lg p-6 text-center hover:border-raiz-primary/50 transition-colors">
           <Input
             type="file"
@@ -97,33 +115,35 @@ const ImageUpload = ({ onImagesChange, maxImages = 5, label }: ImageUploadProps)
         </div>
       )}
 
-      {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {images.map((url, index) => (
-            <Card key={index} className="relative">
-              <CardContent className="p-2">
-                <img
-                  src={url}
-                  alt={`Upload ${index + 1}`}
-                  className="w-full h-24 object-cover rounded"
-                />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0"
-                  onClick={() => removeImage(index)}
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      {!onImageUploaded && images.length > 0 && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {images.map((url, index) => (
+              <Card key={index} className="relative">
+                <CardContent className="p-2">
+                  <img
+                    src={url}
+                    alt={`Upload ${index + 1}`}
+                    className="w-full h-24 object-cover rounded"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full p-0"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          <p className="text-xs text-raiz-secondary">
+            {images.length}/{maxImages} imagens carregadas
+          </p>
+        </>
       )}
-      
-      <p className="text-xs text-raiz-secondary">
-        {images.length}/{maxImages} imagens carregadas
-      </p>
     </div>
   );
 };

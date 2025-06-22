@@ -9,8 +9,8 @@ import { Search, Filter, MoreVertical, Eye, Edit, UserCheck, UserX } from 'lucid
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface User {
-  id: number;
+interface AdminUser {
+  id: string;
   name: string;
   email: string;
   tokens: number;
@@ -25,10 +25,10 @@ interface User {
 }
 
 interface UsersTabProps {
-  users: User[];
-  onUserAction: (userId: number, action: string) => void;
-  onViewUserDetails: (user: User) => void;
-  onEditUser: (user: User) => void;
+  users: AdminUser[];
+  onUserAction: (userId: string, action: string) => void;
+  onViewUserDetails: (user: AdminUser) => void;
+  onEditUser: (user: AdminUser) => void;
 }
 
 const UsersTab = ({ users, onUserAction, onViewUserDetails, onEditUser }: UsersTabProps) => {

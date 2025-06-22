@@ -27,7 +27,7 @@ interface Project {
   user_id: string;
 }
 
-interface User {
+interface AdminUser {
   id: string;
   name: string;
   email: string;
@@ -45,14 +45,14 @@ interface User {
 const AdminPanel = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [pendingProjects, setPendingProjects] = useState<Project[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeProjects: 0,
@@ -79,37 +79,40 @@ const AdminPanel = () => {
     try {
       setLoading(true);
       
-      // Buscar projetos pendentes
+      // Buscar projetos pendentes com informações do usuário
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
-        .select(`
-          id,
-          title,
-          description,
-          category,
-          goal,
-          status,
-          created_at,
-          user_id,
-          profiles!inner(nome, sobrenome, email)
-        `)
+        .select('*')
         .eq('status', 'pending');
 
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
       } else {
-        const formattedProjects = projectsData?.map(project => ({
-          id: project.id,
-          title: project.title,
-          author: `${project.profiles.nome} ${project.profiles.sobrenome}`,
-          authorEmail: project.profiles.email,
-          category: project.category,
-          goal: project.goal,
-          description: project.description,
-          submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
-          status: project.status,
-          user_id: project.user_id
-        })) || [];
+        // Buscar informações dos usuários para cada projeto
+        const formattedProjects: Project[] = [];
+        
+        for (const project of projectsData || []) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('nome, sobrenome, email')
+            .eq('id', project.user_id)
+            .single();
+
+          if (profileData) {
+            formattedProjects.push({
+              id: project.id,
+              title: project.title,
+              author: `${profileData.nome} ${profileData.sobrenome}`,
+              authorEmail: profileData.email,
+              category: project.category,
+              goal: project.goal,
+              description: project.description,
+              submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
+              status: project.status,
+              user_id: project.user_id
+            });
+          }
+        }
         
         setPendingProjects(formattedProjects);
       }
@@ -151,7 +154,7 @@ const AdminPanel = () => {
     }
   };
 
-  const handleUserAction = (userId: number, action: string) => {
+  const handleUserAction = (userId: string, action: string) => {
     // Mock implementation - manter a funcionalidade existente para usuários
     toast({
       title: `Ação realizada`,
@@ -161,12 +164,12 @@ const AdminPanel = () => {
     setIsUserDetailModalOpen(false);
   };
 
-  const handleViewUserDetails = (user: User) => {
+  const handleViewUserDetails = (user: AdminUser) => {
     setSelectedUser(user);
     setIsUserDetailModalOpen(true);
   };
 
-  const handleEditUser = (user: User) => {
+  const handleEditUser = (user: AdminUser) => {
     setSelectedUser(user);
     form.reset({
       name: user.name,
