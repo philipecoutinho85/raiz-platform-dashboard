@@ -5,8 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { UserCheck, UserX } from 'lucide-react';
 
-interface User {
-  id: number;
+interface AdminUser {
+  id: string;
   name: string;
   email: string;
   tokens: number;
@@ -23,8 +23,8 @@ interface User {
 interface UserDetailModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedUser: User | null;
-  onUserAction: (userId: number, action: string) => void;
+  selectedUser: AdminUser | null;
+  onUserAction: (userId: string, action: string) => void;
 }
 
 const UserDetailModal = ({ isOpen, onOpenChange, selectedUser, onUserAction }: UserDetailModalProps) => {
