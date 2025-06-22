@@ -20,10 +20,10 @@ const Login = () => {
     password: ''
   });
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - send to projects page instead of dashboard
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate('/projetos');
     }
   }, [user, navigate]);
 
@@ -76,7 +76,7 @@ const Login = () => {
           variant: "destructive"
         });
       } else {
-        navigate('/dashboard');
+        navigate('/projetos');
       }
     } catch (error) {
       toast({

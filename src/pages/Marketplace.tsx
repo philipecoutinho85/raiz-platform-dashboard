@@ -72,10 +72,9 @@ const Marketplace = () => {
           deadline,
           cidade,
           estado,
-          project_images!inner(image_url, is_featured)
+          project_images(image_url, is_featured)
         `)
         .eq('status', 'approved')
-        .eq('project_images.is_featured', true)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -88,10 +87,13 @@ const Marketplace = () => {
         return;
       }
 
-      const formattedProjects = projectsData?.map(project => ({
-        ...project,
-        featured_image: project.project_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=250&fit=crop'
-      })) || [];
+      const formattedProjects = projectsData?.map(project => {
+        const featuredImage = project.project_images?.find((img: any) => img.is_featured);
+        return {
+          ...project,
+          featured_image: featuredImage?.image_url || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=250&fit=crop'
+        };
+      }) || [];
 
       setProjects(formattedProjects);
     } catch (error) {
@@ -153,6 +155,11 @@ const Marketplace = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     return diffDays > 0 ? diffDays : 0;
+  };
+
+  const isProjectExpired = (deadline?: string) => {
+    if (!deadline) return false;
+    return new Date(deadline) < new Date();
   };
 
   if (loading) {
@@ -239,11 +246,12 @@ const Marketplace = () => {
             {filteredProjects.map((project) => {
               const progressPercentage = getProgressPercentage(project.raised_amount, project.goal);
               const daysLeft = getDaysLeft(project.deadline);
+              const expired = isProjectExpired(project.deadline);
               
               return (
                 <Card 
                   key={project.id} 
-                  className="card-hover overflow-hidden border-raiz-accent/20 group cursor-pointer"
+                  className={`card-hover overflow-hidden border-raiz-accent/20 group cursor-pointer ${expired ? 'opacity-75' : ''}`}
                 >
                   <Link to={`/projeto/${project.id}`}>
                     <div className="relative overflow-hidden">
@@ -256,19 +264,26 @@ const Marketplace = () => {
                       <Badge className="absolute top-4 left-4 bg-raiz-gold text-raiz-dark hover:bg-raiz-gold/90">
                         {project.category}
                       </Badge>
-                      <div className="absolute top-4 right-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 p-0"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                        >
-                          <Heart className="w-4 h-4 text-white" />
-                        </Button>
-                      </div>
+                      {expired && (
+                        <Badge className="absolute top-4 right-4 bg-red-600 text-white">
+                          Expirado
+                        </Badge>
+                      )}
+                      {!expired && (
+                        <div className="absolute top-4 right-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 p-0"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                          >
+                            <Heart className="w-4 h-4 text-white" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     
                     <CardHeader className="pb-4">
@@ -316,13 +331,25 @@ const Marketplace = () => {
                           <Users className="w-3 h-3" />
                           <span>{project.backers_count} apoiadores</span>
                         </div>
-                        {daysLeft !== null && (
+                        {daysLeft !== null && !expired && (
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />
                             <span>{daysLeft} dias</span>
                           </div>
                         )}
+                        {expired && (
+                          <div className="flex items-center space-x-1 text-red-600">
+                            <Clock className="w-3 h-3" />
+                            <span>Expirado</span>
+                          </div>
+                        )}
                       </div>
+                      
+                      {expired && (
+                        <div className="text-center text-xs text-red-600 font-medium">
+                          Doações não disponíveis - Projeto expirado
+                        </div>
+                      )}
                     </CardContent>
                   </Link>
                 </Card>

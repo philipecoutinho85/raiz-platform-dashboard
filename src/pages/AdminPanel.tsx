@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -59,7 +60,7 @@ const AdminPanel = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [pendingProjects, setPendingProjects] = useState<Project[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -88,15 +89,14 @@ const AdminPanel = () => {
     try {
       setLoading(true);
       
-      // Buscar projetos pendentes com informações do usuário
+      // Buscar TODOS os projetos (não apenas pendentes) com informações do usuário
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
           *,
-          project_images!inner(image_url, is_featured)
+          project_images(image_url, is_featured)
         `)
-        .eq('status', 'pending')
-        .eq('project_images.is_featured', true);
+        .order('created_at', { ascending: false });
 
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
@@ -112,6 +112,8 @@ const AdminPanel = () => {
             .single();
 
           if (profileData) {
+            const featuredImage = project.project_images?.find((img: any) => img.is_featured);
+            
             formattedProjects.push({
               id: project.id,
               title: project.title,
@@ -130,16 +132,16 @@ const AdminPanel = () => {
               cidade: project.cidade,
               estado: project.estado,
               youtube_url: project.youtube_url,
-              featured_image: project.project_images?.[0]?.image_url
+              featured_image: featuredImage?.image_url
             });
           }
         }
         
-        setPendingProjects(formattedProjects);
+        setAllProjects(formattedProjects);
       }
 
       // Buscar estatísticas
-      const { data: allProjects } = await supabase
+      const { data: allProjectsStats } = await supabase
         .from('projects')
         .select('status');
 
@@ -151,8 +153,8 @@ const AdminPanel = () => {
         .from('user_tokens')
         .select('balance');
 
-      const activeProjectsCount = allProjects?.filter(p => p.status === 'approved').length || 0;
-      const pendingProjectsCount = allProjects?.filter(p => p.status === 'pending').length || 0;
+      const activeProjectsCount = allProjectsStats?.filter(p => p.status === 'approved').length || 0;
+      const pendingProjectsCount = allProjectsStats?.filter(p => p.status === 'pending').length || 0;
       const totalUsersCount = allUsers?.length || 0;
       const totalTokens = totalTokensData?.reduce((sum, user) => sum + user.balance, 0) || 0;
 
@@ -215,7 +217,7 @@ const AdminPanel = () => {
 
   const handleProjectAction = async (projectId: string, action: string, reason?: string) => {
     try {
-      const project = pendingProjects.find(p => p.id === projectId);
+      const project = allProjects.find(p => p.id === projectId);
       
       if (action === 'approve') {
         const { error } = await supabase
@@ -235,9 +237,6 @@ const AdminPanel = () => {
           title: "Projeto aprovado",
           description: `O projeto foi aprovado e está disponível na plataforma.`,
         });
-        
-        // Remover projeto da lista de pendentes
-        setPendingProjects(prev => prev.filter(p => p.id !== projectId));
         
       } else if (action === 'reject') {
         if (!reason || reason.trim() === '') {
@@ -268,15 +267,12 @@ const AdminPanel = () => {
           description: `O projeto foi rejeitado e o criador foi notificado.`,
         });
         
-        // Remover projeto da lista de pendentes
-        setPendingProjects(prev => prev.filter(p => p.id !== projectId));
-        
         setIsRejectModalOpen(false);
         setRejectionReason('');
         setSelectedProject(null);
       }
 
-      // Atualizar estatísticas
+      // Atualizar dados
       await fetchAdminData();
 
     } catch (error) {
@@ -330,7 +326,7 @@ const AdminPanel = () => {
 
           <TabsContent value="projects">
             <ProjectsTab 
-              pendingProjects={pendingProjects}
+              pendingProjects={allProjects}
               onProjectAction={handleProjectAction}
               onRejectProject={handleRejectProject}
               onViewProjectDetails={handleViewProjectDetails}
