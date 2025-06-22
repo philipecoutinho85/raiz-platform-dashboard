@@ -1,10 +1,5 @@
 
-import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { useForm } from 'react-hook-form';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStats from '@/components/admin/AdminStats';
 import UsersTab from '@/components/admin/UsersTab';
@@ -14,291 +9,55 @@ import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
 import ProjectDetailModal from '@/components/admin/ProjectDetailModal';
-
-interface Project {
-  id: string;
-  title: string;
-  author: string;
-  authorEmail: string;
-  category: string;
-  goal: number;
-  description: string;
-  submittedDate: string;
-  status: string;
-  user_id: string;
-  raised_amount?: number;
-  backers_count?: number;
-  deadline?: string;
-  endereco?: string;
-  cidade?: string;
-  estado?: string;
-  youtube_url?: string;
-  featured_image?: string;
-}
-
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  tokens: number;
-  projects: number;
-  totalRaised: number;
-  status: string;
-  joinDate: string;
-  avatar: string;
-  phone: string;
-  bio: string;
-  lastLogin: string;
-}
+import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminUserActions } from '@/hooks/useAdminUserActions';
+import { useAdminModals } from '@/hooks/useAdminModals';
 
 const AdminPanel = () => {
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [allProjects, setAllProjects] = useState<Project[]>([]);
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeProjects: 0,
-    pendingApproval: 0,
-    totalTokens: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [isProjectDetailModalOpen, setIsProjectDetailModalOpen] = useState(false);
+  const { allProjects, users, stats, loading, handleProjectAction } = useAdminData();
+  const { handleUserAction, handleSaveEdit } = useAdminUserActions();
+  const {
+    selectedUser,
+    selectedProject,
+    isUserDetailModalOpen,
+    isEditModalOpen,
+    isRejectModalOpen,
+    isProjectDetailModalOpen,
+    rejectionReason,
+    form,
+    setIsUserDetailModalOpen,
+    setIsEditModalOpen,
+    setIsRejectModalOpen,
+    setIsProjectDetailModalOpen,
+    setRejectionReason,
+    setSelectedUser,
+    handleViewUserDetails,
+    handleEditUser,
+    handleRejectProject,
+    handleCancelReject,
+    handleViewProjectDetails
+  } = useAdminModals();
 
-  const form = useForm({
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      bio: '',
-      tokens: 0,
-    }
-  });
-
-  useEffect(() => {
-    fetchAdminData();
-  }, []);
-
-  const fetchAdminData = async () => {
-    try {
-      setLoading(true);
-      
-      // Buscar TODOS os projetos (não apenas pendentes) com informações do usuário
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          project_images(image_url, is_featured)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (projectsError) {
-        console.error('Error fetching projects:', projectsError);
-      } else {
-        // Buscar informações dos usuários para cada projeto
-        const formattedProjects: Project[] = [];
-        
-        for (const project of projectsData || []) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('nome, sobrenome, email')
-            .eq('id', project.user_id)
-            .single();
-
-          if (profileData) {
-            const featuredImage = project.project_images?.find((img: any) => img.is_featured);
-            
-            formattedProjects.push({
-              id: project.id,
-              title: project.title,
-              author: `${profileData.nome} ${profileData.sobrenome}`,
-              authorEmail: profileData.email,
-              category: project.category,
-              goal: project.goal,
-              description: project.description,
-              submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
-              status: project.status,
-              user_id: project.user_id,
-              raised_amount: project.raised_amount,
-              backers_count: project.backers_count,
-              deadline: project.deadline,
-              endereco: project.endereco,
-              cidade: project.cidade,
-              estado: project.estado,
-              youtube_url: project.youtube_url,
-              featured_image: featuredImage?.image_url
-            });
-          }
-        }
-        
-        setAllProjects(formattedProjects);
-      }
-
-      // Buscar estatísticas
-      const { data: allProjectsStats } = await supabase
-        .from('projects')
-        .select('status');
-
-      const { data: allUsers } = await supabase
-        .from('profiles')
-        .select('id');
-
-      const { data: totalTokensData } = await supabase
-        .from('user_tokens')
-        .select('balance');
-
-      const activeProjectsCount = allProjectsStats?.filter(p => p.status === 'approved').length || 0;
-      const pendingProjectsCount = allProjectsStats?.filter(p => p.status === 'pending').length || 0;
-      const totalUsersCount = allUsers?.length || 0;
-      const totalTokens = totalTokensData?.reduce((sum, user) => sum + user.balance, 0) || 0;
-
-      setStats({
-        totalUsers: totalUsersCount,
-        activeProjects: activeProjectsCount,
-        pendingApproval: pendingProjectsCount,
-        totalTokens
-      });
-
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar dados administrativos.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUserAction = (userId: string, action: string) => {
-    // Mock implementation - manter a funcionalidade existente para usuários
-    toast({
-      title: `Ação realizada`,
-      description: `Usuário ${action === 'suspend' ? 'suspenso' : 'ativado'} com sucesso.`,
-    });
-    
+  const handleUserActionWrapper = (userId: string, action: string) => {
+    handleUserAction(userId, action);
     setIsUserDetailModalOpen(false);
   };
 
-  const handleViewUserDetails = (user: AdminUser) => {
-    setSelectedUser(user);
-    setIsUserDetailModalOpen(true);
-  };
-
-  const handleEditUser = (user: AdminUser) => {
-    setSelectedUser(user);
-    form.reset({
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      bio: user.bio,
-      tokens: user.tokens,
-    });
-    setIsEditModalOpen(true);
-  };
-
-  const handleSaveEdit = (data: any) => {
-    // Mock implementation - manter a funcionalidade existente
-    toast({
-      title: "Usuário atualizado",
-      description: "As informações do usuário foram atualizadas com sucesso.",
-    });
-    
+  const handleSaveEditWrapper = (data: any) => {
+    handleSaveEdit(data);
     setIsEditModalOpen(false);
     setSelectedUser(null);
   };
 
-  const handleProjectAction = async (projectId: string, action: string, reason?: string) => {
-    try {
-      const project = allProjects.find(p => p.id === projectId);
-      
-      if (action === 'approve') {
-        const { error } = await supabase
-          .from('projects')
-          .update({
-            status: 'approved',
-            reviewed_at: new Date().toISOString(),
-            reviewed_by: user?.id
-          })
-          .eq('id', projectId);
-
-        if (error) {
-          throw error;
-        }
-
-        toast({
-          title: "Projeto aprovado",
-          description: `O projeto foi aprovado e está disponível na plataforma.`,
-        });
-        
-      } else if (action === 'reject') {
-        if (!reason || reason.trim() === '') {
-          toast({
-            title: "Erro",
-            description: "É obrigatório informar o motivo da rejeição.",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        const { error } = await supabase
-          .from('projects')
-          .update({
-            status: 'rejected',
-            reviewed_at: new Date().toISOString(),
-            reviewed_by: user?.id,
-            admin_notes: reason
-          })
-          .eq('id', projectId);
-
-        if (error) {
-          throw error;
-        }
-        
-        toast({
-          title: "Projeto rejeitado",
-          description: `O projeto foi rejeitado e o criador foi notificado.`,
-        });
-        
-        setIsRejectModalOpen(false);
-        setRejectionReason('');
-        setSelectedProject(null);
-      }
-
-      // Atualizar dados
-      await fetchAdminData();
-
-    } catch (error) {
-      console.error('Error updating project:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar projeto.",
-        variant: "destructive"
-      });
+  const handleProjectActionWrapper = async (projectId: string, action: string, reason?: string) => {
+    if (action === 'reject') {
+      await handleProjectAction(projectId, action, reason);
+      setIsRejectModalOpen(false);
+      setRejectionReason('');
+      setSelectedUser(null);
+    } else {
+      await handleProjectAction(projectId, action, reason);
     }
-  };
-
-  const handleRejectProject = (project: Project) => {
-    setSelectedProject(project);
-    setIsRejectModalOpen(true);
-  };
-
-  const handleCancelReject = () => {
-    setIsRejectModalOpen(false);
-    setRejectionReason('');
-    setSelectedProject(null);
-  };
-
-  const handleViewProjectDetails = (project: Project) => {
-    setSelectedProject(project);
-    setIsProjectDetailModalOpen(true);
   };
 
   if (loading) {
@@ -327,7 +86,7 @@ const AdminPanel = () => {
           <TabsContent value="projects">
             <ProjectsTab 
               pendingProjects={allProjects}
-              onProjectAction={handleProjectAction}
+              onProjectAction={handleProjectActionWrapper}
               onRejectProject={handleRejectProject}
               onViewProjectDetails={handleViewProjectDetails}
             />
@@ -336,7 +95,7 @@ const AdminPanel = () => {
           <TabsContent value="users">
             <UsersTab 
               users={users}
-              onUserAction={handleUserAction}
+              onUserAction={handleUserActionWrapper}
               onViewUserDetails={handleViewUserDetails}
               onEditUser={handleEditUser}
             />
@@ -352,7 +111,7 @@ const AdminPanel = () => {
         isOpen={isUserDetailModalOpen}
         onOpenChange={setIsUserDetailModalOpen}
         selectedUser={selectedUser}
-        onUserAction={handleUserAction}
+        onUserAction={handleUserActionWrapper}
       />
 
       <EditUserModal 
@@ -360,7 +119,7 @@ const AdminPanel = () => {
         onOpenChange={setIsEditModalOpen}
         selectedUser={selectedUser}
         form={form}
-        onSaveEdit={handleSaveEdit}
+        onSaveEdit={handleSaveEditWrapper}
       />
 
       <ProjectDetailModal 
@@ -375,7 +134,7 @@ const AdminPanel = () => {
         selectedProject={selectedProject}
         rejectionReason={rejectionReason}
         setRejectionReason={setRejectionReason}
-        onRejectProject={handleProjectAction}
+        onRejectProject={handleProjectActionWrapper}
         onCancel={handleCancelReject}
       />
     </div>
