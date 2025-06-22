@@ -10,6 +10,7 @@ import Header from "./components/Header";
 import MobileNavigation from "./components/MobileNavigation";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Marketplace from "./pages/Marketplace";
 import CreateProject from "./pages/CreateProject";
 import MyProjects from "./pages/MyProjects";
 import ProjectDetail from "./pages/ProjectDetail";
@@ -42,6 +43,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/projetos" 
+                element={
+                  <ProtectedRoute>
+                    <Marketplace />
                   </ProtectedRoute>
                 } 
               />

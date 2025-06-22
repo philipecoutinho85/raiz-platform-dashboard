@@ -15,15 +15,24 @@ interface Project {
   submittedDate: string;
   status: string;
   user_id: string;
+  raised_amount?: number;
+  backers_count?: number;
+  deadline?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  youtube_url?: string;
+  featured_image?: string;
 }
 
 interface ProjectsTabProps {
   pendingProjects: Project[];
   onProjectAction: (projectId: string, action: string, reason?: string) => void;
   onRejectProject: (project: Project) => void;
+  onViewProjectDetails: (project: Project) => void;
 }
 
-const ProjectsTab = ({ pendingProjects, onProjectAction, onRejectProject }: ProjectsTabProps) => {
+const ProjectsTab = ({ pendingProjects, onProjectAction, onRejectProject, onViewProjectDetails }: ProjectsTabProps) => {
   if (pendingProjects.length === 0) {
     return (
       <Card>
@@ -68,6 +77,7 @@ const ProjectsTab = ({ pendingProjects, onProjectAction, onRejectProject }: Proj
                   size="sm" 
                   variant="outline"
                   className="flex-1"
+                  onClick={() => onViewProjectDetails(project)}
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   Ver Detalhes

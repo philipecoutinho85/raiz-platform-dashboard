@@ -5,18 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Sprout, Menu, X, Home, FolderPlus, Folder, User, Shield, Coins, LogOut } from 'lucide-react';
+import { Sprout, Menu, X, Home, FolderPlus, Folder, User, Shield, Coins, LogOut, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, profile } = useAuth();
   const { tokens, loading: tokensLoading } = useTokens();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Projetos', href: '/projetos', icon: Search },
     { name: 'Criar Projeto', href: '/criar-projeto', icon: FolderPlus },
     { name: 'Meus Projetos', href: '/meus-projetos', icon: Folder },
   ];
@@ -82,9 +83,9 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src="/placeholder.svg" alt={user.email || ''} />
+                    <AvatarImage src={profile?.avatar_url || "/placeholder.svg"} alt={profile?.nome || user.email || ''} />
                     <AvatarFallback>
-                      {user.email?.charAt(0).toUpperCase() || 'U'}
+                      {profile?.nome?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -92,7 +93,7 @@ const Header = () => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user.email}</p>
+                    <p className="font-medium">{profile?.nome ? `${profile.nome} ${profile.sobrenome}` : user.email}</p>
                     <div className="flex items-center space-x-2">
                       <Coins className="w-3 h-3 text-raiz-gold" />
                       <span className="text-xs text-muted-foreground">

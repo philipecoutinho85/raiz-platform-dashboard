@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +12,7 @@ import TokensTab from '@/components/admin/TokensTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
+import ProjectDetailModal from '@/components/admin/ProjectDetailModal';
 
 interface Project {
   id: string;
@@ -25,6 +25,14 @@ interface Project {
   submittedDate: string;
   status: string;
   user_id: string;
+  raised_amount?: number;
+  backers_count?: number;
+  deadline?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  youtube_url?: string;
+  featured_image?: string;
 }
 
 interface AdminUser {
@@ -60,6 +68,7 @@ const AdminPanel = () => {
     totalTokens: 0
   });
   const [loading, setLoading] = useState(true);
+  const [isProjectDetailModalOpen, setIsProjectDetailModalOpen] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -82,8 +91,12 @@ const AdminPanel = () => {
       // Buscar projetos pendentes com informações do usuário
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
-        .select('*')
-        .eq('status', 'pending');
+        .select(`
+          *,
+          project_images!inner(image_url, is_featured)
+        `)
+        .eq('status', 'pending')
+        .eq('project_images.is_featured', true);
 
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
@@ -109,7 +122,15 @@ const AdminPanel = () => {
               description: project.description,
               submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
               status: project.status,
-              user_id: project.user_id
+              user_id: project.user_id,
+              raised_amount: project.raised_amount,
+              backers_count: project.backers_count,
+              deadline: project.deadline,
+              endereco: project.endereco,
+              cidade: project.cidade,
+              estado: project.estado,
+              youtube_url: project.youtube_url,
+              featured_image: project.project_images?.[0]?.image_url
             });
           }
         }
@@ -279,6 +300,11 @@ const AdminPanel = () => {
     setSelectedProject(null);
   };
 
+  const handleViewProjectDetails = (project: Project) => {
+    setSelectedProject(project);
+    setIsProjectDetailModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-raiz-light flex items-center justify-center">
@@ -307,6 +333,7 @@ const AdminPanel = () => {
               pendingProjects={pendingProjects}
               onProjectAction={handleProjectAction}
               onRejectProject={handleRejectProject}
+              onViewProjectDetails={handleViewProjectDetails}
             />
           </TabsContent>
 
@@ -338,6 +365,12 @@ const AdminPanel = () => {
         selectedUser={selectedUser}
         form={form}
         onSaveEdit={handleSaveEdit}
+      />
+
+      <ProjectDetailModal 
+        isOpen={isProjectDetailModalOpen}
+        onOpenChange={setIsProjectDetailModalOpen}
+        project={selectedProject}
       />
 
       <RejectProjectModal 
