@@ -91,7 +91,7 @@ const Header = () => {
                         </p>
                       )}
                       <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        {profile?.email}
+                        {profile?.email || user.email}
                       </p>
                     </div>
                   </div>
