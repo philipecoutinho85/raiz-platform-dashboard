@@ -12,37 +12,58 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bairro: string | null
           celular: string
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
           cpf: string
           created_at: string
           data_nascimento: string
           email: string
+          endereco: string | null
+          estado: string | null
           id: string
           nome: string
+          numero: string | null
           sobrenome: string
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          bairro?: string | null
           celular: string
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           cpf: string
           created_at?: string
           data_nascimento: string
           email: string
+          endereco?: string | null
+          estado?: string | null
           id: string
           nome: string
+          numero?: string | null
           sobrenome: string
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          bairro?: string | null
           celular?: string
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
           cpf?: string
           created_at?: string
           data_nascimento?: string
           email?: string
+          endereco?: string | null
+          estado?: string | null
           id?: string
           nome?: string
+          numero?: string | null
           sobrenome?: string
           updated_at?: string
         }
@@ -76,6 +97,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_contributions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_gallery: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+          order_index: number | null
+          project_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          order_index?: number | null
+          project_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          order_index?: number | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_gallery_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"

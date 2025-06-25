@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -43,6 +42,8 @@ interface ProjectImage {
   image_url: string;
   is_featured: boolean;
 }
+
+import ProjectGallery from '@/components/ProjectGallery';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -285,6 +286,9 @@ const ProjectDetail = () => {
               </Card>
             )}
 
+            {/* Project Gallery */}
+            <ProjectGallery projectId={project.id} isOwner={isOwner} />
+
             {/* Contributors */}
             <ProjectContributors projectId={project.id} />
 
@@ -338,29 +342,28 @@ const ProjectDetail = () => {
 
                 <Progress value={progressPercentage} className="h-3" />
 
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <div className="text-2xl font-bold text-raiz-gold">
+                    <div className="text-xl font-bold text-raiz-gold">
                       {Math.round(progressPercentage)}%
                     </div>
                     <div className="text-xs text-raiz-secondary">da meta</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-raiz-primary">
+                    <div className="text-xl font-bold text-raiz-primary">
                       {project.backers_count}
                     </div>
                     <div className="text-xs text-raiz-secondary">apoiadores</div>
                   </div>
-                </div>
-
-                {daysLeft !== null && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-raiz-dark">
-                      {daysLeft}
+                  {daysLeft !== null && (
+                    <div>
+                      <div className="text-xl font-bold text-raiz-dark">
+                        {daysLeft}
+                      </div>
+                      <div className="text-xs text-raiz-secondary">dias restantes</div>
                     </div>
-                    <div className="text-xs text-raiz-secondary">dias restantes</div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {project.status === 'approved' && !isOwner && (
                   <Button className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3">

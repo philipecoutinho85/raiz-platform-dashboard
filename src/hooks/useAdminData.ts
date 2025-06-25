@@ -201,6 +201,21 @@ export const useAdminData = () => {
           title: "Projeto rejeitado",
           description: `O projeto foi rejeitado e o criador foi notificado.`,
         });
+        
+      } else if (action === 'delete') {
+        const { error } = await supabase
+          .from('projects')
+          .delete()
+          .eq('id', projectId);
+
+        if (error) {
+          throw error;
+        }
+        
+        toast({
+          title: "Projeto excluído",
+          description: `O projeto foi permanentemente excluído do sistema.`,
+        });
       }
 
       // Atualizar dados
