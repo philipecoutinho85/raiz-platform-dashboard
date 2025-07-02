@@ -115,6 +115,47 @@ export const useAdminData = () => {
         setAllProjects(formattedProjects);
       }
 
+      // Buscar usuários para exibir na aba de usuários
+      const { data: usersData } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      const { data: userTokensData } = await supabase
+        .from('user_tokens')
+        .select('*');
+      
+      const { data: userProjectsData } = await supabase
+        .from('projects')
+        .select('user_id, raised_amount');
+
+      // Formatar dados dos usuários
+      const formattedUsers: AdminUser[] = [];
+      
+      if (usersData) {
+        for (const profile of usersData) {
+          const userTokens = userTokensData?.find(t => t.user_id === profile.id);
+          const userProjects = userProjectsData?.filter(p => p.user_id === profile.id) || [];
+          const totalRaised = userProjects.reduce((sum, p) => sum + (p.raised_amount || 0), 0);
+          
+          formattedUsers.push({
+            id: profile.id,
+            name: `${profile.nome} ${profile.sobrenome}`,
+            email: profile.email,
+            tokens: userTokens?.balance || 0,
+            projects: userProjects.length,
+            totalRaised,
+            status: 'active',
+            joinDate: new Date(profile.created_at).toLocaleDateString('pt-BR'),
+            avatar: profile.avatar_url || '',
+            phone: profile.celular || '',
+            bio: '',
+            lastLogin: ''
+          });
+        }
+      }
+      
+      setUsers(formattedUsers);
+
       // Buscar estatísticas
       const { data: allProjectsStats } = await supabase
         .from('projects')

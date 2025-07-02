@@ -11,10 +11,12 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Settings, Shield } from 'lucide-react';
+import { useTokens } from '@/hooks/useTokens';
+import { LogOut, User, Settings, Shield, Coins } from 'lucide-react';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
+  const { tokens } = useTokens();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -50,9 +52,6 @@ const Header = () => {
                 <Link to="/criar-projeto" className="text-raiz-dark hover:text-raiz-primary transition-colors">
                   Criar Projeto
                 </Link>
-                <Link to="/meus-projetos" className="text-raiz-dark hover:text-raiz-primary transition-colors">
-                  Meus Projetos
-                </Link>
               </>
             ) : (
               <>
@@ -68,20 +67,25 @@ const Header = () => {
 
           <div className="flex items-center space-x-4">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage 
-                        src={profile?.avatar_url || ''} 
-                        alt={`${profile?.nome || ''} ${profile?.sobrenome || ''}`} 
-                      />
-                      <AvatarFallback className="bg-raiz-primary text-white">
-                        {getInitials(profile?.nome, profile?.sobrenome)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 text-raiz-dark">
+                  <Coins className="h-4 w-4 text-raiz-primary" />
+                  <span className="text-sm font-medium">{tokens}</span>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage 
+                          src={profile?.avatar_url || ''} 
+                          alt={`${profile?.nome || ''} ${profile?.sobrenome || ''}`} 
+                        />
+                        <AvatarFallback className="bg-raiz-primary text-white">
+                          {getInitials(profile?.nome, profile?.sobrenome)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
@@ -117,6 +121,7 @@ const Header = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             ) : (
               <div className="flex items-center space-x-2">
                 <Link to="/login">
