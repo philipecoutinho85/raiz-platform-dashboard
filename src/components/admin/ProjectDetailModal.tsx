@@ -39,11 +39,8 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModa
     ? Math.min((project.raised_amount / project.goal) * 100, 100) 
     : 0;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   return (
@@ -82,7 +79,7 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModa
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
                     <Target className="w-4 h-4" />
-                    <span>Meta: {formatCurrency(project.goal)}</span>
+                    <span>Meta: {formatTokens(project.goal)} tokens</span>
                   </div>
                   {project.deadline && (
                     <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
@@ -111,7 +108,7 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModa
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-raiz-secondary">
-                        {formatCurrency(project.raised_amount)} arrecadados
+                        {formatTokens(project.raised_amount)} tokens arrecadados
                       </span>
                       <span className="text-raiz-gold font-bold">
                         {Math.round(progressPercentage)}%
@@ -125,7 +122,7 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModa
                       </div>
                       <div className="flex items-center space-x-1">
                         <DollarSign className="w-4 h-4" />
-                        <span>Meta: {formatCurrency(project.goal)}</span>
+                        <span>Meta: {formatTokens(project.goal)} tokens</span>
                       </div>
                     </div>
                   </div>

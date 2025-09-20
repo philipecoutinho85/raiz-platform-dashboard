@@ -69,8 +69,8 @@ const HeroSection = () => {
                 <div className="text-raiz-light/70 text-sm">Projetos</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-raiz-gold">R$ 5.8M</div>
-                <div className="text-raiz-light/70 text-sm">Arrecadado</div>
+                 <div className="text-2xl font-bold text-raiz-gold">58M</div>
+                <div className="text-raiz-light/70 text-sm">Tokens Arrecadados</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-raiz-gold">25K+</div>
@@ -97,7 +97,7 @@ const HeroSection = () => {
                   
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-raiz-light/70">Meta: R$ 50.000</span>
+                      <span className="text-raiz-light/70">Meta: 500.000 tokens</span>
                       <span className="text-raiz-gold font-semibold">78% atingido</span>
                     </div>
                     <div className="w-full bg-raiz-dark/30 rounded-full h-2">
@@ -110,7 +110,7 @@ const HeroSection = () => {
                       <Users className="w-4 h-4 text-raiz-accent" />
                       <span className="text-raiz-light text-sm">156 apoiadores</span>
                     </div>
-                    <div className="text-raiz-gold font-semibold">R$ 39.200</div>
+                    <div className="text-raiz-gold font-semibold">392.000 tokens</div>
                   </div>
                 </div>
               </div>

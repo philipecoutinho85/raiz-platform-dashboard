@@ -90,11 +90,8 @@ const ProjectContributors = ({ projectId }: ProjectContributorsProps) => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const getInitials = (nome: string, sobrenome: string) => {
@@ -193,7 +190,7 @@ const ProjectContributors = ({ projectId }: ProjectContributorsProps) => {
               </div>
               <div className="text-right">
                 <p className="font-bold text-raiz-gold">
-                  {formatCurrency(contributor.amount)}
+                  {formatTokens(contributor.amount)} tokens
                 </p>
               </div>
             </div>

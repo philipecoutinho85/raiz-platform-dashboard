@@ -82,7 +82,7 @@ const UserDetailModal = ({ isOpen, onOpenChange, selectedUser, onUserAction }: U
                 </div>
                 <div>
                   <label className="text-sm font-medium text-raiz-secondary">Total Arrecadado</label>
-                  <p className="text-raiz-dark font-semibold">R$ {selectedUser.totalRaised.toLocaleString()}</p>
+                  <p className="text-raiz-dark font-semibold">{selectedUser.totalRaised.toLocaleString()} tokens</p>
                 </div>
               </div>
             </div>

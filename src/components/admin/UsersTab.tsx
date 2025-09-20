@@ -95,7 +95,7 @@ const UsersTab = ({ users, onUserAction, onViewUserDetails, onEditUser }: UsersT
                   <div className="text-xs text-raiz-secondary">Projetos</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-semibold text-raiz-dark">R$ {user.totalRaised.toLocaleString()}</div>
+                  <div className="font-semibold text-raiz-dark">{user.totalRaised.toLocaleString()} tokens</div>
                   <div className="text-xs text-raiz-secondary">Arrecadado</div>
                 </div>
                 
