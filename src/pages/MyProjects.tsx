@@ -113,11 +113,8 @@ const MyProjects = () => {
     );
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const calculateProgress = (raised: number, goal: number) => {
@@ -251,7 +248,7 @@ const MyProjects = () => {
                               <Progress value={calculateProgress(project.raised_amount, project.goal)} />
                               <div className="flex justify-between text-sm">
                                 <span className="text-raiz-dark font-semibold">
-                                  {formatCurrency(project.raised_amount)}
+                                  {formatTokens(project.raised_amount)} tokens
                                 </span>
                                 <span className="text-raiz-secondary">
                                   {Math.round(calculateProgress(project.raised_amount, project.goal))}% da meta
@@ -266,7 +263,7 @@ const MyProjects = () => {
                               <div className="flex items-center space-x-2 text-sm">
                                 <DollarSign className="w-4 h-4 text-raiz-gold" />
                                 <span className="text-raiz-secondary">Meta:</span>
-                                <span className="font-semibold text-raiz-dark">{formatCurrency(project.goal)}</span>
+                                <span className="font-semibold text-raiz-dark">{formatTokens(project.goal)} tokens</span>
                               </div>
                               <div className="flex items-center space-x-2 text-sm">
                                 <Users className="w-4 h-4 text-raiz-accent" />

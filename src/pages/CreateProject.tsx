@@ -275,7 +275,7 @@ const CreateProject = () => {
                     placeholder="50000"
                   />
                   <p className="text-xs text-raiz-secondary">
-                    1 token = R$ 0,10 | Meta mínima: 1.000 tokens (R$ 100)
+                    1 token = R$ 0,10 | Meta mínima: 1.000 tokens
                   </p>
                   {errors.goal && (
                     <p className="text-red-500 text-sm">{errors.goal.message}</p>

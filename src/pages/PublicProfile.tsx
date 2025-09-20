@@ -98,11 +98,8 @@ const PublicProfile = () => {
     return `${nome?.charAt(0) || ''}${sobrenome?.charAt(0) || ''}`.toUpperCase();
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const calculateProgress = (raised: number, goal: number) => {
@@ -169,9 +166,9 @@ const PublicProfile = () => {
                   
                   <div className="text-center">
                     <div className="text-2xl font-bold text-raiz-gold">
-                      {formatCurrency(projects.reduce((sum, p) => sum + p.raised_amount, 0))}
+                      {formatTokens(projects.reduce((sum, p) => sum + p.raised_amount, 0))} tokens
                     </div>
-                    <div className="text-sm text-raiz-secondary">Arrecadado</div>
+                    <div className="text-sm text-raiz-secondary">Tokens Arrecadados</div>
                   </div>
                   
                   <div className="text-center">
@@ -238,7 +235,7 @@ const PublicProfile = () => {
                         
                         <div className="flex justify-between text-sm">
                           <span className="text-raiz-dark font-semibold">
-                            {formatCurrency(project.raised_amount)}
+                            {formatTokens(project.raised_amount)} tokens
                           </span>
                           <span className="text-raiz-secondary">
                             {Math.round(calculateProgress(project.raised_amount, project.goal))}%
@@ -246,7 +243,7 @@ const PublicProfile = () => {
                         </div>
                         
                         <div className="flex justify-between text-xs text-raiz-secondary">
-                          <span>Meta: {formatCurrency(project.goal)}</span>
+                          <span>Meta: {formatTokens(project.goal)} tokens</span>
                           <span>{project.backers_count} apoiadores</span>
                         </div>
                         

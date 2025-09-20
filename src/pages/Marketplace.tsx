@@ -135,11 +135,8 @@ const Marketplace = () => {
     setFilteredProjects(filtered);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const getProgressPercentage = (raised: number, goal: number) => {
@@ -306,7 +303,7 @@ const Marketplace = () => {
                       <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-raiz-secondary">
-                            {formatCurrency(project.raised_amount)}
+                            {formatTokens(project.raised_amount)} tokens
                           </span>
                           <span className="text-raiz-gold font-bold">
                             {Math.round(progressPercentage)}%
@@ -321,7 +318,7 @@ const Marketplace = () => {
                         <div className="text-xs text-raiz-secondary">
                           <div className="flex items-center space-x-1 mb-1">
                             <Target className="w-3 h-3" />
-                            <span>Meta: {formatCurrency(project.goal)}</span>
+                            <span>Meta: {formatTokens(project.goal)} tokens</span>
                           </div>
                         </div>
                       </div>
