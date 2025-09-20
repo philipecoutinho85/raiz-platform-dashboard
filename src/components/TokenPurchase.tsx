@@ -13,10 +13,11 @@ const TokenPurchase = () => {
   const [loading, setLoading] = useState(false);
 
   const tokenPackages = [
+    { tokens: 50, price: 5, bonus: 0 }, // Valor mínimo
     { tokens: 100, price: 10, bonus: 0 },
-    { tokens: 500, price: 45, bonus: 50 },
-    { tokens: 1000, price: 80, bonus: 200 },
-    { tokens: 2000, price: 150, bonus: 500 },
+    { tokens: 500, price: 50, bonus: 0 },
+    { tokens: 1000, price: 100, bonus: 0 },
+    { tokens: 2000, price: 200, bonus: 0 },
   ];
 
   const handlePurchase = async (tokens: number, price: number) => {
@@ -50,7 +51,7 @@ const TokenPurchase = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <p className="text-raiz-secondary text-sm">
-          Use tokens para apoiar projetos e participar da comunidade Raiz.
+          Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 0,10. Valor mínimo de compra: R$ 5,00 (50 tokens).
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -93,24 +94,25 @@ const TokenPurchase = () => {
             <Input
               id="custom-amount"
               type="number"
-              placeholder="Quantidade de tokens"
+              min="50"
+              placeholder="Quantidade de tokens (mín. 50)"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             <Button
               onClick={() => {
                 const tokens = parseInt(amount);
-                if (tokens > 0) {
+                if (tokens >= 50 && tokens > 0) {
                   handlePurchase(tokens, tokens * 0.1);
                 }
               }}
-              disabled={loading || !amount || parseInt(amount) <= 0}
+              disabled={loading || !amount || parseInt(amount) < 50}
             >
               Comprar
             </Button>
           </div>
           <p className="text-xs text-raiz-secondary mt-1">
-            R$ 0,10 por token
+            R$ 0,10 por token (mínimo: R$ 5,00 = 50 tokens)
           </p>
         </div>
       </CardContent>

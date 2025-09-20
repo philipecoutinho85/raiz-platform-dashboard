@@ -264,16 +264,19 @@ const CreateProject = () => {
               {/* Financial Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="goal">Meta de Arrecadação (R$) *</Label>
+                  <Label htmlFor="goal">Meta em Tokens *</Label>
                   <Input
                     id="goal"
                     type="number"
                     {...register('goal', { 
                       required: 'Meta é obrigatória',
-                      min: { value: 100, message: 'Meta mínima é R$ 100' }
+                      min: { value: 1000, message: 'Meta mínima é 1.000 tokens' }
                     })}
-                    placeholder="5000"
+                    placeholder="50000"
                   />
+                  <p className="text-xs text-raiz-secondary">
+                    1 token = R$ 0,10 | Meta mínima: 1.000 tokens (R$ 100)
+                  </p>
                   {errors.goal && (
                     <p className="text-red-500 text-sm">{errors.goal.message}</p>
                   )}

@@ -130,11 +130,8 @@ const ProjectDetail = () => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const formatDate = (dateString: string) => {
@@ -333,10 +330,10 @@ const ProjectDetail = () => {
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-raiz-primary mb-2">
-                    {formatCurrency(project.raised_amount)}
+                    {formatTokens(project.raised_amount)} tokens
                   </div>
                   <div className="text-sm text-raiz-secondary">
-                    arrecadados de {formatCurrency(project.goal)}
+                    arrecadados de {formatTokens(project.goal)} tokens
                   </div>
                 </div>
 
@@ -367,7 +364,7 @@ const ProjectDetail = () => {
 
                 {project.status === 'approved' && !isOwner && (
                   <Button className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3">
-                    Apoiar este Projeto
+                    Apoiar com Tokens
                   </Button>
                 )}
               </CardContent>
@@ -384,7 +381,7 @@ const ProjectDetail = () => {
                     <Target className="w-4 h-4 text-raiz-secondary" />
                     <span className="text-sm text-raiz-secondary">Meta:</span>
                   </div>
-                  <span className="font-semibold">{formatCurrency(project.goal)}</span>
+                  <span className="font-semibold">{formatTokens(project.goal)} tokens</span>
                 </div>
 
                 <div className="flex items-center justify-between">

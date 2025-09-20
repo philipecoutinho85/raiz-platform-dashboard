@@ -76,11 +76,8 @@ const FeaturedProjects = () => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const getDaysLeft = (deadline?: string) => {
@@ -186,7 +183,7 @@ const FeaturedProjects = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-raiz-secondary">
-                        {formatCurrency(project.raised_amount)} arrecadados
+                        {formatTokens(project.raised_amount)} tokens arrecadados
                       </span>
                       <span className="text-raiz-gold font-bold text-lg">
                         {Math.round(progressPercentage)}%
@@ -199,7 +196,7 @@ const FeaturedProjects = () => {
                     />
                     
                     <div className="text-xs text-raiz-secondary text-center">
-                      Meta: {formatCurrency(project.goal)}
+                      Meta: {formatTokens(project.goal)} tokens
                     </div>
                   </div>
                   
@@ -218,7 +215,7 @@ const FeaturedProjects = () => {
                   </div>
                   
                   <Button className="w-full bg-gradient-raiz hover:opacity-90 text-white font-medium py-3 rounded-lg transform hover:scale-[1.02] transition-all duration-200">
-                    Apoiar Projeto
+                    Apoiar com Tokens
                   </Button>
                 </CardContent>
               </Card>

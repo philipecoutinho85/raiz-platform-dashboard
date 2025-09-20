@@ -35,11 +35,8 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const formatDate = (dateString: string) => {
@@ -98,7 +95,7 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
                     {project.status === 'approved' && (
                       <div className="space-y-2 mb-3">
                         <div className="flex justify-between text-xs">
-                          <span>{formatCurrency(project.raised_amount)} de {formatCurrency(project.goal)}</span>
+                          <span>{formatTokens(project.raised_amount)} de {formatTokens(project.goal)} tokens</span>
                           <span className="font-medium">{Math.round(progressPercentage)}%</span>
                         </div>
                         <Progress value={progressPercentage} className="h-2" />
@@ -113,7 +110,7 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
                     
                     <div className="flex items-center space-x-4 text-xs text-raiz-secondary">
                       <span>Categoria: {project.category}</span>
-                      <span>Meta: {formatCurrency(project.goal)}</span>
+                      <span>Meta: {formatTokens(project.goal)} tokens</span>
                       <span>Criado: {formatDate(project.created_at)}</span>
                     </div>
                   </div>

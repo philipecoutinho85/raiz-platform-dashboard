@@ -79,11 +79,8 @@ const ProjectsTab = ({
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -139,8 +136,8 @@ const ProjectsTab = ({
                   </p>
                   {project.status === 'approved' && (
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>Meta: {formatCurrency(project.goal)}</span>
-                      <span>Arrecadado: {formatCurrency(project.raised_amount || 0)}</span>
+                      <span>Meta: {formatTokens(project.goal)} tokens</span>
+                      <span>Arrecadado: {formatTokens(project.raised_amount || 0)} tokens</span>
                       <span>Apoiadores: {project.backers_count || 0}</span>
                     </div>
                   )}
