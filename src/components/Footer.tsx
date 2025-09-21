@@ -39,11 +39,11 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Links Rápidos</h3>
             <ul className="space-y-2">
-              <li><a href="#projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Explorar Projetos</a></li>
-              <li><a href="#criar" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Criar Projeto</a></li>
-              <li><a href="#como-funciona" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Como Funciona</a></li>
-              <li><a href="#sucesso" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Cases de Sucesso</a></li>
-              <li><a href="#blog" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Blog</a></li>
+              <li><a href="/marketplace" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Explorar Projetos</a></li>
+              <li><a href="/create-project" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Criar Projeto</a></li>
+              <li><a href="/how-it-works" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Como Funciona</a></li>
+              <li><a href="/marketplace" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Cases de Sucesso</a></li>
+              <li><a href="/marketplace" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Blog</a></li>
             </ul>
           </div>
           
@@ -51,11 +51,11 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Suporte</h3>
             <ul className="space-y-2">
-              <li><a href="#faq" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">FAQ</a></li>
-              <li><a href="#termos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Termos de Uso</a></li>
-              <li><a href="#privacidade" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Política de Privacidade</a></li>
-              <li><a href="#seguranca" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Segurança</a></li>
-              <li><a href="#contato" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Contato</a></li>
+              <li><a href="/faq" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">FAQ</a></li>
+              <li><a href="/terms" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Termos de Uso</a></li>
+              <li><a href="/privacy" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Política de Privacidade</a></li>
+              <li><a href="/security" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Segurança</a></li>
+              <li><a href="mailto:contato@raiztoken.com.br" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Contato</a></li>
             </ul>
           </div>
           
@@ -65,15 +65,15 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Mail className="w-4 h-4 text-raiz-accent" />
-                <span className="text-raiz-light/80">contato@raiz.com</span>
+                <span className="text-raiz-light/80">contato@raiztoken.com.br</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Phone className="w-4 h-4 text-raiz-accent" />
-                <span className="text-raiz-light/80">(11) 9999-9999</span>
+                <span className="text-raiz-light/80">(21) 96883-9616</span>
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-raiz-accent" />
-                <span className="text-raiz-light/80">São Paulo, SP</span>
+                <span className="text-raiz-light/80">Niterói, RJ</span>
               </div>
             </div>
           </div>
@@ -81,7 +81,7 @@ const Footer = () => {
         
         <div className="border-t border-raiz-accent/20 mt-12 pt-8 text-center">
           <p className="text-raiz-light/60">
-            © 2024 $RAIZ Plataforma de Crowdfunding. Todos os direitos reservados.
+            © 2025 $RAIZ Plataforma de Crowdfunding. Todos os direitos reservados.
           </p>
         </div>
       </div>
