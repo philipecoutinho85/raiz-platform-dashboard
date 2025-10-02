@@ -6,22 +6,7 @@ import { Link } from 'react-router-dom';
 const Terms = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-raiz-primary via-raiz-primary/95 to-raiz-secondary">
-      {/* Header */}
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-raiz rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">$</span>
-            </div>
-            <span className="text-2xl font-bold text-raiz-gold">RAIZ</span>
-          </Link>
-          <Link to="/">
-            <Button variant="outline" className="text-raiz-light border-raiz-light hover:bg-raiz-light hover:text-raiz-primary">
-              Voltar ao Início
-            </Button>
-          </Link>
-        </div>
-
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="mx-auto mb-6 p-4 bg-raiz-accent/20 rounded-full w-fit">
@@ -168,9 +153,9 @@ const Terms = () => {
             Estes termos podem ser atualizados periodicamente. Sempre notificaremos os usuários sobre mudanças importantes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/privacy">
-              <Button size="lg" className="bg-raiz-gold hover:bg-raiz-gold/90 text-raiz-primary font-semibold px-8">
-                Política de Privacidade
+            <Link to="/contato">
+              <Button size="lg" className="bg-raiz-gold hover:bg-raiz-gold/90 text-black font-semibold px-8">
+                Falar Conosco
               </Button>
             </Link>
             <Link to="/security">

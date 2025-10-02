@@ -30,7 +30,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b">
+    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
@@ -52,11 +52,17 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Link to="/projetos" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
-                  Projetos
+                <Link to="/" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                  Inicio
                 </Link>
-                <Link to="/sobre" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
-                  Sobre
+                <Link to="/como-funciona" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                  Como Funciona
+                </Link>
+                <Link to="/faq" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                  FAQ
+                </Link>
+                <Link to="/contato" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                  Falar Conosco
                 </Link>
               </>
             )}

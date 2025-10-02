@@ -26,6 +26,7 @@ import FAQ from "./pages/FAQ";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Security from "./pages/Security";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -109,10 +110,12 @@ const App = () => (
               />
               {/* Public informational pages */}
               <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/como-funciona" element={<HowItWorks />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/security" element={<Security />} />
+              <Route path="/contato" element={<Contact />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
