@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +12,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
 import { LogOut, User, Settings, Shield, Coins } from 'lucide-react';
+import raizLogo from '@/assets/raiz-logo.png';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
@@ -34,10 +34,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-raiz-primary rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">R</span>
-            </div>
-            <span className="text-xl font-bold text-raiz-dark">Raiz</span>
+            <img src={raizLogo} alt="Raiz Token" className="h-10 w-auto" />
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
