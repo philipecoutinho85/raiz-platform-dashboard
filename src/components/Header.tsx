@@ -34,28 +34,28 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <img src={raizLogo} alt="Raiz Token" className="h-16 w-auto transition-transform hover:scale-105" />
+            <img src={raizLogo} alt="Raiz Token" className="h-20 w-auto transition-transform hover:scale-105" />
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-8">
             {user ? (
               <>
-                <Link to="/dashboard" className="text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/dashboard" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Dashboard
                 </Link>
-                <Link to="/projetos" className="text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/projetos" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Projetos
                 </Link>
-                <Link to="/criar-projeto" className="text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/criar-projeto" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Criar Projeto
                 </Link>
               </>
             ) : (
               <>
-                <Link to="/projetos" className="text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/projetos" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Projetos
                 </Link>
-                <Link to="/sobre" className="text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/sobre" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Sobre
                 </Link>
               </>
@@ -120,12 +120,12 @@ const Header = () => {
               </DropdownMenu>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <Link to="/login">
-                  <Button variant="ghost">Entrar</Button>
+                  <Button variant="ghost" className="text-base font-semibold">Entrar</Button>
                 </Link>
                 <Link to="/registro">
-                  <Button>Cadastrar</Button>
+                  <Button className="text-base font-semibold">Cadastrar</Button>
                 </Link>
               </div>
             )}
