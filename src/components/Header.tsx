@@ -34,7 +34,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <img src={raizLogo} alt="Raiz Token" className="h-10 w-auto" />
+            <img src={raizLogo} alt="Raiz Token" className="h-16 w-auto transition-transform hover:scale-105" />
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
