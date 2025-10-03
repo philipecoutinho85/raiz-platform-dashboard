@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 interface Project {
   id: string;
@@ -308,6 +309,7 @@ const MyProjects = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

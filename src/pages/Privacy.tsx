@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Lock, Eye, UserCheck, Database, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
 
 const Privacy = () => {
   return (
@@ -223,13 +224,14 @@ const Privacy = () => {
               </Button>
             </Link>
             <Link to="/terms">
-              <Button variant="outline" size="lg" className="text-raiz-light border-raiz-light hover:bg-raiz-light hover:text-raiz-primary px-8">
+              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
                 Termos de Uso
               </Button>
             </Link>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

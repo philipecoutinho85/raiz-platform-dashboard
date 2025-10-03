@@ -1,6 +1,7 @@
 
-import { Sprout, Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import raizLogo from '@/assets/raiz-logo-light.png';
 
 const Footer = () => {
   return (
@@ -9,11 +10,8 @@ const Footer = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-raiz rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">$</span>
-              </div>
-              <span className="text-2xl font-bold text-raiz-gold">RAIZ</span>
+            <div className="flex items-center space-x-3">
+              <img src={raizLogo} alt="$RAIZ Logo" className="h-16 w-auto" />
             </div>
             <p className="text-raiz-light/80">
               Transformando ideias em realidade através do poder da comunidade. 
@@ -39,11 +37,11 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Links Rápidos</h3>
             <ul className="space-y-2">
-              <li><a href="/marketplace" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Explorar Projetos</a></li>
-              <li><a href="/create-project" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Criar Projeto</a></li>
-              <li><a href="/how-it-works" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Como Funciona</a></li>
-              <li><a href="/marketplace" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Cases de Sucesso</a></li>
-              <li><a href="/marketplace" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Blog</a></li>
+              <li><a href="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Explorar Projetos</a></li>
+              <li><a href="/criar-projeto" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Criar Projeto</a></li>
+              <li><a href="/como-funciona" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Como Funciona</a></li>
+              <li><a href="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Cases de Sucesso</a></li>
+              <li><a href="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Blog</a></li>
             </ul>
           </div>
           

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Shield, Users, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
 
 const Terms = () => {
   return (
@@ -159,13 +160,14 @@ const Terms = () => {
               </Button>
             </Link>
             <Link to="/security">
-              <Button variant="outline" size="lg" className="text-raiz-light border-raiz-light hover:bg-raiz-light hover:text-raiz-primary px-8">
+              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
                 Segurança
               </Button>
             </Link>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

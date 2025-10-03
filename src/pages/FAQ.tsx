@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
 
 const FAQ = () => {
   const faqs = [
@@ -104,13 +105,14 @@ const FAQ = () => {
               </Button>
             </Link>
             <Link to="/como-funciona">
-              <Button variant="outline" size="lg" className="text-raiz-light border-raiz-light hover:bg-raiz-light hover:text-raiz-primary px-8">
+              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
                 Como Funciona
               </Button>
             </Link>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

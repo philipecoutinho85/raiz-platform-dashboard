@@ -47,7 +47,7 @@ const HeroSection = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <Button size="lg" asChild className="bg-raiz-gold hover:bg-raiz-gold/90 text-raiz-dark text-lg px-8 py-6 h-auto">
-                <Link to="/registro" className="flex items-center space-x-2">
+                <Link to="/login" className="flex items-center space-x-2">
                   <span>Criar Meu Projeto</span>
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
@@ -55,10 +55,13 @@ const HeroSection = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
+                asChild
                 className="border-raiz-accent text-raiz-accent hover:bg-raiz-accent hover:text-raiz-dark text-lg px-8 py-6 h-auto"
               >
-                <Play className="mr-2 w-5 h-5" />
-                Como Funciona
+                <Link to="/como-funciona">
+                  <Play className="mr-2 w-5 h-5" />
+                  Como Funciona
+                </Link>
               </Button>
             </div>
             

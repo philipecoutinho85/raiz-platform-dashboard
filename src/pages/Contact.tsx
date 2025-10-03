@@ -6,6 +6,7 @@ import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import Footer from '@/components/Footer';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -70,7 +71,7 @@ const Contact = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-raiz-light/80">(11) 9999-9999</p>
+                <p className="text-raiz-light/80">(21) 96883-9616</p>
                 <p className="text-sm text-raiz-light/60 mt-2">Segunda a Sexta, 9h às 18h</p>
               </CardContent>
             </Card>
@@ -83,7 +84,7 @@ const Contact = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-raiz-light/80">São Paulo, SP - Brasil</p>
+                <p className="text-raiz-light/80">Niterói, RJ - Brasil</p>
                 <p className="text-sm text-raiz-light/60 mt-2">Atendimento online</p>
               </CardContent>
             </Card>
@@ -180,18 +181,19 @@ const Contact = () => {
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/faq">
-              <Button variant="outline" size="lg" className="text-raiz-light border-raiz-light hover:bg-raiz-light hover:text-raiz-primary px-8">
+              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
                 Perguntas Frequentes
               </Button>
             </Link>
             <Link to="/como-funciona">
-              <Button variant="outline" size="lg" className="text-raiz-light border-raiz-light hover:bg-raiz-light hover:text-raiz-primary px-8">
+              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
                 Como Funciona
               </Button>
             </Link>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

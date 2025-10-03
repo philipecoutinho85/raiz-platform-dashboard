@@ -204,8 +204,8 @@ const Register = () => {
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-raiz-primary rounded-2xl mb-4">
-            <Sprout className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src="/src/assets/raiz-logo-light.png" alt="$RAIZ Logo" className="h-20 w-auto" />
           </div>
           <h1 className="text-2xl font-bold text-raiz-dark">Criar Conta no $RAIZ</h1>
           <p className="text-raiz-secondary">Preencha seus dados para se cadastrar</p>

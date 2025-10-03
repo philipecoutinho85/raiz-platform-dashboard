@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, Camera, MapPin, Coins } from 'lucide-react';
 import TokenPurchase from '@/components/TokenPurchase';
+import Footer from '@/components/Footer';
 
 interface ProfileFormData {
   nome: string;
@@ -420,6 +421,7 @@ const UserProfile = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import DashboardStats from '@/components/dashboard/DashboardStats';
 import QuickActions from '@/components/dashboard/QuickActions';
 import RecentProjects from '@/components/dashboard/RecentProjects';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import Footer from '@/components/Footer';
 
 const Dashboard = () => {
   const { projects, stats, loading } = useDashboardData();
@@ -37,6 +38,7 @@ const Dashboard = () => {
         {/* Recent Projects */}
         <RecentProjects projects={projects} />
       </div>
+      <Footer />
     </div>
   );
 };

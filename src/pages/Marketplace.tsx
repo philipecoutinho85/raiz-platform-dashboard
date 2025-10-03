@@ -10,6 +10,7 @@ import { Search, Filter, Heart, Users, Clock, MapPin, Target } from 'lucide-reac
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import Footer from '@/components/Footer';
 
 interface Project {
   id: string;
@@ -355,6 +356,7 @@ const Marketplace = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };
