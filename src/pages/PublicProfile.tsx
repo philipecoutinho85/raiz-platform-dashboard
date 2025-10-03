@@ -76,7 +76,6 @@ const PublicProfile = () => {
           project_images!left(image_url, is_featured)
         `)
         .eq('user_id', userId)
-        .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -104,6 +103,18 @@ const PublicProfile = () => {
 
   const calculateProgress = (raised: number, goal: number) => {
     return Math.min((raised / goal) * 100, 100);
+  };
+
+  const getCompletedProjects = () => {
+    return projects.filter(p => p.raised_amount >= p.goal && p.status === 'approved').length;
+  };
+
+  const getPendingProjects = () => {
+    return projects.filter(p => p.status === 'pending').length;
+  };
+
+  const getApprovedProjects = () => {
+    return projects.filter(p => p.status === 'approved').length;
   };
 
   if (loading) {
@@ -159,19 +170,34 @@ const PublicProfile = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-4">
-                  <div className="text-center">
+                  <div className="text-center px-4 py-2 bg-raiz-primary/10 rounded-lg">
                     <div className="text-2xl font-bold text-raiz-primary">{projects.length}</div>
-                    <div className="text-sm text-raiz-secondary">Projetos</div>
+                    <div className="text-sm text-raiz-secondary">Total de Projetos</div>
                   </div>
                   
-                  <div className="text-center">
+                  <div className="text-center px-4 py-2 bg-green-100 rounded-lg">
+                    <div className="text-2xl font-bold text-green-700">{getCompletedProjects()}</div>
+                    <div className="text-sm text-raiz-secondary">Concluídos</div>
+                  </div>
+                  
+                  <div className="text-center px-4 py-2 bg-blue-100 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-700">{getApprovedProjects()}</div>
+                    <div className="text-sm text-raiz-secondary">Aprovados</div>
+                  </div>
+                  
+                  <div className="text-center px-4 py-2 bg-yellow-100 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-700">{getPendingProjects()}</div>
+                    <div className="text-sm text-raiz-secondary">Pendentes</div>
+                  </div>
+                  
+                  <div className="text-center px-4 py-2 bg-raiz-gold/20 rounded-lg">
                     <div className="text-2xl font-bold text-raiz-gold">
-                      {formatTokens(projects.reduce((sum, p) => sum + p.raised_amount, 0))} tokens
+                      {formatTokens(projects.reduce((sum, p) => sum + p.raised_amount, 0))}
                     </div>
                     <div className="text-sm text-raiz-secondary">Tokens Arrecadados</div>
                   </div>
                   
-                  <div className="text-center">
+                  <div className="text-center px-4 py-2 bg-raiz-accent/20 rounded-lg">
                     <div className="text-2xl font-bold text-raiz-accent">
                       {projects.reduce((sum, p) => sum + p.backers_count, 0)}
                     </div>
@@ -188,7 +214,7 @@ const PublicProfile = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <User className="w-5 h-5" />
-              <span>Projetos ({projects.length})</span>
+              <span>Projetos Aprovados ({getApprovedProjects()})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -198,7 +224,7 @@ const PublicProfile = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => (
+                {projects.filter(p => p.status === 'approved').map((project) => (
                   <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     {project.featured_image && (
                       <div className="h-48 bg-gray-200">
@@ -247,7 +273,11 @@ const PublicProfile = () => {
                           <span>{project.backers_count} apoiadores</span>
                         </div>
                         
-                        <Button className="w-full mt-4" size="sm">
+                        <Button 
+                          className="w-full mt-4" 
+                          size="sm"
+                          onClick={() => window.location.href = `/projeto/${project.id}`}
+                        >
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Ver Projeto
                         </Button>

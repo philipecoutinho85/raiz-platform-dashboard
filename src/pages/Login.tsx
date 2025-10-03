@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Mail, Lock, Sprout } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import raizTokenLogo from '@/assets/raiz-token-logo.png';
 
 const Login = () => {
   const { toast } = useToast();
@@ -95,9 +96,9 @@ const Login = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
-            <img src="/src/assets/raiz-logo-light.png" alt="$RAIZ Logo" className="h-20 w-auto" />
+            <img src={raizTokenLogo} alt="Raiz Token Logo" className="h-32 w-auto" />
           </div>
-          <h1 className="text-2xl font-bold text-raiz-dark">Bem-vindo ao $RAIZ</h1>
+          <h1 className="text-2xl font-bold text-raiz-dark">Bem-vindo ao Raiz Token</h1>
           <p className="text-raiz-secondary">Entre na sua conta para continuar</p>
         </div>
 

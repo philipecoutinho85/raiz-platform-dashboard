@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
 import { LogOut, User, Settings, Shield, Coins } from 'lucide-react';
 import raizLogo from '@/assets/raiz-logo.png';
+import raizTokenLogo from '@/assets/raiz-token-logo.png';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
@@ -71,9 +72,10 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 text-raiz-dark">
-                  <Coins className="h-4 w-4 text-raiz-primary" />
-                  <span className="text-sm font-medium">{tokens}</span>
+                <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-raiz-accent/20 to-raiz-primary/10 rounded-full border border-raiz-primary/20">
+                  <img src={raizTokenLogo} alt="Token" className="h-6 w-6" />
+                  <span className="text-lg font-bold text-raiz-primary">{tokens}</span>
+                  <span className="text-sm font-medium text-raiz-dark">tokens</span>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

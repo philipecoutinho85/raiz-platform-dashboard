@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Calendar, DollarSign, MapPin, Youtube, User, Users, Target, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,9 +33,11 @@ interface Project {
 }
 
 interface Profile {
+  id: string;
   nome: string;
   sobrenome: string;
   email: string;
+  avatar_url?: string;
 }
 
 interface ProjectImage {
@@ -86,7 +89,7 @@ const ProjectDetail = () => {
       // Fetch project owner profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('nome, sobrenome, email')
+        .select('id, nome, sobrenome, email, avatar_url')
         .eq('id', project.user_id)
         .single();
 
@@ -242,13 +245,26 @@ const ProjectDetail = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-2xl mb-2">{project.title}</CardTitle>
-                    <div className="flex items-center space-x-2 mb-4">
+                    <div className="flex items-center space-x-3 mb-4">
                       <Badge variant="outline">{project.category}</Badge>
                       {profile && (
-                        <div className="flex items-center space-x-1 text-sm text-raiz-secondary">
-                          <User className="w-4 h-4" />
-                          <span>por {profile.nome} {profile.sobrenome}</span>
-                        </div>
+                        <Link 
+                          to={`/perfil-publico/${profile.id}`}
+                          className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+                        >
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={profile.avatar_url} alt={`${profile.nome} ${profile.sobrenome}`} />
+                            <AvatarFallback className="bg-raiz-primary text-white text-xs">
+                              {profile.nome?.charAt(0)}{profile.sobrenome?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-raiz-dark">
+                              {profile.nome} {profile.sobrenome}
+                            </span>
+                            <span className="text-xs text-raiz-secondary">Ver perfil</span>
+                          </div>
+                        </Link>
                       )}
                     </div>
                   </div>
