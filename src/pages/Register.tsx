@@ -8,6 +8,7 @@ import { Eye, EyeOff, User, Mail, Lock, Phone, Calendar, MapPin, Home, Sprout } 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import raizLogo from '@/assets/raiz-token-full-logo.png';
+import Footer from '@/components/Footer';
 
 const Register = () => {
   const { toast } = useToast();
@@ -201,12 +202,13 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20 py-8">
-      <div className="container mx-auto px-4 max-w-2xl">
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20 py-8">
+        <div className="container mx-auto px-4 max-w-2xl">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
-            <img src={raizLogo} alt="Raiz Token" className="h-20 w-auto" />
+            <img src={raizLogo} alt="Raiz Token" className="h-32 w-auto" />
           </div>
           <h1 className="text-2xl font-bold text-raiz-dark">Criar Conta no $RAIZ</h1>
           <p className="text-raiz-secondary">Preencha seus dados para se cadastrar</p>
@@ -499,6 +501,8 @@ const Register = () => {
         </form>
       </div>
     </div>
+    <Footer />
+  </>
   );
 };
 
