@@ -12,6 +12,7 @@ import ProjectDetailModal from '@/components/admin/ProjectDetailModal';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useAdminUserActions } from '@/hooks/useAdminUserActions';
 import { useAdminModals } from '@/hooks/useAdminModals';
+import Footer from '@/components/Footer';
 
 const AdminPanel = () => {
   const { allProjects, users, stats, loading, handleProjectAction } = useAdminData();
@@ -137,6 +138,7 @@ const AdminPanel = () => {
         onRejectProject={handleProjectActionWrapper}
         onCancel={handleCancelReject}
       />
+      <Footer />
     </div>
   );
 };

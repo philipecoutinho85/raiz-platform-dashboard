@@ -10,6 +10,7 @@ import { Upload, X, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import Footer from '@/components/Footer';
 
 interface ProjectFormData {
   title: string;
@@ -478,6 +479,7 @@ const CreateProject = () => {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 };

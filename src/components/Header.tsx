@@ -13,7 +13,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
 import { LogOut, User, Settings, Shield, Coins } from 'lucide-react';
 import raizLogo from '@/assets/raiz-logo.png';
-import raizTokenLogo from '@/assets/raiz-token-logo.png';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
@@ -73,7 +72,7 @@ const Header = () => {
             {user ? (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-raiz-accent/20 to-raiz-primary/10 rounded-full border border-raiz-primary/20">
-                  <img src={raizTokenLogo} alt="Token" className="h-6 w-6" />
+                  <Coins className="h-6 w-6 text-raiz-accent" />
                   <span className="text-lg font-bold text-raiz-primary">{tokens}</span>
                   <span className="text-sm font-medium text-raiz-dark">tokens</span>
                 </div>

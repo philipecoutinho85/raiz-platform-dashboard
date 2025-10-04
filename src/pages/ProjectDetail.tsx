@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ProjectContributors from '@/components/ProjectContributors';
+import Footer from '@/components/Footer';
 
 interface Project {
   id: string;
@@ -249,7 +250,7 @@ const ProjectDetail = () => {
                       <Badge variant="outline">{project.category}</Badge>
                       {profile && (
                         <Link 
-                          to={`/perfil-publico/${profile.id}`}
+                          to={`/usuario/${profile.id}`}
                           className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                         >
                           <Avatar className="w-8 h-8">
@@ -259,10 +260,10 @@ const ProjectDetail = () => {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col">
+                            <span className="text-xs text-raiz-secondary">Autor do Projeto</span>
                             <span className="text-sm font-medium text-raiz-dark">
                               {profile.nome} {profile.sobrenome}
                             </span>
-                            <span className="text-xs text-raiz-secondary">Ver perfil</span>
                           </div>
                         </Link>
                       )}
@@ -461,6 +462,7 @@ const ProjectDetail = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

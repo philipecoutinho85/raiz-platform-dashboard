@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Eye, EyeOff, User, Mail, Lock, Phone, Calendar, MapPin, Home, Sprout } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import raizLogo from '@/assets/raiz-token-full-logo.png';
 
 const Register = () => {
   const { toast } = useToast();
@@ -205,7 +206,7 @@ const Register = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">
-            <img src="/src/assets/raiz-logo-light.png" alt="$RAIZ Logo" className="h-20 w-auto" />
+            <img src={raizLogo} alt="Raiz Token" className="h-20 w-auto" />
           </div>
           <h1 className="text-2xl font-bold text-raiz-dark">Criar Conta no $RAIZ</h1>
           <p className="text-raiz-secondary">Preencha seus dados para se cadastrar</p>
