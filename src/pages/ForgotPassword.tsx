@@ -125,7 +125,7 @@ const ForgotPassword = () => {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center mb-4">
-              <img src={raizTokenLogo} alt="Raiz Token Logo" className="h-32 w-auto" />
+              <img src={raizTokenLogo} alt="Raiz Token Logo" className="h-40 w-auto" />
             </div>
           <h1 className="text-2xl font-bold text-raiz-dark">Esqueci Minha Senha</h1>
           <p className="text-raiz-secondary">Digite seu e-mail para redefinir sua senha</p>
