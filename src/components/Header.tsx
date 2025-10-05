@@ -11,13 +11,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
-import { LogOut, User, Settings, Shield, Coins } from 'lucide-react';
+import { LogOut, User, Settings, Shield, Coins, HelpCircle } from 'lucide-react';
 import raizLogo from '@/assets/raiz-logo.png';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
   const { tokens } = useTokens();
   const navigate = useNavigate();
+
+  const handleStartTour = () => {
+    // Disparar evento customizado para iniciar tour
+    window.dispatchEvent(new CustomEvent('startPlatformTour'));
+    // Navegar para dashboard se não estiver lá
+    if (window.location.pathname !== '/dashboard') {
+      navigate('/dashboard');
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -37,7 +46,7 @@ const Header = () => {
             <img src={raizLogo} alt="Raiz Token" className="h-20 w-auto transition-transform hover:scale-105" />
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-8" data-tour="header-nav">
             {user ? (
               <>
                 <Link to="/dashboard" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
@@ -78,7 +87,7 @@ const Header = () => {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-tour="user-menu">
                       <Avatar className="h-10 w-10">
                         <AvatarImage 
                           src={profile?.avatar_url || ''} 
@@ -118,6 +127,10 @@ const Header = () => {
                       <span>Administração</span>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem onClick={handleStartTour}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>Tour da Plataforma</span>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />

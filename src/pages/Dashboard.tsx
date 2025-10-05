@@ -1,12 +1,39 @@
-
+import { useState, useEffect } from 'react';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import QuickActions from '@/components/dashboard/QuickActions';
 import RecentProjects from '@/components/dashboard/RecentProjects';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import Footer from '@/components/Footer';
+import PlatformTour from '@/components/PlatformTour';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const { projects, stats, loading } = useDashboardData();
+  const { profile } = useAuth();
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    // Iniciar tour automaticamente para novos usuários
+    if (profile && !profile.has_completed_tour && !loading) {
+      // Delay para garantir que os elementos estejam renderizados
+      setTimeout(() => {
+        setRunTour(true);
+      }, 1000);
+    }
+  }, [profile, loading]);
+
+  useEffect(() => {
+    // Escutar evento customizado para reiniciar tour
+    const handleStartTour = () => {
+      setRunTour(true);
+    };
+
+    window.addEventListener('startPlatformTour', handleStartTour);
+
+    return () => {
+      window.removeEventListener('startPlatformTour', handleStartTour);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -18,6 +45,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20">
+      <PlatformTour run={runTour} onClose={() => setRunTour(false)} />
+      
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -30,13 +59,19 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <DashboardStats stats={stats} />
+        <div data-tour="stats">
+          <DashboardStats stats={stats} />
+        </div>
 
         {/* Quick Actions */}
-        <QuickActions />
+        <div data-tour="quick-actions">
+          <QuickActions />
+        </div>
 
         {/* Recent Projects */}
-        <RecentProjects projects={projects} />
+        <div data-tour="recent-projects">
+          <RecentProjects projects={projects} />
+        </div>
       </div>
       <Footer />
     </div>

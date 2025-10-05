@@ -20,6 +20,7 @@ interface Profile {
   cidade?: string;
   estado?: string;
   cep?: string;
+  has_completed_tour?: boolean;
 }
 
 interface AuthContextType {
