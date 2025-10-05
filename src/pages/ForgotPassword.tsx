@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Mail, ArrowLeft, Sprout } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import raizLogo from '@/assets/raiz-token-full-logo.png';
+import raizTokenLogo from '@/assets/raiz-token-logo.png';
 import Footer from '@/components/Footer';
 
 const ForgotPassword = () => {
@@ -125,7 +125,7 @@ const ForgotPassword = () => {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center mb-4">
-              <img src={raizLogo} alt="Raiz Token" className="h-32 w-auto" />
+              <img src={raizTokenLogo} alt="Raiz Token Logo" className="h-32 w-auto" />
             </div>
           <h1 className="text-2xl font-bold text-raiz-dark">Esqueci Minha Senha</h1>
           <p className="text-raiz-secondary">Digite seu e-mail para redefinir sua senha</p>
