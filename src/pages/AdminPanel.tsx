@@ -5,6 +5,7 @@ import AdminStats from '@/components/admin/AdminStats';
 import UsersTab from '@/components/admin/UsersTab';
 import ProjectsTab from '@/components/admin/ProjectsTab';
 import TokensTab from '@/components/admin/TokensTab';
+import SettingsTab from '@/components/admin/SettingsTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -78,10 +79,11 @@ const AdminPanel = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="projects" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="projects">Projetos</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            <TabsTrigger value="settings">Configurações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="projects">
@@ -104,6 +106,10 @@ const AdminPanel = () => {
 
           <TabsContent value="tokens">
             <TokensTab stats={stats} />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <SettingsTab />
           </TabsContent>
         </Tabs>
       </div>

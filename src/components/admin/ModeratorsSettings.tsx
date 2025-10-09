@@ -56,19 +56,32 @@ const ModeratorsSettings = () => {
       const { data: roles } = await supabase
         .from('user_roles')
         .select('user_id')
-        .eq('role', 'moderator');
+        .eq('role', 'moderator' as any);
 
       if (!roles) return;
 
+      const userIds = roles.map(r => r.user_id);
+      
       const { data: permissions } = await supabase
         .from('moderator_permissions')
-        .select(`
-          *,
-          profile:profiles(nome, email)
-        `)
-        .in('user_id', roles.map(r => r.user_id));
+        .select('*')
+        .in('user_id', userIds);
 
-      setModerators(permissions || []);
+      if (!permissions) return;
+
+      // Fetch profiles separately
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nome, email')
+        .in('id', userIds);
+
+      // Merge data
+      const moderatorsWithProfiles = permissions.map(perm => ({
+        ...perm,
+        profile: profiles?.find(p => p.id === perm.user_id)
+      }));
+
+      setModerators(moderatorsWithProfiles as Moderator[]);
     } catch (error) {
       console.error('Error fetching moderators:', error);
     }
@@ -93,7 +106,7 @@ const ModeratorsSettings = () => {
       // Add moderator role
       const { error: roleError } = await supabase
         .from('user_roles')
-        .insert({ user_id: selectedUser, role: 'moderator' });
+        .insert({ user_id: selectedUser, role: 'moderator' as any });
 
       if (roleError) throw roleError;
 
@@ -124,7 +137,7 @@ const ModeratorsSettings = () => {
 
   const removeModerator = async (userId: string) => {
     try {
-      await supabase.from('user_roles').delete().eq('user_id', userId).eq('role', 'moderator');
+      await supabase.from('user_roles').delete().eq('user_id', userId).eq('role', 'moderator' as any);
       await supabase.from('moderator_permissions').delete().eq('user_id', userId);
 
       toast({

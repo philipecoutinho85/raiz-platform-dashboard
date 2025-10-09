@@ -33,9 +33,9 @@ export const useSystemSettings = () => {
 
       data?.forEach(setting => {
         if (setting.key === 'maintenance_mode') {
-          setMaintenanceMode(setting.value as MaintenanceSettings);
+          setMaintenanceMode(setting.value as unknown as MaintenanceSettings);
         } else if (setting.key === 'analytics') {
-          setAnalytics(setting.value as AnalyticsSettings);
+          setAnalytics(setting.value as unknown as AnalyticsSettings);
         }
       });
     } catch (error) {
@@ -49,7 +49,7 @@ export const useSystemSettings = () => {
     try {
       const { error } = await supabase
         .from('system_settings')
-        .update({ value: settings })
+        .update({ value: settings as any })
         .eq('key', 'maintenance_mode');
 
       if (error) throw error;
@@ -73,7 +73,7 @@ export const useSystemSettings = () => {
     try {
       const { error } = await supabase
         .from('system_settings')
-        .update({ value: settings })
+        .update({ value: settings as any })
         .eq('key', 'analytics');
 
       if (error) throw error;

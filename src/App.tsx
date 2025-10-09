@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AnalyticsScripts from "./components/AnalyticsScripts";
 import Header from "./components/Header";
 import MobileNavigation from "./components/MobileNavigation";
 import Index from "./pages/Index";
@@ -36,6 +37,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <AnalyticsScripts />
         <BrowserRouter>
           <div className="pb-16 md:pb-0">
             <Header />

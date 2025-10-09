@@ -10,6 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import raizTokenLogo from '@/assets/raiz-token-logo.png';
 import Footer from '@/components/Footer';
+import { supabase } from '@/integrations/supabase/client';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Login = () => {
   const { toast } = useToast();
@@ -17,10 +20,27 @@ const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState<{ enabled: boolean; message: string } | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
+  // Check maintenance mode
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'maintenance_mode')
+        .single();
+      
+      if (data) {
+        setMaintenanceMode(data.value as any);
+      }
+    };
+    checkMaintenance();
+  }, []);
 
   // Redirect if already authenticated - send to projects page instead of dashboard
   useEffect(() => {
@@ -39,6 +59,15 @@ const Login = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    if (maintenanceMode?.enabled) {
+      toast({
+        title: "Sistema em Manutenção",
+        description: maintenanceMode.message,
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (!formData.email || !formData.password) {
       toast({
@@ -103,6 +132,15 @@ const Login = () => {
           <h1 className="text-2xl font-bold text-raiz-dark">Bem-vindo ao Raiz Token</h1>
           <p className="text-raiz-secondary">Entre na sua conta para continuar</p>
         </div>
+
+        {maintenanceMode?.enabled && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {maintenanceMode.message}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Card>
           <CardHeader>
