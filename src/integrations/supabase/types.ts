@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      moderator_permissions: {
+        Row: {
+          can_manage_users: boolean | null
+          can_review_projects: boolean | null
+          can_view_analytics: boolean | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_manage_users?: boolean | null
+          can_review_projects?: boolean | null
+          can_view_analytics?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_manage_users?: boolean | null
+          can_review_projects?: boolean | null
+          can_view_analytics?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -251,6 +281,30 @@ export type Database = {
           updated_at?: string
           user_id?: string
           youtube_url?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
