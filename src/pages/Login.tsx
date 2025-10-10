@@ -61,7 +61,37 @@ const Login = () => {
     
     const mode = await checkMaintenanceMode();
     if (mode?.enabled) {
-      return;
+      // Check if user is admin before allowing login during maintenance
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+      
+      if (user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+        
+        if (!roleData) {
+          await supabase.auth.signOut();
+          setLoading(false);
+          toast({
+            title: "Acesso Negado",
+            description: "Sistema em manutenção. Apenas administradores podem acessar.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+      setLoading(false);
+      if (user) {
+        navigate('/projetos');
+        return;
+      }
     }
     
     if (!formData.email || !formData.password) {

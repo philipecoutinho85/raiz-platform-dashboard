@@ -108,6 +108,11 @@ const Register = () => {
     
     const mode = await checkMaintenanceMode();
     if (mode?.enabled) {
+      toast({
+        title: "Sistema em Manutenção",
+        description: "Não é possível criar novas contas durante a manutenção.",
+        variant: "destructive"
+      });
       return;
     }
     
