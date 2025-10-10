@@ -9,9 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import raizTokenLogo from '@/assets/raiz-token-logo.png';
 import Footer from '@/components/Footer';
+import MaintenanceModal from '@/components/MaintenanceModal';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Register = () => {
   const { toast } = useToast();
@@ -41,21 +40,21 @@ const Register = () => {
     estado: ''
   });
 
-  // Check maintenance mode
-  useEffect(() => {
-    const checkMaintenance = async () => {
-      const { data } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'maintenance_mode')
-        .single();
-      
-      if (data) {
-        setMaintenanceMode(data.value as any);
-      }
-    };
-    checkMaintenance();
-  }, []);
+  // Check maintenance mode on submit
+  const checkMaintenanceMode = async () => {
+    const { data } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'maintenance_mode')
+      .single();
+    
+    if (data) {
+      const mode = data.value as any;
+      setMaintenanceMode(mode);
+      return mode;
+    }
+    return null;
+  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -107,12 +106,8 @@ const Register = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    if (maintenanceMode?.enabled) {
-      toast({
-        title: "Sistema em Manutenção",
-        description: maintenanceMode.message,
-        variant: "destructive"
-      });
+    const mode = await checkMaintenanceMode();
+    if (mode?.enabled) {
       return;
     }
     
@@ -232,6 +227,7 @@ const Register = () => {
 
   return (
     <>
+      <MaintenanceModal />
       <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
         {/* Logo */}
@@ -242,15 +238,6 @@ const Register = () => {
           <h1 className="text-2xl font-bold text-raiz-dark">Criar Conta no $RAIZ</h1>
           <p className="text-raiz-secondary">Preencha seus dados para se cadastrar</p>
         </div>
-
-        {maintenanceMode?.enabled && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {maintenanceMode.message}
-            </AlertDescription>
-          </Alert>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Dados Pessoais */}

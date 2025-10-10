@@ -66,14 +66,10 @@ const HeroSection = () => {
             </div>
             
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 max-w-md mx-auto lg:mx-0">
+            <div className="grid grid-cols-2 gap-6 max-w-md mx-auto lg:mx-0">
               <div className="text-center">
                 <div className="text-2xl font-bold text-raiz-gold">1.2K+</div>
                 <div className="text-raiz-light/70 text-sm">Projetos</div>
-              </div>
-              <div className="text-center">
-                 <div className="text-2xl font-bold text-raiz-gold">58M</div>
-                <div className="text-raiz-light/70 text-sm">Tokens Arrecadados</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-raiz-gold">25K+</div>
