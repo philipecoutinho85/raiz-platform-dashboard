@@ -1,6 +1,6 @@
-
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import raizLogo from '@/assets/raiz-logo-light.png';
 
 const Footer = () => {
@@ -37,11 +37,11 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Links Rápidos</h3>
             <ul className="space-y-2">
-              <li><a href="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Explorar Projetos</a></li>
-              <li><a href="/criar-projeto" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Criar Projeto</a></li>
-              <li><a href="/como-funciona" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Como Funciona</a></li>
-              <li><a href="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Cases de Sucesso</a></li>
-              <li><a href="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Blog</a></li>
+              <li><Link to="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Explorar Projetos</Link></li>
+              <li><Link to="/criar-projeto" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Criar Projeto</Link></li>
+              <li><Link to="/como-funciona" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Como Funciona</Link></li>
+              <li><Link to="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Cases de Sucesso</Link></li>
+              <li><Link to="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Blog</Link></li>
             </ul>
           </div>
           
@@ -49,10 +49,10 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Suporte</h3>
             <ul className="space-y-2">
-              <li><a href="/faq" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">FAQ</a></li>
-              <li><a href="/terms" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Termos de Uso</a></li>
-              <li><a href="/privacy" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Política de Privacidade</a></li>
-              <li><a href="/security" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Segurança</a></li>
+              <li><Link to="/faq" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">FAQ</Link></li>
+              <li><Link to="/terms" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Termos de Uso</Link></li>
+              <li><Link to="/privacy" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Política de Privacidade</Link></li>
+              <li><Link to="/security" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Segurança</Link></li>
               <li><a href="mailto:contato@raiztoken.com.br" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Contato</a></li>
             </ul>
           </div>

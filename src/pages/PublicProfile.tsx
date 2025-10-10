@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +34,7 @@ interface Project {
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -276,7 +276,7 @@ const PublicProfile = () => {
                         <Button 
                           className="w-full mt-4" 
                           size="sm"
-                          onClick={() => window.location.href = `/projeto/${project.id}`}
+                          onClick={() => navigate(`/projeto/${project.id}`)}
                         >
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Ver Projeto

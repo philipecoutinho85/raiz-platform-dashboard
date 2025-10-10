@@ -5,12 +5,15 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const MaintenanceModal = () => {
   const [maintenanceMode, setMaintenanceMode] = useState<{ enabled: boolean; message: string } | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const checkMaintenance = async () => {
@@ -21,7 +24,9 @@ const MaintenanceModal = () => {
         .single();
       
       if (data) {
-        setMaintenanceMode(data.value as any);
+        const mode = data.value as any;
+        setMaintenanceMode(mode);
+        setIsOpen(mode.enabled);
       }
     };
     checkMaintenance();
@@ -30,7 +35,7 @@ const MaintenanceModal = () => {
   if (!maintenanceMode?.enabled) return null;
 
   return (
-    <AlertDialog open={maintenanceMode.enabled}>
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center justify-center mb-4">
@@ -45,6 +50,11 @@ const MaintenanceModal = () => {
             {maintenanceMode.message}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction onClick={() => setIsOpen(false)}>
+            Fechar
+          </AlertDialogAction>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
