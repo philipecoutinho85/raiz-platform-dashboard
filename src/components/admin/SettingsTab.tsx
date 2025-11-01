@@ -1,10 +1,11 @@
 import MaintenanceSettings from './MaintenanceSettings';
 import AnalyticsSettings from './AnalyticsSettings';
 import ModeratorsSettings from './ModeratorsSettings';
+import SocialLinksSettings from './SocialLinksSettings';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 const SettingsTab = () => {
-  const { maintenanceMode, analytics, loading, updateMaintenanceMode, updateAnalytics } = useSystemSettings();
+  const { maintenanceMode, analytics, socialLinks, loading, updateMaintenanceMode, updateAnalytics, updateSocialLinks } = useSystemSettings();
 
   if (loading) {
     return (
@@ -18,6 +19,7 @@ const SettingsTab = () => {
     <div className="space-y-6">
       <MaintenanceSettings settings={maintenanceMode} onUpdate={updateMaintenanceMode} />
       <AnalyticsSettings settings={analytics} onUpdate={updateAnalytics} />
+      <SocialLinksSettings settings={socialLinks} onUpdate={updateSocialLinks} />
       <ModeratorsSettings />
     </div>
   );

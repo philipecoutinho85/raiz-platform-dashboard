@@ -13,6 +13,12 @@ export interface AnalyticsSettings {
   meta_pixel_id: string;
 }
 
+export interface SocialLinksSettings {
+  linkedin: string;
+  instagram: string;
+  twitter: string;
+}
+
 export const useSystemSettings = () => {
   const { toast } = useToast();
   const [maintenanceMode, setMaintenanceMode] = useState<MaintenanceSettings>({ enabled: false, message: '' });
@@ -20,6 +26,11 @@ export const useSystemSettings = () => {
     google_analytics_id: '', 
     google_tag_manager_id: '', 
     meta_pixel_id: '' 
+  });
+  const [socialLinks, setSocialLinks] = useState<SocialLinksSettings>({
+    linkedin: '',
+    instagram: '',
+    twitter: ''
   });
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +47,8 @@ export const useSystemSettings = () => {
           setMaintenanceMode(setting.value as unknown as MaintenanceSettings);
         } else if (setting.key === 'analytics') {
           setAnalytics(setting.value as unknown as AnalyticsSettings);
+        } else if (setting.key === 'social_links') {
+          setSocialLinks(setting.value as unknown as SocialLinksSettings);
         }
       });
     } catch (error) {
@@ -97,11 +110,41 @@ export const useSystemSettings = () => {
     fetchSettings();
   }, []);
 
+  const updateSocialLinks = async (settings: SocialLinksSettings) => {
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert({ 
+          key: 'social_links',
+          value: settings as any 
+        }, {
+          onConflict: 'key'
+        });
+
+      if (error) throw error;
+
+      setSocialLinks(settings);
+      toast({
+        title: 'Configurações atualizadas',
+        description: 'Links das redes sociais atualizados com sucesso.'
+      });
+    } catch (error) {
+      console.error('Error updating social links:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar links das redes sociais.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return {
     maintenanceMode,
     analytics,
+    socialLinks,
     loading,
     updateMaintenanceMode,
-    updateAnalytics
+    updateAnalytics,
+    updateSocialLinks
   };
 };

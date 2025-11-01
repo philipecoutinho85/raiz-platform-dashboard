@@ -1,9 +1,32 @@
-import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Linkedin, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import raizLogo from '@/assets/raiz-logo-light.png';
 
 const Footer = () => {
+  const [socialLinks, setSocialLinks] = useState({
+    linkedin: '',
+    instagram: '',
+    twitter: ''
+  });
+
+  useEffect(() => {
+    const fetchSocialLinks = async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'social_links')
+        .single();
+      
+      if (data?.value) {
+        setSocialLinks(data.value as any);
+      }
+    };
+    
+    fetchSocialLinks();
+  }, []);
+
   return (
     <footer className="bg-raiz-dark text-raiz-light">
       <div className="container mx-auto px-4 py-16">
@@ -17,19 +40,23 @@ const Footer = () => {
               Transformando ideias em realidade através do poder da comunidade. 
               Sua plataforma de crowdfunding para projetos inovadores.
             </p>
-            <div className="flex space-x-4">
-              <Button variant="ghost" size="icon" className="text-raiz-accent hover:text-raiz-gold">
-                <Facebook className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-raiz-accent hover:text-raiz-gold">
-                <Instagram className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-raiz-accent hover:text-raiz-gold">
-                <Twitter className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-raiz-accent hover:text-raiz-gold">
-                <Youtube className="w-5 h-5" />
-              </Button>
+            
+            <div className="flex space-x-4 mt-4">
+              {socialLinks.linkedin && (
+                <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-raiz-accent hover:text-raiz-gold transition-colors">
+                  <Linkedin className="w-5 h-5" />
+                </a>
+              )}
+              {socialLinks.instagram && (
+                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-raiz-accent hover:text-raiz-gold transition-colors">
+                  <Instagram className="w-5 h-5" />
+                </a>
+              )}
+              {socialLinks.twitter && (
+                <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-raiz-accent hover:text-raiz-gold transition-colors">
+                  <Twitter className="w-5 h-5" />
+                </a>
+              )}
             </div>
           </div>
           
