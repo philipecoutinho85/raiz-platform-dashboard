@@ -41,7 +41,7 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold text-raiz-dark mb-6">
-            Por que escolher a <span className="text-gradient">$RAIZ</span>?
+            Por que escolher a <span className="text-gradient">Plataforma Raiz Token</span>?
           </h2>
           <p className="text-xl text-raiz-secondary max-w-3xl mx-auto">
             Nossa plataforma foi desenvolvida pensando em cada detalhe para oferecer a melhor experiência 

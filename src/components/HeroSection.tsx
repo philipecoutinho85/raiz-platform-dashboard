@@ -26,7 +26,7 @@ const HeroSection = () => {
             </h1>
             
             <p className="text-xl text-raiz-light/80 mb-8 max-w-2xl">
-              Na <strong>$RAIZ</strong>, conectamos empreendedores visionários com apoiadores que acreditam no potencial de grandes ideias. 
+              Na <strong>Plataforma Raiz Token</strong>, conectamos empreendedores visionários com apoiadores que acreditam no potencial de grandes ideias. 
               Sua ideia é a semente, nossos apoiadores são o adubo que fará ela florescer.
             </p>
             

@@ -34,7 +34,7 @@ const Footer = () => {
           {/* Logo and Description */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <img src={raizLogo} alt="$RAIZ Logo" className="h-16 w-auto" />
+              <img src={raizLogo} alt="Plataforma Raiz Token Logo" className="h-16 w-auto" />
             </div>
             <p className="text-raiz-light/80">
               Transformando ideias em realidade através do poder da comunidade. 
@@ -106,7 +106,7 @@ const Footer = () => {
         
         <div className="border-t border-raiz-accent/20 mt-12 pt-8 text-center">
           <p className="text-raiz-light/60">
-            © 2025 $RAIZ Plataforma de Crowdfunding. Todos os direitos reservados.
+            © 2025 Plataforma Raiz Token. Todos os direitos reservados.
           </p>
         </div>
       </div>

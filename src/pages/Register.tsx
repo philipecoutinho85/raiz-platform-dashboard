@@ -240,7 +240,7 @@ const Register = () => {
           <div className="inline-flex items-center justify-center mb-4">
             <img src={raizTokenLogo} alt="Raiz Token Logo" className="h-36 w-auto" />
           </div>
-          <h1 className="text-2xl font-bold text-raiz-dark">Criar Conta no $RAIZ</h1>
+          <h1 className="text-2xl font-bold text-raiz-dark">Criar Conta na Plataforma Raiz Token</h1>
           <p className="text-raiz-secondary">Preencha seus dados para se cadastrar</p>
         </div>
 

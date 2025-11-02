@@ -48,6 +48,8 @@ interface ProjectImage {
 }
 
 import ProjectGallery from '@/components/ProjectGallery';
+import SocialShare from '@/components/SocialShare';
+import ProjectComments from '@/components/ProjectComments';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -202,7 +204,14 @@ const ProjectDetail = () => {
             <ArrowLeft className="w-4 h-4" />
             <span>Voltar</span>
           </Button>
-          {getStatusBadge(project.status)}
+          <div className="flex items-center gap-3">
+            <SocialShare 
+              title={project.title}
+              description={project.description}
+              url={window.location.href}
+            />
+            {getStatusBadge(project.status)}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -302,6 +311,9 @@ const ProjectDetail = () => {
 
             {/* Project Gallery */}
             <ProjectGallery projectId={project.id} isOwner={isOwner} />
+
+            {/* Comments and Feedback */}
+            <ProjectComments projectId={project.id} />
 
             {/* Contributors */}
             <ProjectContributors projectId={project.id} />

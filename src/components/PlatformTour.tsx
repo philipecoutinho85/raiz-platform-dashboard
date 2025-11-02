@@ -18,7 +18,7 @@ const PlatformTour = ({ run, onClose }: PlatformTourProps) => {
       target: 'body',
       content: (
         <div>
-          <h2 className="text-xl font-bold mb-2">Bem-vindo à Plataforma $RAIZ! 🌱</h2>
+          <h2 className="text-xl font-bold mb-2">Bem-vindo à Plataforma Raiz Token! 🌱</h2>
           <p>Vamos fazer um tour rápido pelas principais funcionalidades para você aproveitar ao máximo a plataforma.</p>
         </div>
       ),

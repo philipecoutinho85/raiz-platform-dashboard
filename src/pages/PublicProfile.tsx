@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Calendar, MapPin, ExternalLink } from 'lucide-react';
+import { User, Calendar, MapPin, ExternalLink, Star } from 'lucide-react';
+import UserBadges from '@/components/UserBadges';
 
 interface UserProfile {
   id: string;
@@ -19,7 +20,7 @@ interface UserProfile {
   estado?: string;
 }
 
-interface Project {
+  interface Project {
   id: string;
   title: string;
   description: string;
@@ -32,18 +33,30 @@ interface Project {
   featured_image?: string;
 }
 
+interface Testimonial {
+  id: string;
+  content: string;
+  created_at: string;
+  project_id: string;
+  projects?: {
+    title: string;
+  };
+}
+
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (userId) {
       fetchUserProfile();
       fetchUserProjects();
+      fetchUserTestimonials();
     }
   }, [userId]);
 
@@ -90,6 +103,42 @@ const PublicProfile = () => {
       console.error('Error fetching projects:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserTestimonials = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('project_comments')
+        .select(`
+          *,
+          projects:project_id (title)
+        `)
+        .eq('comment_type', 'testimonial')
+        .in('project_id', projects.map(p => p.id))
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const testimonialsWithProjects = await Promise.all(
+        (data || []).map(async (testimonial) => {
+          const { data: project } = await supabase
+            .from('projects')
+            .select('title')
+            .eq('id', testimonial.project_id)
+            .single();
+
+          return {
+            ...testimonial,
+            projects: project,
+          };
+        })
+      );
+
+      setTestimonials(testimonialsWithProjects as Testimonial[]);
+    } catch (error: any) {
+      console.error('Error fetching testimonials:', error);
     }
   };
 
@@ -208,6 +257,33 @@ const PublicProfile = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* User Badges */}
+        <UserBadges userId={userId!} />
+
+        {/* Testimonials Section */}
+        {testimonials.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Star className="w-5 h-5" />
+                <span>Testemunhos Recebidos</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {testimonials.map((testimonial) => (
+                  <div key={testimonial.id} className="border-l-4 border-raiz-gold pl-4 py-2">
+                    <p className="text-raiz-dark mb-2">{testimonial.content}</p>
+                    <p className="text-sm text-raiz-secondary">
+                      Projeto: {testimonial.projects?.title} • {new Date(testimonial.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Projects Section */}
         <Card>

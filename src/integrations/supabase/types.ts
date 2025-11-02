@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      badges: {
+        Row: {
+          created_at: string | null
+          criteria: string
+          description: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_manual: boolean | null
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria: string
+          description: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_manual?: boolean | null
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_manual?: boolean | null
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       moderator_permissions: {
         Row: {
           can_manage_users: boolean | null
@@ -106,6 +145,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      project_comments: {
+        Row: {
+          comment_type: string
+          content: string
+          created_at: string | null
+          id: string
+          project_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_type: string
+          content: string
+          created_at?: string | null
+          id?: string
+          project_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_type?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          project_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_contributions: {
         Row: {
@@ -307,6 +384,38 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_id: string
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
