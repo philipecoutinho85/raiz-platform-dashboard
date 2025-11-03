@@ -83,6 +83,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -151,8 +184,15 @@ export type Database = {
           comment_type: string
           content: string
           created_at: string | null
+          hidden_at: string | null
+          hidden_by: string | null
           id: string
+          is_hidden: boolean | null
+          is_reported: boolean | null
+          parent_comment_id: string | null
           project_id: string
+          reported_at: string | null
+          reported_by: string | null
           updated_at: string | null
           user_id: string
         }
@@ -160,8 +200,15 @@ export type Database = {
           comment_type: string
           content: string
           created_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
           id?: string
+          is_hidden?: boolean | null
+          is_reported?: boolean | null
+          parent_comment_id?: string | null
           project_id: string
+          reported_at?: string | null
+          reported_by?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -169,12 +216,26 @@ export type Database = {
           comment_type?: string
           content?: string
           created_at?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
           id?: string
+          is_hidden?: boolean | null
+          is_reported?: boolean | null
+          parent_comment_id?: string | null
           project_id?: string
+          reported_at?: string | null
+          reported_by?: string | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "project_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_comments_project_id_fkey"
             columns: ["project_id"]

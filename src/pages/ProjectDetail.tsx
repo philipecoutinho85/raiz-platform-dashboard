@@ -312,8 +312,19 @@ const ProjectDetail = () => {
             {/* Project Gallery */}
             <ProjectGallery projectId={project.id} isOwner={isOwner} />
 
+            {/* Social Share */}
+            <SocialShare 
+              title={project.title}
+              description={project.description}
+              url={window.location.href}
+            />
+
             {/* Comments and Feedback */}
-            <ProjectComments projectId={project.id} />
+            <ProjectComments 
+              projectId={project.id}
+              projectOwnerId={project.user_id}
+              isProjectCompleted={project.status === 'approved' && project.raised_amount >= project.goal}
+            />
 
             {/* Contributors */}
             <ProjectContributors projectId={project.id} />

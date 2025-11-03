@@ -50,6 +50,8 @@ const BadgesTab = () => {
     is_active: true,
     is_manual: false,
   });
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchBadges();
@@ -76,15 +78,96 @@ const BadgesTab = () => {
     }
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file) return null;
+
+    const MAX_SIZE = 500 * 1024; // 500KB
+    let imageToUpload = file;
+
+    // Comprimir imagem se for muito grande
+    if (file.size > MAX_SIZE) {
+      imageToUpload = await compressImage(file, MAX_SIZE);
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `badges/${fileName}`;
+
+    const { error: uploadError, data } = await supabase.storage
+      .from('project-images')
+      .upload(filePath, imageToUpload);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('project-images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const compressImage = async (file: File, maxSize: number): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Redimensionar mantendo proporção
+          const MAX_DIMENSION = 400;
+          if (width > height && width > MAX_DIMENSION) {
+            height = (height * MAX_DIMENSION) / width;
+            width = MAX_DIMENSION;
+          } else if (height > MAX_DIMENSION) {
+            width = (width * MAX_DIMENSION) / height;
+            height = MAX_DIMENSION;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+              }
+            },
+            'image/jpeg',
+            0.8
+          );
+        };
+      };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      let imageUrl = formData.image_url;
+
+      // Se há um arquivo novo para upload
+      if (imageFile) {
+        setUploading(true);
+        imageUrl = await handleImageUpload(imageFile) || imageUrl;
+        setUploading(false);
+      }
+
+      const dataToSave = { ...formData, image_url: imageUrl };
+
       if (editingBadge) {
         const { error } = await supabase
           .from('badges')
-          .update(formData)
+          .update(dataToSave)
           .eq('id', editingBadge.id);
 
         if (error) throw error;
@@ -92,7 +175,7 @@ const BadgesTab = () => {
       } else {
         const { error } = await supabase
           .from('badges')
-          .insert([formData]);
+          .insert([dataToSave]);
 
         if (error) throw error;
         toast({ title: 'Badge criada com sucesso!' });
@@ -110,6 +193,7 @@ const BadgesTab = () => {
       });
     } finally {
       setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -151,6 +235,7 @@ const BadgesTab = () => {
 
   const resetForm = () => {
     setEditingBadge(null);
+    setImageFile(null);
     setFormData({
       name: '',
       slug: '',
@@ -218,13 +303,32 @@ const BadgesTab = () => {
                     />
                   </div>
                   <div>
-                    <Label>URL da Imagem (opcional)</Label>
-                    <Input
-                      type="url"
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                      placeholder="https://exemplo.com/badge.png"
-                    />
+                    <Label>Imagem da Badge</Label>
+                    <div className="space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setImageFile(file);
+                        }}
+                      />
+                      {(imageFile || formData.image_url) && (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={imageFile ? URL.createObjectURL(imageFile) : formData.image_url}
+                            alt="Preview"
+                            className="w-16 h-16 object-contain border rounded"
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            {imageFile ? 'Nova imagem selecionada' : 'Imagem atual'}
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        A imagem será otimizada automaticamente para 400x400px
+                      </p>
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Switch
@@ -248,8 +352,8 @@ const BadgesTab = () => {
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancelar
                     </Button>
-                    <Button type="submit" disabled={loading}>
-                      {loading ? 'Salvando...' : 'Salvar'}
+                    <Button type="submit" disabled={loading || uploading}>
+                      {uploading ? 'Fazendo upload...' : loading ? 'Salvando...' : 'Salvar'}
                     </Button>
                   </div>
                 </form>

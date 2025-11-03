@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import Footer from '@/components/Footer';
+import ProjectRanking from '@/components/ProjectRanking';
 
 interface Project {
   id: string;
@@ -183,6 +184,11 @@ const Marketplace = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Ranking Section */}
+        <div className="mb-8">
+          <ProjectRanking category={selectedCategory !== 'all' ? selectedCategory : undefined} />
+        </div>
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-raiz-accent/20 p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
