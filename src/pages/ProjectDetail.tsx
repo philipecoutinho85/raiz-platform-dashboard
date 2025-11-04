@@ -50,6 +50,7 @@ interface ProjectImage {
 import ProjectGallery from '@/components/ProjectGallery';
 import SocialShare from '@/components/SocialShare';
 import ProjectComments from '@/components/ProjectComments';
+import UserBadges from '@/components/UserBadges';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -255,26 +256,33 @@ const ProjectDetail = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-2xl mb-2">{project.title}</CardTitle>
-                    <div className="flex items-center space-x-3 mb-4">
-                      <Badge variant="outline">{project.category}</Badge>
+                    <div className="flex flex-col space-y-3 mb-4">
+                      <div className="flex items-center space-x-3">
+                        <Badge variant="outline">{project.category}</Badge>
+                        {profile && (
+                          <Link 
+                            to={`/usuario/${profile.id}`}
+                            className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+                          >
+                            <Avatar className="w-8 h-8">
+                              <AvatarImage src={profile.avatar_url} alt={`${profile.nome} ${profile.sobrenome}`} />
+                              <AvatarFallback className="bg-raiz-primary text-white text-xs">
+                                {profile.nome?.charAt(0)}{profile.sobrenome?.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="text-xs text-raiz-secondary">Autor do Projeto</span>
+                              <span className="text-sm font-medium text-raiz-dark">
+                                {profile.nome} {profile.sobrenome}
+                              </span>
+                            </div>
+                          </Link>
+                        )}
+                      </div>
                       {profile && (
-                        <Link 
-                          to={`/usuario/${profile.id}`}
-                          className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-                        >
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={profile.avatar_url} alt={`${profile.nome} ${profile.sobrenome}`} />
-                            <AvatarFallback className="bg-raiz-primary text-white text-xs">
-                              {profile.nome?.charAt(0)}{profile.sobrenome?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="text-xs text-raiz-secondary">Autor do Projeto</span>
-                            <span className="text-sm font-medium text-raiz-dark">
-                              {profile.nome} {profile.sobrenome}
-                            </span>
-                          </div>
-                        </Link>
+                        <div className="ml-0">
+                          <UserBadges userId={profile.id} showTitle={false} />
+                        </div>
                       )}
                     </div>
                   </div>

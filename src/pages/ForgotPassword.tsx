@@ -46,14 +46,16 @@ const ForgotPassword = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {
+        console.error('Reset password error:', error);
+        // Mesmo com erro, mostrar sucesso para não revelar se o email existe
+        setIsSubmitted(true);
         toast({
-          title: "Erro",
-          description: "Erro ao enviar e-mail. Tente novamente.",
-          variant: "destructive"
+          title: "E-mail enviado!",
+          description: "Se este e-mail estiver cadastrado, você receberá instruções para redefinir sua senha.",
         });
         return;
       }
@@ -64,10 +66,12 @@ const ForgotPassword = () => {
         description: "Verifique sua caixa de entrada para redefinir sua senha.",
       });
     } catch (error) {
+      console.error('Unexpected error:', error);
+      // Sempre mostrar mensagem de sucesso por segurança
+      setIsSubmitted(true);
       toast({
-        title: "Erro",
-        description: "Erro inesperado. Tente novamente.",
-        variant: "destructive"
+        title: "E-mail enviado!",
+        description: "Se este e-mail estiver cadastrado, você receberá instruções para redefinir sua senha.",
       });
     } finally {
       setLoading(false);
