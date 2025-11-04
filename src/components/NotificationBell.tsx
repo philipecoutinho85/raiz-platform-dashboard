@@ -30,33 +30,9 @@ const NotificationBell = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      subscribeToNotifications();
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      return;
-    }
-
-    setNotifications(data || []);
-    setUnreadCount(data?.filter(n => !n.is_read).length || 0);
-  };
-
-  const subscribeToNotifications = () => {
-    if (!user) return;
+    fetchNotifications();
 
     const channel = supabase
       .channel('notifications-changes')
@@ -77,6 +53,25 @@ const NotificationBell = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Error fetching notifications:', error);
+      return;
+    }
+
+    setNotifications(data || []);
+    setUnreadCount(data?.filter(n => !n.is_read).length || 0);
   };
 
   const markAsRead = async (notificationId: string) => {
