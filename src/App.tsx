@@ -26,8 +26,11 @@ import HowItWorks from "./pages/HowItWorks";
 import FAQ from "./pages/FAQ";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import PrivacySupporters from "./pages/PrivacySupporters";
+import PrivacyCreators from "./pages/PrivacyCreators";
 import Security from "./pages/Security";
 import Contact from "./pages/Contact";
+import CookieConsent from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +42,7 @@ const App = () => (
       <AuthProvider>
         <AnalyticsScripts />
         <BrowserRouter>
+          <CookieConsent />
           <div className="pb-16 md:pb-0">
             <Header />
             <Routes>
@@ -116,6 +120,8 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/privacidade-apoiadores" element={<PrivacySupporters />} />
+              <Route path="/privacidade-criadores" element={<PrivacyCreators />} />
               <Route path="/security" element={<Security />} />
               <Route path="/contato" element={<Contact />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
