@@ -1,1 +1,4 @@
 project_id = "oefkzjyqjjfzfrmovfdt"
+
+[functions.send-admin-alert]
+verify_jwt = true

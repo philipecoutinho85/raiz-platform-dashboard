@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStats from '@/components/admin/AdminStats';
@@ -11,14 +12,21 @@ import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
 import ProjectDetailModal from '@/components/admin/ProjectDetailModal';
+import AdminLogsViewer from '@/components/AdminLogsViewer';
+import Admin2FASetup from '@/components/Admin2FASetup';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useAdminUserActions } from '@/hooks/useAdminUserActions';
 import { useAdminModals } from '@/hooks/useAdminModals';
+import { useAdminSecurity } from '@/hooks/useAdminSecurity';
 import Footer from '@/components/Footer';
 
 const AdminPanel = () => {
   const { allProjects, users, stats, loading, handleProjectAction } = useAdminData();
   const { handleUserAction, handleSaveEdit } = useAdminUserActions();
+  const { checkDeviceFingerprint, check2FAStatus } = useAdminSecurity();
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
+  
   const {
     selectedUser,
     selectedProject,
@@ -40,6 +48,20 @@ const AdminPanel = () => {
     handleCancelReject,
     handleViewProjectDetails
   } = useAdminModals();
+
+  // Verificar 2FA e dispositivo ao montar
+  useEffect(() => {
+    const checkSecurity = async () => {
+      const twoFAStatus = await check2FAStatus();
+      if (!twoFAStatus || !twoFAStatus.is_enabled) {
+        setRequires2FA(true);
+        setShow2FASetup(true);
+      } else {
+        await checkDeviceFingerprint();
+      }
+    };
+    checkSecurity();
+  }, []);
 
   const handleUserActionWrapper = (userId: string, action: string) => {
     handleUserAction(userId, action);
@@ -74,17 +96,24 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-raiz-light">
       <AdminHeader />
+      
+      <Admin2FASetup 
+        isOpen={show2FASetup} 
+        onClose={() => setShow2FASetup(false)}
+        isRequired={requires2FA}
+      />
 
       <div className="container mx-auto px-4 py-8">
         <AdminStats stats={stats} />
 
         {/* Main Content */}
         <Tabs defaultValue="projects" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
             <TabsTrigger value="projects">Projetos</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="badges">Badges</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
             <TabsTrigger value="settings">Configurações</TabsTrigger>
           </TabsList>
 
@@ -112,6 +141,10 @@ const AdminPanel = () => {
 
           <TabsContent value="tokens">
             <TokensTab stats={stats} />
+          </TabsContent>
+
+          <TabsContent value="logs">
+            <AdminLogsViewer />
           </TabsContent>
 
           <TabsContent value="settings">

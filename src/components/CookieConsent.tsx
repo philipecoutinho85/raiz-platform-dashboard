@@ -129,6 +129,26 @@ const CookieConsent = () => {
             <p className="text-sm text-raiz-secondary">
               Gerencie suas preferências de cookies. Os cookies essenciais são necessários para o funcionamento básico do site e não podem ser desativados.
             </p>
+            
+            <div className="flex flex-col gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm font-medium text-blue-900">Políticas de Privacidade</p>
+              <div className="flex flex-col gap-1">
+                <a 
+                  href="/privacidade-apoiadores" 
+                  target="_blank"
+                  className="text-sm text-blue-700 hover:text-blue-900 hover:underline"
+                >
+                  → Política de Privacidade - Apoiadores
+                </a>
+                <a 
+                  href="/privacidade-criadores" 
+                  target="_blank"
+                  className="text-sm text-blue-700 hover:text-blue-900 hover:underline"
+                >
+                  → Política de Privacidade - Criadores
+                </a>
+              </div>
+            </div>
 
             {/* Essential Cookies */}
             <Card>
