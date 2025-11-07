@@ -23,6 +23,11 @@ const TokenPurchase = () => {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
 
+  // Calcular valor em reais baseado na quantidade de tokens
+  const calculatePrice = (tokens: number) => {
+    return (tokens * 0.10).toFixed(2);
+  };
+
   const tokenPackages = [
     { tokens: 50, price: 5, bonus: 0 }, // Valor mínimo
     { tokens: 100, price: 10, bonus: 0 },
@@ -153,7 +158,7 @@ const TokenPurchase = () => {
 
         <div className="border-t pt-4">
           <Label htmlFor="custom-amount">Valor personalizado</Label>
-          <div className="flex space-x-2 mt-2">
+          <div className="space-y-3 mt-2">
             <Input
               id="custom-amount"
               type="number"
@@ -162,6 +167,16 @@ const TokenPurchase = () => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
+            {amount && parseInt(amount) >= 50 && (
+              <div className="p-3 bg-raiz-primary/10 rounded-lg">
+                <p className="text-sm font-medium text-raiz-primary">
+                  Valor total: R$ {calculatePrice(parseInt(amount))}
+                </p>
+                <p className="text-xs text-raiz-secondary mt-1">
+                  {amount} tokens × R$ 0,10
+                </p>
+              </div>
+            )}
             <Button
               onClick={() => {
                 const tokens = parseInt(amount);
@@ -170,11 +185,13 @@ const TokenPurchase = () => {
                 }
               }}
               disabled={loading || !amount || parseInt(amount) < 50}
+              className="w-full"
             >
-              Comprar
+              <CreditCard className="w-4 h-4 mr-2" />
+              {loading ? 'Processando...' : 'Comprar'}
             </Button>
           </div>
-          <p className="text-xs text-raiz-secondary mt-1">
+          <p className="text-xs text-raiz-secondary mt-2">
             R$ 0,10 por token (mínimo: R$ 5,00 = 50 tokens)
           </p>
         </div>

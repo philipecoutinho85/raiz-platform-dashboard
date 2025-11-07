@@ -2,24 +2,52 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Mail, MapPin, Send, Paperclip } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import Footer from '@/components/Footer';
+import { supabase } from '@/integrations/supabase/client';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    subject: '',
-    message: ''
+    category: '',
+    title: '',
+    message: '',
+    attachment: null as File | null
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Mensagem enviada com sucesso! Responderemos em breve.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          category: formData.category,
+          title: formData.title,
+          message: formData.message,
+          hasAttachment: !!formData.attachment
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Mensagem enviada com sucesso! Responderemos em breve.');
+      setFormData({ name: '', email: '', category: '', title: '', message: '', attachment: null });
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
+      toast.error('Erro ao enviar mensagem. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -27,6 +55,11 @@ const Contact = () => {
       ...prev,
       [e.target.name]: e.target.value
     }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setFormData(prev => ({ ...prev, attachment: file }));
   };
 
   return (
@@ -66,19 +99,6 @@ const Contact = () => {
             <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
               <CardHeader>
                 <CardTitle className="text-raiz-gold flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Telefone
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-raiz-light/80">(21) 96883-9616</p>
-                <p className="text-sm text-raiz-light/60 mt-2">Segunda a Sexta, 9h às 18h</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-              <CardHeader>
-                <CardTitle className="text-raiz-gold flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
                   Endereço
                 </CardTitle>
@@ -99,24 +119,24 @@ const Contact = () => {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label htmlFor="name" className="block text-raiz-light font-medium mb-2">
+                    <Label htmlFor="name" className="text-raiz-light">
                       Nome Completo
-                    </label>
+                    </Label>
                     <Input
                       id="name"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      placeholder="Seu nome"
+                      placeholder="Seu nome completo"
                       required
                       className="bg-white/5 border-raiz-accent/20 text-raiz-light placeholder:text-raiz-light/40"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-raiz-light font-medium mb-2">
-                      E-mail
-                    </label>
+                    <Label htmlFor="email" className="text-raiz-light">
+                      Endereço de E-mail
+                    </Label>
                     <Input
                       id="email"
                       name="email"
@@ -130,24 +150,45 @@ const Contact = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="subject" className="block text-raiz-light font-medium mb-2">
+                    <Label htmlFor="category" className="text-raiz-light">
                       Assunto
-                    </label>
+                    </Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                      required
+                    >
+                      <SelectTrigger className="bg-white/5 border-raiz-accent/20 text-raiz-light">
+                        <SelectValue placeholder="Selecione o assunto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="apoio">Apoio</SelectItem>
+                        <SelectItem value="projeto">Projeto</SelectItem>
+                        <SelectItem value="perfil">Perfil</SelectItem>
+                        <SelectItem value="saque">Saque</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="title" className="text-raiz-light">
+                      Título da Mensagem
+                    </Label>
                     <Input
-                      id="subject"
-                      name="subject"
-                      value={formData.subject}
+                      id="title"
+                      name="title"
+                      value={formData.title}
                       onChange={handleChange}
-                      placeholder="Como podemos ajudar?"
+                      placeholder="Título da sua mensagem"
                       required
                       className="bg-white/5 border-raiz-accent/20 text-raiz-light placeholder:text-raiz-light/40"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="message" className="block text-raiz-light font-medium mb-2">
-                      Mensagem
-                    </label>
+                    <Label htmlFor="message" className="text-raiz-light">
+                      Deixe sua Mensagem
+                    </Label>
                     <Textarea
                       id="message"
                       name="message"
@@ -160,13 +201,34 @@ const Contact = () => {
                     />
                   </div>
 
+                  <div>
+                    <Label htmlFor="attachment" className="text-raiz-light">
+                      Anexos (opcional)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="attachment"
+                        type="file"
+                        onChange={handleFileChange}
+                        className="bg-white/5 border-raiz-accent/20 text-raiz-light file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-raiz-gold file:text-black hover:file:bg-raiz-gold/90"
+                      />
+                      <Paperclip className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-raiz-light/40 pointer-events-none" />
+                    </div>
+                    {formData.attachment && (
+                      <p className="text-sm text-raiz-light/60 mt-1">
+                        Arquivo: {formData.attachment.name}
+                      </p>
+                    )}
+                  </div>
+
                   <Button 
                     type="submit" 
                     size="lg" 
+                    disabled={loading}
                     className="w-full bg-raiz-gold hover:bg-raiz-gold/90 text-black font-semibold"
                   >
                     <Send className="w-4 h-4 mr-2" />
-                    Enviar Mensagem
+                    {loading ? 'Enviando...' : 'Enviar Mensagem'}
                   </Button>
                 </form>
               </CardContent>
