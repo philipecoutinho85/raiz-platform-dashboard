@@ -112,14 +112,14 @@ const AdminPanel = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="projects" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto">
-            <TabsTrigger value="projects">Projetos</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="badges">Badges</TabsTrigger>
-            <TabsTrigger value="tokens">Tokens</TabsTrigger>
-            <TabsTrigger value="transactions">Transações</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-            <TabsTrigger value="settings">Configurações</TabsTrigger>
+          <TabsList className="flex md:grid w-full overflow-x-auto md:grid-cols-7 lg:w-auto">
+            <TabsTrigger value="projects" className="whitespace-nowrap text-xs md:text-sm">Projetos</TabsTrigger>
+            <TabsTrigger value="users" className="whitespace-nowrap text-xs md:text-sm">Usuários</TabsTrigger>
+            <TabsTrigger value="badges" className="whitespace-nowrap text-xs md:text-sm">Badges</TabsTrigger>
+            <TabsTrigger value="tokens" className="whitespace-nowrap text-xs md:text-sm">Tokens</TabsTrigger>
+            <TabsTrigger value="transactions" className="whitespace-nowrap text-xs md:text-sm">Transações</TabsTrigger>
+            <TabsTrigger value="logs" className="whitespace-nowrap text-xs md:text-sm">Logs</TabsTrigger>
+            <TabsTrigger value="settings" className="whitespace-nowrap text-xs md:text-sm">Config.</TabsTrigger>
           </TabsList>
 
           <TabsContent value="projects">

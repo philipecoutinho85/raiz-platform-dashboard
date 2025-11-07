@@ -4,8 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
 import { supabase } from '@/integrations/supabase/client';
-import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock } from 'lucide-react';
+import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import TokenPurchase from '@/components/TokenPurchase';
 import RefundRequest from '@/components/RefundRequest';
 import Header from '@/components/Header';
@@ -44,6 +46,11 @@ const Wallet = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filtros
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<string>('');
 
   useEffect(() => {
     if (user) {
@@ -135,6 +142,27 @@ const Wallet = () => {
     return labels[method as keyof typeof labels] || method;
   };
 
+  // Filtrar transações
+  const filteredTransactions = transactions.filter(transaction => {
+    if (filterType !== 'all' && transaction.transaction_type !== filterType) return false;
+    if (filterDate && !transaction.created_at.startsWith(filterDate)) return false;
+    return true;
+  });
+
+  // Filtrar compras
+  const filteredPurchases = purchases.filter(purchase => {
+    if (filterStatus !== 'all' && purchase.status !== filterStatus) return false;
+    if (filterDate && !purchase.created_at.startsWith(filterDate)) return false;
+    return true;
+  });
+
+  // Filtrar reembolsos
+  const filteredRefunds = refunds.filter(refund => {
+    if (filterStatus !== 'all' && refund.status !== filterStatus) return false;
+    if (filterDate && !refund.created_at.startsWith(filterDate)) return false;
+    return true;
+  });
+
   if (!user) {
     return (
       <div className="min-h-screen bg-raiz-light">
@@ -196,16 +224,52 @@ const Wallet = () => {
           <TabsContent value="transactions">
             <Card>
               <CardHeader>
-                <CardTitle>Histórico de Transações</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                  Histórico de Transações
+                </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Filtros */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os tipos</SelectItem>
+                      <SelectItem value="purchase">Compra</SelectItem>
+                      <SelectItem value="support">Apoio</SelectItem>
+                      <SelectItem value="refund">Reembolso</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    placeholder="Data"
+                  />
+
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setFilterType('all');
+                      setFilterStatus('all');
+                      setFilterDate('');
+                    }}
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+
                 {loading ? (
                   <p className="text-center text-raiz-secondary">Carregando...</p>
-                ) : transactions.length === 0 ? (
+                ) : filteredTransactions.length === 0 ? (
                   <p className="text-center text-raiz-secondary">Nenhuma transação encontrada</p>
                 ) : (
                   <div className="space-y-4">
-                    {transactions.map((transaction) => (
+                    {filteredTransactions.map((transaction) => (
                       <div
                         key={transaction.id}
                         className="flex items-center justify-between p-4 border rounded-lg hover:bg-raiz-accent/5 transition-colors"
@@ -238,16 +302,52 @@ const Wallet = () => {
           <TabsContent value="purchases">
             <Card>
               <CardHeader>
-                <CardTitle>Minhas Compras</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                  Minhas Compras
+                </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Filtros */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os status</SelectItem>
+                      <SelectItem value="paid">Pago</SelectItem>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="failed">Falhou</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    placeholder="Data"
+                  />
+
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setFilterType('all');
+                      setFilterStatus('all');
+                      setFilterDate('');
+                    }}
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+
                 {loading ? (
                   <p className="text-center text-raiz-secondary">Carregando...</p>
-                ) : purchases.length === 0 ? (
+                ) : filteredPurchases.length === 0 ? (
                   <p className="text-center text-raiz-secondary">Nenhuma compra encontrada</p>
                 ) : (
                   <div className="space-y-4">
-                    {purchases.map((purchase) => (
+                    {filteredPurchases.map((purchase) => (
                       <div
                         key={purchase.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
@@ -274,16 +374,52 @@ const Wallet = () => {
           <TabsContent value="refunds">
             <Card>
               <CardHeader>
-                <CardTitle>Reembolsos</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                  Reembolsos
+                </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Filtros */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os status</SelectItem>
+                      <SelectItem value="completed">Completado</SelectItem>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="rejected">Rejeitado</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    placeholder="Data"
+                  />
+
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setFilterType('all');
+                      setFilterStatus('all');
+                      setFilterDate('');
+                    }}
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+
                 {loading ? (
                   <p className="text-center text-raiz-secondary">Carregando...</p>
-                ) : refunds.length === 0 ? (
+                ) : filteredRefunds.length === 0 ? (
                   <p className="text-center text-raiz-secondary">Nenhum reembolso encontrado</p>
                 ) : (
                   <div className="space-y-4">
-                    {refunds.map((refund) => (
+                    {filteredRefunds.map((refund) => (
                       <div
                         key={refund.id}
                         className="flex items-center justify-between p-4 border rounded-lg"

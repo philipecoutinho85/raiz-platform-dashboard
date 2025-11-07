@@ -124,14 +124,15 @@ serve(async (req) => {
       
       console.log(`Tokens creditados com sucesso! Novo saldo: ${newBalance}`);
       
-      // Criar notificação para o usuário
+      // Criar notificação para o usuário (push notification)
       await supabase
         .from('notifications')
         .insert({
           user_id: userId,
           type: 'token_purchase',
-          title: 'Compra Confirmada!',
-          message: `Você recebeu ${tokensAmount} tokens. Seu saldo atual é ${newBalance} tokens.`
+          title: 'Compra de Tokens Confirmada! 🎉',
+          message: `Sua compra de ${tokensAmount} tokens foi confirmada e já está disponível em sua carteira!`,
+          related_id: purchaseId
         });
     }
     

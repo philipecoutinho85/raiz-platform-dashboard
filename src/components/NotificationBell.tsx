@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,97 +9,24 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  related_id?: string;
-  is_read: boolean;
-  created_at: string;
-}
+import { useNotifications } from '@/hooks/useNotifications';
 
 const NotificationBell = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-
-    fetchNotifications();
-
-    const channel = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  const fetchNotifications = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      return;
-    }
-
-    setNotifications(data || []);
-    setUnreadCount(data?.filter(n => !n.is_read).length || 0);
-  };
-
-  const markAsRead = async (notificationId: string) => {
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', notificationId);
-
-    fetchNotifications();
-  };
-
-  const markAllAsRead = async () => {
-    if (!user) return;
-
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
-
-    fetchNotifications();
-  };
-
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: any) => {
     markAsRead(notification.id);
     
     if (notification.related_id) {
-      navigate(`/project/${notification.related_id}`);
+      if (notification.type === 'token_purchase') {
+        navigate('/carteira');
+      } else {
+        navigate(`/projeto/${notification.related_id}`);
+      }
     }
     
     setOpen(false);
