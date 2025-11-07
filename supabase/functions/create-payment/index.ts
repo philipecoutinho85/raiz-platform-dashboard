@@ -110,12 +110,17 @@ serve(async (req) => {
         }
       }];
     } else if (paymentMethod === 'credit_card') {
-      // Para cartão de crédito, criar checkout sem dados do cartão
-      // O usuário será redirecionado para página do Pagar.me
+      // Para cartão de crédito, criar checkout do Pagar.me
       pagarmePayload.payments = [{
-        payment_method: 'checkout'
+        payment_method: 'checkout',
+        checkout: {
+          expires_in: 3600,
+          skip_checkout_success_page: true,
+          accepted_payment_methods: ['credit_card'],
+          success_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/payment-webhook`
+        }
       }];
-      pagarmePayload.closed = false; // Permitir que o usuário escolha o método na página
+      pagarmePayload.closed = false;
     } else if (paymentMethod === 'boleto') {
       pagarmePayload.payments = [{
         payment_method: 'boleto',
