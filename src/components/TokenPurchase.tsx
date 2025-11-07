@@ -61,8 +61,14 @@ const TokenPurchase = () => {
 
       if (error) throw error;
 
+      // Para cartão de crédito, redirecionar para página do Pagar.me
+      if (paymentMethod === 'credit_card' && data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+        return;
+      }
+
       if (data.purchaseId) {
-        // Redirecionar para página de checkout
+        // Redirecionar para página de checkout (PIX/Boleto)
         navigate(`/checkout-pagamento?purchaseId=${data.purchaseId}&method=${paymentMethod}`);
       } else {
         toast({

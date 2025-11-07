@@ -28,7 +28,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="bg-raiz-dark text-raiz-light">
+    <footer className="bg-raiz-dark text-raiz-light mb-16 md:mb-0">
       <div className="container mx-auto px-4 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
@@ -80,7 +80,7 @@ const Footer = () => {
               <li><Link to="/terms" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Termos de Uso</Link></li>
               <li><Link to="/privacy" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Política de Privacidade</Link></li>
               <li><Link to="/security" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Segurança</Link></li>
-              <li><a href="mailto:contato@raiztoken.com.br" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Contato</a></li>
+              <li><Link to="/contato" className="text-raiz-light/80 hover:text-raiz-gold transition-colors">Contato</Link></li>
             </ul>
           </div>
           
