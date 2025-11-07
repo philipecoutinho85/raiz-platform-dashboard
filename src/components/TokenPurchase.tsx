@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const TokenPurchase = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
@@ -59,13 +61,13 @@ const TokenPurchase = () => {
 
       if (error) throw error;
 
-      if (data.paymentUrl) {
-        // Redirecionar para página de pagamento
-        window.location.href = data.paymentUrl;
+      if (data.purchaseId) {
+        // Redirecionar para página de checkout
+        navigate(`/checkout-pagamento?purchaseId=${data.purchaseId}&method=${paymentMethod}`);
       } else {
         toast({
           title: 'Atenção',
-          description: 'Não foi possível gerar o link de pagamento. Entre em contato com o suporte.',
+          description: 'Não foi possível processar a compra. Entre em contato com o suporte.',
           variant: 'destructive',
         });
       }

@@ -31,6 +31,7 @@ import PrivacyCreators from "./pages/PrivacyCreators";
 import Security from "./pages/Security";
 import Contact from "./pages/Contact";
 import Wallet from "./pages/Wallet";
+import CheckoutPayment from "./pages/CheckoutPayment";
 import CookieConsent from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
@@ -120,6 +121,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Wallet />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/checkout-pagamento" 
+                element={
+                  <ProtectedRoute>
+                    <CheckoutPayment />
                   </ProtectedRoute>
                 } 
               />
