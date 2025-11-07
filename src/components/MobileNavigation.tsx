@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FolderPlus, Folder, User, Shield } from 'lucide-react';
+import { Home, FolderPlus, Folder, User, Shield, Wallet } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,6 +17,7 @@ const MobileNavigation = () => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Criar', href: '/criar-projeto', icon: FolderPlus },
     { name: 'Projetos', href: '/meus-projetos', icon: Folder },
+    { name: 'Carteira', href: '/carteira', icon: Wallet },
     { name: 'Perfil', href: '/perfil', icon: User },
   ];
 

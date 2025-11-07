@@ -152,10 +152,10 @@ const Wallet = () => {
     <div className="min-h-screen bg-raiz-light">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 mb-16 md:mb-0">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-raiz-dark mb-2">Minha Carteira</h1>
-          <p className="text-raiz-secondary">Gerencie seus tokens e acompanhe suas transações</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-raiz-dark mb-2">Minha Carteira</h1>
+          <p className="text-sm md:text-base text-raiz-secondary">Gerencie seus tokens e acompanhe suas transações</p>
         </div>
 
         {/* Saldo */}
@@ -184,12 +184,12 @@ const Wallet = () => {
         </Card>
 
         <Tabs defaultValue="transactions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="transactions">Histórico</TabsTrigger>
-            <TabsTrigger value="purchases">Compras</TabsTrigger>
-            <TabsTrigger value="refunds">Reembolsos</TabsTrigger>
-            <TabsTrigger value="refund-request">Solicitar Reembolso</TabsTrigger>
-            <TabsTrigger value="buy">Comprar Tokens</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
+            <TabsTrigger value="transactions" className="text-xs md:text-sm">Histórico</TabsTrigger>
+            <TabsTrigger value="purchases" className="text-xs md:text-sm">Compras</TabsTrigger>
+            <TabsTrigger value="refunds" className="text-xs md:text-sm">Reembolsos</TabsTrigger>
+            <TabsTrigger value="refund-request" className="text-xs md:text-sm col-span-2 md:col-span-1">Solicitar Reembolso</TabsTrigger>
+            <TabsTrigger value="buy" className="text-xs md:text-sm col-span-2 md:col-span-1">Comprar Tokens</TabsTrigger>
           </TabsList>
 
           {/* Histórico de Transações */}
