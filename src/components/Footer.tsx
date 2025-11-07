@@ -87,12 +87,9 @@ const Footer = () => {
           {/* Contact Info */}
           <div>
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Contato</h3>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-raiz-accent" />
-                <span className="text-raiz-light/80">contato@raiztoken.com.br</span>
-              </div>
-            </div>
+            <p className="text-raiz-light/80">
+              Entre em contato conosco através da nossa <Link to="/contato" className="text-raiz-accent hover:text-raiz-gold transition-colors">página de contato</Link>.
+            </p>
           </div>
         </div>
         

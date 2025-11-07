@@ -110,9 +110,12 @@ serve(async (req) => {
         }
       }];
     } else if (paymentMethod === 'credit_card') {
+      // Para cartão de crédito, criar checkout sem dados do cartão
+      // O usuário será redirecionado para página do Pagar.me
       pagarmePayload.payments = [{
-        payment_method: 'credit_card'
+        payment_method: 'checkout'
       }];
+      pagarmePayload.closed = false; // Permitir que o usuário escolha o método na página
     } else if (paymentMethod === 'boleto') {
       pagarmePayload.payments = [{
         payment_method: 'boleto',
@@ -199,15 +202,16 @@ serve(async (req) => {
     // Extrair URL de pagamento baseado no método
     let paymentUrl = null;
     
-    if (pagarmeData.charges && pagarmeData.charges.length > 0) {
+    if (paymentMethod === 'credit_card') {
+      // Para cartão, retornar URL do checkout
+      paymentUrl = pagarmeData.checkouts?.[0]?.payment_url || null;
+    } else if (pagarmeData.charges && pagarmeData.charges.length > 0) {
       const charge = pagarmeData.charges[0];
       
       if (paymentMethod === 'pix' && charge.last_transaction?.qr_code_url) {
         paymentUrl = charge.last_transaction.qr_code_url;
       } else if (paymentMethod === 'boleto' && charge.last_transaction?.pdf) {
         paymentUrl = charge.last_transaction.pdf;
-      } else if (paymentMethod === 'credit_card' && charge.last_transaction?.url) {
-        paymentUrl = charge.last_transaction.url;
       }
     }
     

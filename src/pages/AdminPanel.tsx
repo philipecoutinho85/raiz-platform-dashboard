@@ -6,6 +6,7 @@ import AdminStats from '@/components/admin/AdminStats';
 import UsersTab from '@/components/admin/UsersTab';
 import ProjectsTab from '@/components/admin/ProjectsTab';
 import TokensTab from '@/components/admin/TokensTab';
+import TransactionsTab from '@/components/admin/TransactionsTab';
 import SettingsTab from '@/components/admin/SettingsTab';
 import BadgesTab from '@/components/admin/BadgesTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
@@ -111,11 +112,12 @@ const AdminPanel = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="projects" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto">
             <TabsTrigger value="projects">Projetos</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="badges">Badges</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            <TabsTrigger value="transactions">Transações</TabsTrigger>
             <TabsTrigger value="logs">Logs</TabsTrigger>
             <TabsTrigger value="settings">Configurações</TabsTrigger>
           </TabsList>
@@ -144,6 +146,10 @@ const AdminPanel = () => {
 
           <TabsContent value="tokens">
             <TokensTab stats={stats} />
+          </TabsContent>
+
+          <TabsContent value="transactions">
+            <TransactionsTab />
           </TabsContent>
 
           <TabsContent value="logs">

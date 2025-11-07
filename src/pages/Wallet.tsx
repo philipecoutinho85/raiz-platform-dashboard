@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TokenPurchase from '@/components/TokenPurchase';
+import RefundRequest from '@/components/RefundRequest';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -183,10 +184,11 @@ const Wallet = () => {
         </Card>
 
         <Tabs defaultValue="transactions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="transactions">Histórico</TabsTrigger>
             <TabsTrigger value="purchases">Compras</TabsTrigger>
             <TabsTrigger value="refunds">Reembolsos</TabsTrigger>
+            <TabsTrigger value="refund-request">Solicitar Reembolso</TabsTrigger>
             <TabsTrigger value="buy">Comprar Tokens</TabsTrigger>
           </TabsList>
 
@@ -300,6 +302,11 @@ const Wallet = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Solicitar Reembolso */}
+          <TabsContent value="refund-request">
+            <RefundRequest />
           </TabsContent>
 
           {/* Comprar Tokens */}
