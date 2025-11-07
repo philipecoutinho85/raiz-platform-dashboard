@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useHighValueApproval } from './useHighValueApproval';
+import { useAdminSecurity } from './useAdminSecurity';
 
 interface Project {
   id: string;
@@ -50,6 +52,8 @@ interface AdminStats {
 export const useAdminData = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { checkHighValueAndAlert } = useHighValueApproval();
+  const { logAdminAction } = useAdminSecurity();
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<AdminStats>({
@@ -196,6 +200,9 @@ export const useAdminData = () => {
   const handleProjectAction = async (projectId: string, action: string, reason?: string) => {
     try {
       if (action === 'approve') {
+        // Buscar meta do projeto antes de aprovar
+        const project = allProjects.find(p => p.id === projectId);
+        
         const { error } = await supabase
           .from('projects')
           .update({
@@ -207,6 +214,16 @@ export const useAdminData = () => {
 
         if (error) {
           throw error;
+        }
+
+        // Log da ação
+        await logAdminAction('approve_project', 'project', projectId, { 
+          project_goal: project?.goal 
+        });
+
+        // Verificar se precisa de alerta de alto valor
+        if (project) {
+          await checkHighValueAndAlert(projectId, project.goal);
         }
 
         toast({
@@ -237,6 +254,9 @@ export const useAdminData = () => {
         if (error) {
           throw error;
         }
+
+        // Log da ação
+        await logAdminAction('reject_project', 'project', projectId, { reason });
         
         toast({
           title: "Projeto rejeitado",
@@ -252,6 +272,9 @@ export const useAdminData = () => {
         if (error) {
           throw error;
         }
+
+        // Log da ação
+        await logAdminAction('delete_project', 'project', projectId);
         
         toast({
           title: "Projeto excluído",

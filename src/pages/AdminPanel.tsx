@@ -18,12 +18,15 @@ import { useAdminData } from '@/hooks/useAdminData';
 import { useAdminUserActions } from '@/hooks/useAdminUserActions';
 import { useAdminModals } from '@/hooks/useAdminModals';
 import { useAdminSecurity } from '@/hooks/useAdminSecurity';
+import { useReauthentication } from '@/hooks/useReauthentication';
+import { ReauthenticationModal } from '@/components/ReauthenticationModal';
 import Footer from '@/components/Footer';
 
 const AdminPanel = () => {
   const { allProjects, users, stats, loading, handleProjectAction } = useAdminData();
   const { handleUserAction, handleSaveEdit } = useAdminUserActions();
   const { checkDeviceFingerprint, check2FAStatus } = useAdminSecurity();
+  const { isReauthModalOpen, pendingAction, requireReauth, handleReauthSuccess, handleReauthClose } = useReauthentication();
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
   
@@ -183,6 +186,14 @@ const AdminPanel = () => {
         onRejectProject={handleProjectActionWrapper}
         onCancel={handleCancelReject}
       />
+
+      <ReauthenticationModal
+        isOpen={isReauthModalOpen}
+        onClose={handleReauthClose}
+        onSuccess={handleReauthSuccess}
+        actionDescription={pendingAction?.description || ''}
+      />
+
       <Footer />
     </div>
   );

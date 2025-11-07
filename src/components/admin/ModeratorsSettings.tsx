@@ -7,6 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Shield, UserCog } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useReauthentication } from '@/hooks/useReauthentication';
+import { ReauthenticationModal } from '@/components/ReauthenticationModal';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +39,8 @@ interface User {
 
 const ModeratorsSettings = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { isReauthModalOpen, pendingAction, requireReauth, handleReauthSuccess, handleReauthClose } = useReauthentication();
   const [moderators, setModerators] = useState<Moderator[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
@@ -99,7 +104,7 @@ const ModeratorsSettings = () => {
     }
   };
 
-  const addModerator = async () => {
+  const performAddModerator = async () => {
     if (!selectedUser) return;
 
     try {
@@ -117,6 +122,18 @@ const ModeratorsSettings = () => {
 
       if (permError) throw permError;
 
+      // Enviar alerta de novo admin
+      const selectedUserData = users.find(u => u.id === selectedUser);
+      if (selectedUserData) {
+        await supabase.functions.invoke('send-admin-alert', {
+          body: {
+            type: 'new_admin',
+            adminEmail: selectedUserData.email,
+            adminName: selectedUserData.nome,
+          }
+        });
+      }
+
       toast({
         title: 'Moderador adicionado',
         description: 'Usuário promovido a moderador com sucesso.'
@@ -133,6 +150,14 @@ const ModeratorsSettings = () => {
         variant: 'destructive'
       });
     }
+  };
+
+  const addModerator = () => {
+    const selectedUserData = users.find(u => u.id === selectedUser);
+    requireReauth(
+      performAddModerator,
+      `Adicionar novo moderador: ${selectedUserData?.nome || 'Usuário'}`
+    );
   };
 
   const removeModerator = async (userId: string) => {
@@ -308,6 +333,13 @@ const ModeratorsSettings = () => {
           )}
         </div>
       </CardContent>
+
+      <ReauthenticationModal
+        isOpen={isReauthModalOpen}
+        onClose={handleReauthClose}
+        onSuccess={handleReauthSuccess}
+        actionDescription={pendingAction?.description || ''}
+      />
     </Card>
   );
 };

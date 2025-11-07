@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const MAILGUN_API_KEY = Deno.env.get("MAILGUN_API_KEY");
+const MAILGUN_DOMAIN = "raiztoken.com.br";
+const MAILGUN_BASE_URL = "https://api.mailgun.net/v3";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -102,11 +106,38 @@ const handler = async (req: Request): Promise<Response> => {
         .select('email')
         .in('id', admins.map(a => a.user_id));
 
-      // Aqui você integraria com um serviço de e-mail como Resend
-      // Por enquanto, apenas log
-      console.log('Alertas enviados para:', profiles?.map(p => p.email));
-      console.log('Assunto:', subject);
-      console.log('Mensagem:', message);
+      if (profiles && profiles.length > 0) {
+        // Enviar email via Mailgun para cada admin
+        for (const profile of profiles) {
+          try {
+            const formData = new FormData();
+            formData.append('from', 'Raiz Token <noreply@raiztoken.com.br>');
+            formData.append('to', profile.email);
+            formData.append('subject', subject);
+            formData.append('html', message);
+
+            const mailgunResponse = await fetch(
+              `${MAILGUN_BASE_URL}/${MAILGUN_DOMAIN}/messages`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Basic ${btoa(`api:${MAILGUN_API_KEY}`)}`,
+                },
+                body: formData,
+              }
+            );
+
+            if (!mailgunResponse.ok) {
+              const errorText = await mailgunResponse.text();
+              console.error(`Erro ao enviar email para ${profile.email}:`, errorText);
+            } else {
+              console.log(`Email enviado com sucesso para: ${profile.email}`);
+            }
+          } catch (emailError) {
+            console.error(`Falha ao enviar email para ${profile.email}:`, emailError);
+          }
+        }
+      }
     }
 
     return new Response(

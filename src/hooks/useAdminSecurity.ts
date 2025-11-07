@@ -50,10 +50,30 @@ export const useAdminSecurity = () => {
       .single();
 
     if (!devices) {
-      // Novo dispositivo detectado
+      // Novo dispositivo detectado - enviar alerta
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email, nome')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        await supabase.functions.invoke('send-admin-alert', {
+          body: {
+            type: 'new_device',
+            adminEmail: profile.email,
+            adminName: profile.nome,
+            details: {
+              userAgent: navigator.userAgent,
+              ipAddress: 'Será detectado no servidor'
+            }
+          }
+        });
+      }
+
       toast({
         title: "Novo dispositivo detectado",
-        description: "Login de admin em novo dispositivo.",
+        description: "Login de admin em novo dispositivo. Um alerta foi enviado.",
         variant: "default"
       });
 

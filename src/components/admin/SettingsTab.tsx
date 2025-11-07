@@ -2,6 +2,7 @@ import MaintenanceSettings from './MaintenanceSettings';
 import AnalyticsSettings from './AnalyticsSettings';
 import ModeratorsSettings from './ModeratorsSettings';
 import SocialLinksSettings from './SocialLinksSettings';
+import Admin2FAManagement from './Admin2FAManagement';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 const SettingsTab = () => {
@@ -17,6 +18,7 @@ const SettingsTab = () => {
 
   return (
     <div className="space-y-6">
+      <Admin2FAManagement />
       <MaintenanceSettings settings={maintenanceMode} onUpdate={updateMaintenanceMode} />
       <AnalyticsSettings settings={analytics} onUpdate={updateAnalytics} />
       <SocialLinksSettings settings={socialLinks} onUpdate={updateSocialLinks} />
