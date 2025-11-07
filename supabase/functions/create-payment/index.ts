@@ -39,12 +39,16 @@ serve(async (req) => {
     // Buscar dados do usuário
     const { data: profile } = await supabase
       .from('profiles')
-      .select('nome, sobrenome, email, cpf')
+      .select('nome, sobrenome, email, cpf, celular')
       .eq('id', userId)
       .single();
     
     if (!profile) {
       throw new Error('Perfil do usuário não encontrado');
+    }
+    
+    if (!profile.celular) {
+      throw new Error('Telefone não cadastrado. Por favor, atualize seu perfil.');
     }
     
     // Criar transação no banco antes de chamar Pagar.me
@@ -73,7 +77,14 @@ serve(async (req) => {
         name: `${profile.nome} ${profile.sobrenome}`,
         email: profile.email,
         document: profile.cpf.replace(/\D/g, ''),
-        type: 'individual'
+        type: 'individual',
+        phones: {
+          mobile_phone: {
+            country_code: '55',
+            area_code: profile.celular.substring(0, 2),
+            number: profile.celular.substring(2)
+          }
+        }
       },
       items: [
         {
