@@ -109,12 +109,13 @@ serve(async (req) => {
     
     console.log('Criando ordem no Pagar.me:', JSON.stringify(pagarmePayload, null, 2));
     
-    // Criar ordem no Pagar.me
+    // Criar ordem no Pagar.me (usando Basic Auth com base64)
+    const authString = Buffer.from(`${pagarmeKey}:`).toString('base64');
     const pagarmeResponse = await fetch('https://api.pagar.me/core/v5/orders', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${pagarmeKey}`
+        'Authorization': `Basic ${authString}`
       },
       body: JSON.stringify(pagarmePayload)
     });
