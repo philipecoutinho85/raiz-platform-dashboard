@@ -5,12 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Coins, CreditCard } from 'lucide-react';
+import { Coins, CreditCard, QrCode, FileText } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const TokenPurchase = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
 
   const tokenPackages = [
     { tokens: 50, price: 5, bonus: 0 }, // Valor mínimo
@@ -20,20 +31,41 @@ const TokenPurchase = () => {
     { tokens: 2000, price: 200, bonus: 0 },
   ];
 
-  const handlePurchase = async (tokens: number, price: number) => {
+  const handlePurchase = async (tokens: number) => {
+    if (!user) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar logado para comprar tokens.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Simulação de compra - aqui você integraria com um sistema de pagamento real
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: 'Compra realizada!',
-        description: `Você adquiriu ${tokens} tokens por R$ ${price}.`,
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          userId: user.id,
+          amount: tokens,
+          paymentMethod
+        }
       });
-    } catch (error) {
+
+      if (error) throw error;
+
+      if (data.checkoutUrl) {
+        window.open(data.checkoutUrl, '_blank');
+      }
+
+      toast({
+        title: 'Pagamento criado!',
+        description: `Pedido de ${tokens} tokens criado. Complete o pagamento para receber seus tokens.`,
+      });
+    } catch (error: any) {
+      console.error('Erro na compra:', error);
       toast({
         title: 'Erro na compra',
-        description: 'Não foi possível processar a compra. Tente novamente.',
+        description: error.message || 'Não foi possível processar a compra. Tente novamente.',
         variant: 'destructive',
       });
     } finally {
@@ -53,6 +85,35 @@ const TokenPurchase = () => {
         <p className="text-raiz-secondary text-sm">
           Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 0,10. Valor mínimo de compra: R$ 5,00 (50 tokens).
         </p>
+
+        <div className="space-y-2">
+          <Label>Método de Pagamento</Label>
+          <Select value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pix">
+                <div className="flex items-center">
+                  <QrCode className="w-4 h-4 mr-2" />
+                  PIX (aprovação instantânea)
+                </div>
+              </SelectItem>
+              <SelectItem value="credit_card">
+                <div className="flex items-center">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Cartão de Crédito
+                </div>
+              </SelectItem>
+              <SelectItem value="boleto">
+                <div className="flex items-center">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Boleto (até 3 dias úteis)
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {tokenPackages.map((pkg) => (
@@ -77,7 +138,7 @@ const TokenPurchase = () => {
               </div>
 
               <Button
-                onClick={() => handlePurchase(pkg.tokens + pkg.bonus, pkg.price)}
+                onClick={() => handlePurchase(pkg.tokens + pkg.bonus)}
                 disabled={loading}
                 className="w-full"
               >
@@ -103,7 +164,7 @@ const TokenPurchase = () => {
               onClick={() => {
                 const tokens = parseInt(amount);
                 if (tokens >= 50 && tokens > 0) {
-                  handlePurchase(tokens, tokens * 0.1);
+                  handlePurchase(tokens);
                 }
               }}
               disabled={loading || !amount || parseInt(amount) < 50}

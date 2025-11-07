@@ -70,6 +70,77 @@ export const useTokens = () => {
     }
   };
 
+  const supportProject = async (projectId: string, amount: number, description: string) => {
+    if (!user) return false;
+
+    if (amount > tokens) {
+      toast({
+        title: "Saldo insuficiente",
+        description: "Você não tem tokens suficientes para este apoio.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      const newBalance = tokens - amount;
+
+      // Criar contribuição
+      const { error: contributionError } = await supabase
+        .from('project_contributions')
+        .insert({
+          project_id: projectId,
+          user_id: user.id,
+          amount,
+          status: 'completed'
+        });
+
+      if (contributionError) throw contributionError;
+
+      // Atualizar saldo
+      const { error: updateError } = await supabase
+        .from('user_tokens')
+        .update({
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Criar transação
+      const { error: transactionError } = await supabase
+        .from('token_transactions')
+        .insert({
+          user_id: user.id,
+          amount: -amount,
+          transaction_type: 'support',
+          reference_id: projectId,
+          description,
+          balance_after: newBalance
+        });
+
+      if (transactionError) throw transactionError;
+
+      setTokens(newBalance);
+      
+      toast({
+        title: "Apoio realizado!",
+        description: `Você apoiou este projeto com ${amount} tokens.`,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao apoiar projeto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao processar apoio. Tente novamente.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchTokens();
   }, [user]);
@@ -78,6 +149,7 @@ export const useTokens = () => {
     tokens,
     loading,
     fetchTokens,
-    updateTokens
+    updateTokens,
+    supportProject
   };
 };

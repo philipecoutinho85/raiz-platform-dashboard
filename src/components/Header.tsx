@@ -119,6 +119,10 @@ const Header = () => {
                     <User className="mr-2 h-4 w-4" />
                     <span>Perfil</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/carteira')}>
+                    <Coins className="mr-2 h-4 w-4" />
+                    <span>Minha Carteira</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/dashboard')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>

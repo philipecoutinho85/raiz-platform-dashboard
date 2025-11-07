@@ -524,6 +524,63 @@ export type Database = {
         }
         Relationships: []
       }
+      refunds: {
+        Row: {
+          amount: number
+          contribution_id: string | null
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          project_id: string | null
+          reason: string
+          requested_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          contribution_id?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          project_id?: string | null
+          reason: string
+          requested_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          contribution_id?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          project_id?: string | null
+          reason?: string
+          requested_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "project_contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           id: string
@@ -545,6 +602,75 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           value?: Json
+        }
+        Relationships: []
+      }
+      token_purchases: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          pagarme_transaction_id: string | null
+          payment_method: string
+          price: number
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          pagarme_transaction_id?: string | null
+          payment_method: string
+          price: number
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          pagarme_transaction_id?: string | null
+          payment_method?: string
+          price?: number
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      token_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string | null
+          description: string
+          id: string
+          reference_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string | null
+          description: string
+          id?: string
+          reference_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string | null
+          description?: string
+          id?: string
+          reference_id?: string | null
+          transaction_type?: string
+          user_id?: string
         }
         Relationships: []
       }

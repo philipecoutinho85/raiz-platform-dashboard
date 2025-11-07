@@ -30,6 +30,7 @@ import PrivacySupporters from "./pages/PrivacySupporters";
 import PrivacyCreators from "./pages/PrivacyCreators";
 import Security from "./pages/Security";
 import Contact from "./pages/Contact";
+import Wallet from "./pages/Wallet";
 import CookieConsent from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
@@ -111,6 +112,14 @@ const App = () => (
                 element={
                   <ProtectedRoute requireAdmin={true}>
                     <AdminPanel />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/carteira" 
+                element={
+                  <ProtectedRoute>
+                    <Wallet />
                   </ProtectedRoute>
                 } 
               />
