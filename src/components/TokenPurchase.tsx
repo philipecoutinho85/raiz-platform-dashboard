@@ -53,14 +53,16 @@ const TokenPurchase = () => {
 
       if (error) throw error;
 
-      if (data.checkoutUrl) {
-        window.open(data.checkoutUrl, '_blank');
+      if (data.paymentUrl) {
+        // Redirecionar para página de pagamento
+        window.location.href = data.paymentUrl;
+      } else {
+        toast({
+          title: 'Atenção',
+          description: 'Não foi possível gerar o link de pagamento. Entre em contato com o suporte.',
+          variant: 'destructive',
+        });
       }
-
-      toast({
-        title: 'Pagamento criado!',
-        description: `Pedido de ${tokens} tokens criado. Complete o pagamento para receber seus tokens.`,
-      });
     } catch (error: any) {
       console.error('Erro na compra:', error);
       toast({

@@ -185,14 +185,32 @@ serve(async (req) => {
         });
     }
     
+    // Extrair URL de pagamento baseado no método
+    let paymentUrl = null;
+    
+    if (pagarmeData.charges && pagarmeData.charges.length > 0) {
+      const charge = pagarmeData.charges[0];
+      
+      if (paymentMethod === 'pix' && charge.last_transaction?.qr_code_url) {
+        paymentUrl = charge.last_transaction.qr_code_url;
+      } else if (paymentMethod === 'boleto' && charge.last_transaction?.pdf) {
+        paymentUrl = charge.last_transaction.pdf;
+      } else if (paymentMethod === 'credit_card' && charge.last_transaction?.url) {
+        paymentUrl = charge.last_transaction.url;
+      }
+    }
+    
+    console.log('URL de pagamento extraída:', paymentUrl);
+    
     return new Response(
       JSON.stringify({
         success: true,
         purchaseId: purchase.id,
         pagarmeOrderId: pagarmeData.id,
         status: pagarmeData.status,
-        charges: pagarmeData.charges,
-        checkoutUrl: pagarmeData.checkouts?.[0]?.payment_url
+        paymentUrl,
+        paymentMethod,
+        charges: pagarmeData.charges
       }),
       {
         status: 200,
