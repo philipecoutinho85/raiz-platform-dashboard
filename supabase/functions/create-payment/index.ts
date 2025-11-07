@@ -22,6 +22,12 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const pagarmeKey = Deno.env.get('PAGARME_SECRET_KEY')!;
     
+    console.log('Chave Pagar.me encontrada:', pagarmeKey ? `${pagarmeKey.substring(0, 8)}...` : 'NÃO ENCONTRADA');
+    
+    if (!pagarmeKey) {
+      throw new Error('PAGARME_SECRET_KEY não configurada');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     const { userId, amount, paymentMethod }: PaymentRequest = await req.json();
@@ -111,6 +117,8 @@ serve(async (req) => {
     
     // Criar ordem no Pagar.me (usando Basic Auth com base64)
     const authString = btoa(`${pagarmeKey}:`);
+    console.log('Auth string criada (primeiros chars):', authString.substring(0, 20) + '...');
+    
     const pagarmeResponse = await fetch('https://api.pagar.me/core/v5/orders', {
       method: 'POST',
       headers: {
@@ -119,6 +127,8 @@ serve(async (req) => {
       },
       body: JSON.stringify(pagarmePayload)
     });
+    
+    console.log('Status da resposta Pagar.me:', pagarmeResponse.status);
     
     const pagarmeData = await pagarmeResponse.json();
     
