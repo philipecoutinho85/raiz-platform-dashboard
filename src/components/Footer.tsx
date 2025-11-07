@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Linkedin, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
+import { Linkedin, Instagram, Twitter, Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import raizLogo from '@/assets/raiz-logo-light.png';
@@ -91,14 +91,6 @@ const Footer = () => {
               <div className="flex items-center space-x-2">
                 <Mail className="w-4 h-4 text-raiz-accent" />
                 <span className="text-raiz-light/80">contato@raiztoken.com.br</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="w-4 h-4 text-raiz-accent" />
-                <span className="text-raiz-light/80">(21) 96883-9616</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <MapPin className="w-4 h-4 text-raiz-accent" />
-                <span className="text-raiz-light/80">Niterói, RJ</span>
               </div>
             </div>
           </div>

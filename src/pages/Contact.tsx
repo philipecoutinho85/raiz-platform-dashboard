@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, MapPin, Send, Paperclip } from 'lucide-react';
+import { Mail, Send, Paperclip, Shield, Zap, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -81,31 +81,41 @@ const Contact = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-          {/* Contact Information */}
+          {/* Platform Benefits */}
           <div className="lg:col-span-1 space-y-6">
             <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
               <CardHeader>
                 <CardTitle className="text-raiz-gold flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
-                  E-mail
+                  <Shield className="w-5 h-5" />
+                  Segurança Total
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-raiz-light/80">contato@raiztoken.com.br</p>
-                <p className="text-sm text-raiz-light/60 mt-2">Respondemos em até 24h</p>
+                <p className="text-raiz-light/80">Plataforma 100% segura com criptografia de dados e proteção LGPD</p>
               </CardContent>
             </Card>
 
             <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
               <CardHeader>
                 <CardTitle className="text-raiz-gold flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Endereço
+                  <Zap className="w-5 h-5" />
+                  Resposta Rápida
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-raiz-light/80">Niterói, RJ - Brasil</p>
-                <p className="text-sm text-raiz-light/60 mt-2">Atendimento online</p>
+                <p className="text-raiz-light/80">Atendimento humanizado em até 24 horas úteis</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+              <CardHeader>
+                <CardTitle className="text-raiz-gold flex items-center gap-2">
+                  <Heart className="w-5 h-5" />
+                  Apoio Garantido
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-raiz-light/80">Sistema de reembolso automático para projetos não concluídos</p>
               </CardContent>
             </Card>
           </div>

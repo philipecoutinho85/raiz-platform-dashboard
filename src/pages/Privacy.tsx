@@ -209,6 +209,38 @@ const Privacy = () => {
 
         </div>
 
+        {/* Políticas Específicas */}
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-raiz-light mb-6">
+            Políticas Específicas
+          </h2>
+          <p className="text-xl text-raiz-light/80 mb-8">
+            Confira as políticas de privacidade específicas para cada tipo de usuário
+          </p>
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <Link to="/privacidade-apoiadores">
+              <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20 hover:border-raiz-gold/50 transition-all cursor-pointer h-full">
+                <CardHeader>
+                  <CardTitle className="text-raiz-gold">Para Apoiadores</CardTitle>
+                </CardHeader>
+                <CardContent className="text-raiz-light/80">
+                  <p>Política de privacidade específica para quem apoia projetos na plataforma</p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link to="/privacidade-criadores">
+              <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20 hover:border-raiz-gold/50 transition-all cursor-pointer h-full">
+                <CardHeader>
+                  <CardTitle className="text-raiz-gold">Para Criadores</CardTitle>
+                </CardHeader>
+                <CardContent className="text-raiz-light/80">
+                  <p>Política de privacidade específica para quem cria e gerencia projetos</p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+
         {/* Contact CTA */}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-raiz-light mb-6">

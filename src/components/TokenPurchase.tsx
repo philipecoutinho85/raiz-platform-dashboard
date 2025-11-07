@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Coins, CreditCard, QrCode, FileText } from 'lucide-react';
+import { Coins, CreditCard, QrCode, FileText, Shield, Lock, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const TokenPurchase = () => {
   const { toast } = useToast();
@@ -81,17 +82,46 @@ const TokenPurchase = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Coins className="w-5 h-5" />
-          <span>Comprar Tokens</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <p className="text-raiz-secondary text-sm">
-          Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 0,10. Valor mínimo de compra: R$ 5,00 (50 tokens).
-        </p>
+    <div className="space-y-6">
+      {/* Security Badges */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+          <Shield className="w-8 h-8 text-green-600" />
+          <div>
+            <p className="font-semibold text-sm text-green-900 dark:text-green-100">100% Seguro</p>
+            <p className="text-xs text-green-700 dark:text-green-300">Pagamento protegido</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <Lock className="w-8 h-8 text-blue-600" />
+          <div>
+            <p className="font-semibold text-sm text-blue-900 dark:text-blue-100">Criptografado</p>
+            <p className="text-xs text-blue-700 dark:text-blue-300">SSL/TLS 256-bit</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+          <CheckCircle2 className="w-8 h-8 text-purple-600" />
+          <div>
+            <p className="font-semibold text-sm text-purple-900 dark:text-purple-100">Aprovação Rápida</p>
+            <p className="text-xs text-purple-700 dark:text-purple-300">PIX instantâneo</p>
+          </div>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Coins className="w-5 h-5" />
+            <span>Comprar Tokens</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Alert className="bg-raiz-primary/5 border-raiz-primary/20">
+            <Coins className="h-4 w-4" />
+            <AlertDescription>
+              Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 0,10. Valor mínimo de compra: R$ 5,00 (50 tokens).
+            </AlertDescription>
+          </Alert>
 
         <div className="space-y-2">
           <Label>Método de Pagamento</Label>
@@ -195,8 +225,22 @@ const TokenPurchase = () => {
             R$ 0,10 por token (mínimo: R$ 5,00 = 50 tokens)
           </p>
         </div>
+
+        <div className="bg-muted/50 p-4 rounded-lg">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-raiz-primary mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Garantia Raiz Token</p>
+              <p className="text-xs text-muted-foreground">
+                Seus dados estão protegidos e criptografados. Processamento via Pagar.me, 
+                líder em pagamentos online no Brasil. Reembolso automático para projetos não concluídos.
+              </p>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
+    </div>
   );
 };
 
