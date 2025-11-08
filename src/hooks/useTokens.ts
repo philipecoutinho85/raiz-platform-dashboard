@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +9,8 @@ export const useTokens = () => {
   const { toast } = useToast();
   const [tokens, setTokens] = useState(0);
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef<any>(null);
+  const userIdRef = useRef<string | null>(null);
 
   const fetchTokens = async () => {
     if (!user) {
@@ -142,17 +144,43 @@ export const useTokens = () => {
   };
 
   useEffect(() => {
-    if (!user) {
+    const userId = user?.id;
+    
+    if (!userId) {
       setTokens(0);
       setLoading(false);
+      
+      // Limpar canal existente se houver
+      if (channelRef.current) {
+        console.log('Cleaning up tokens channel due to no user');
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        userIdRef.current = null;
+      }
       return;
+    }
+
+    // Não recriar se for o mesmo userId
+    if (userIdRef.current === userId && channelRef.current) {
+      console.log('Tokens channel already exists for user:', userId);
+      return;
+    }
+
+    // Limpar canal anterior se houver
+    if (channelRef.current) {
+      console.log('Cleaning up previous tokens channel');
+      channelRef.current.unsubscribe();
+      supabase.removeChannel(channelRef.current);
     }
 
     fetchTokens();
 
     // Configurar listener para mudanças na tabela user_tokens
     // Usar um nome único baseado no user.id para evitar conflitos
-    const channelName = `user-tokens-${user.id}`;
+    const channelName = `user-tokens-${userId}`;
+    
+    console.log('Creating tokens channel:', channelName);
     
     const channel = supabase
       .channel(channelName)
@@ -162,7 +190,7 @@ export const useTokens = () => {
           event: 'UPDATE',
           schema: 'public',
           table: 'user_tokens',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${userId}`
         },
         (payload) => {
           console.log('Token balance updated:', payload);
@@ -171,11 +199,19 @@ export const useTokens = () => {
       )
       .subscribe();
 
+    channelRef.current = channel;
+    userIdRef.current = userId;
+
     return () => {
-      console.log('Cleaning up channel:', channelName);
-      supabase.removeChannel(channel);
+      console.log('Effect cleanup - tokens channel:', channelName);
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        userIdRef.current = null;
+      }
     };
-  }, [user]);
+  }, [user?.id]);
 
   return {
     tokens,
