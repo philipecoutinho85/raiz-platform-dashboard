@@ -45,7 +45,7 @@ const App = () => (
         <AnalyticsScripts />
         <BrowserRouter>
           <CookieConsent />
-          <div className="pb-16 md:pb-0">
+          <div className="min-h-screen flex flex-col">
             <Header />
             <Routes>
               <Route path="/" element={<Index />} />
