@@ -42,6 +42,8 @@ interface Project {
   estado?: string;
   youtube_url?: string;
   featured_image?: string;
+  custom_goal?: number;
+  admin_fee_percentage?: number;
 }
 
 interface ProjectsTabProps {

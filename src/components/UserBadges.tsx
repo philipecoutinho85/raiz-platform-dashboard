@@ -100,7 +100,7 @@ const UserBadges = ({ userId, showTitle = true }: UserBadgesProps) => {
                     <div
                       className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all cursor-help ${
                         hasIt
-                          ? 'border-raiz-gold bg-raiz-gold/20 shadow-lg'
+                          ? 'border-raiz-gold bg-gradient-to-br from-raiz-gold/30 to-raiz-gold/10 shadow-xl shadow-raiz-gold/30'
                           : 'border-gray-300 bg-gray-50 opacity-40'
                       }`}
                     >
@@ -109,28 +109,28 @@ const UserBadges = ({ userId, showTitle = true }: UserBadgesProps) => {
                           <img
                             src={badge.image_url}
                             alt={badge.name}
-                            className={hasIt ? 'w-20 h-20 object-contain' : 'w-16 h-16 object-contain opacity-50'}
+                            className={hasIt ? 'w-24 h-24 object-contain drop-shadow-lg' : 'w-16 h-16 object-contain opacity-50'}
                           />
                         ) : (
                           <div
-                            className={`${hasIt ? 'w-20 h-20' : 'w-16 h-16'} rounded-full flex items-center justify-center ${
-                              hasIt ? 'bg-raiz-gold' : 'bg-gray-300'
+                            className={`${hasIt ? 'w-24 h-24' : 'w-16 h-16'} rounded-full flex items-center justify-center ${
+                              hasIt ? 'bg-gradient-to-br from-raiz-gold to-yellow-600 shadow-lg shadow-raiz-gold/50' : 'bg-gray-300'
                             }`}
                           >
                             {hasIt ? (
-                              <Award className={hasIt ? 'w-10 h-10 text-white' : 'w-8 h-8 text-white'} />
+                              <Award className="w-12 h-12 text-white drop-shadow-md" />
                             ) : (
                               <Lock className="w-8 h-8 text-gray-500" />
                             )}
                           </div>
                         )}
                       </div>
-                      <p className="text-xs font-semibold text-center line-clamp-2 text-raiz-dark">
+                      <p className={`text-xs font-semibold text-center line-clamp-2 ${hasIt ? 'text-raiz-dark' : 'text-gray-500'}`}>
                         {badge.name}
                       </p>
                       {hasIt && (
-                        <Badge variant="outline" className="mt-2 text-xs bg-raiz-gold text-white border-raiz-gold">
-                          Conquistado
+                        <Badge className="mt-2 text-xs bg-gradient-to-r from-raiz-gold to-yellow-600 text-white border-0 shadow-md">
+                          ✓ Conquistado
                         </Badge>
                       )}
                     </div>

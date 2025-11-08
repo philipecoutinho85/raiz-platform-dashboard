@@ -1,9 +1,14 @@
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, MapPin, Target, Users, DollarSign, Clock } from 'lucide-react';
+import { Calendar, MapPin, Target, Users, DollarSign, Clock, Edit2, Save } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Project {
   id: string;
@@ -24,6 +29,8 @@ interface Project {
   estado?: string;
   youtube_url?: string;
   featured_image?: string;
+  custom_goal?: number;
+  admin_fee_percentage?: number;
 }
 
 interface ProjectDetailModalProps {
@@ -33,14 +40,73 @@ interface ProjectDetailModalProps {
 }
 
 const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModalProps) => {
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [isEditingFee, setIsEditingFee] = useState(false);
+  const [customGoal, setCustomGoal] = useState(project?.custom_goal?.toString() || '');
+  const [adminFee, setAdminFee] = useState(project?.admin_fee_percentage?.toString() || '10');
+  const [isSaving, setIsSaving] = useState(false);
+
   if (!project) return null;
 
-  const progressPercentage = project.raised_amount && project.goal 
-    ? Math.min((project.raised_amount / project.goal) * 100, 100) 
+  const effectiveGoal = project.custom_goal || project.goal;
+  const progressPercentage = project.raised_amount && effectiveGoal 
+    ? Math.min((project.raised_amount / effectiveGoal) * 100, 100) 
     : 0;
 
   const formatTokens = (value: number) => {
     return new Intl.NumberFormat('pt-BR').format(value);
+  };
+
+  const handleSaveGoal = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ 
+          custom_goal: customGoal ? parseFloat(customGoal) : null 
+        })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      toast.success('Meta customizada atualizada com sucesso!');
+      setIsEditingGoal(false);
+      // Atualizar o projeto localmente
+      if (project) {
+        project.custom_goal = customGoal ? parseFloat(customGoal) : undefined;
+      }
+    } catch (error) {
+      console.error('Error updating custom goal:', error);
+      toast.error('Erro ao atualizar meta customizada');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveFee = async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ 
+          admin_fee_percentage: adminFee ? parseFloat(adminFee) : 10 
+        })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      toast.success('Taxa administrativa atualizada com sucesso!');
+      setIsEditingFee(false);
+      // Atualizar o projeto localmente
+      if (project) {
+        project.admin_fee_percentage = adminFee ? parseFloat(adminFee) : 10;
+      }
+    } catch (error) {
+      console.error('Error updating admin fee:', error);
+      toast.error('Erro ao atualizar taxa administrativa');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -77,9 +143,125 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModa
                       {project.status === 'pending' ? 'Pendente' : project.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
-                    <Target className="w-4 h-4" />
-                    <span>Meta: {formatTokens(project.goal)} tokens</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
+                      <Target className="w-4 h-4" />
+                      <span>Meta Original: {formatTokens(project.goal)} tokens</span>
+                    </div>
+                    
+                    {/* Meta Customizada */}
+                    <div className="bg-raiz-light p-3 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold text-raiz-dark">
+                          Meta Customizada (Admin)
+                        </Label>
+                        {!isEditingGoal && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditingGoal(true)}
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Editar
+                          </Button>
+                        )}
+                      </div>
+                      {isEditingGoal ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            value={customGoal}
+                            onChange={(e) => setCustomGoal(e.target.value)}
+                            placeholder="Meta em tokens"
+                            className="flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveGoal}
+                            disabled={isSaving}
+                          >
+                            <Save className="w-3 h-3 mr-1" />
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setIsEditingGoal(false);
+                              setCustomGoal(project?.custom_goal?.toString() || '');
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-raiz-secondary">
+                          {project.custom_goal 
+                            ? `${formatTokens(project.custom_goal)} tokens` 
+                            : 'Não definida (usando meta original)'}
+                        </p>
+                      )}
+                      {project.custom_goal && (
+                        <p className="text-xs text-raiz-gold font-semibold">
+                          Meta Efetiva: {formatTokens(effectiveGoal)} tokens
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Taxa Administrativa */}
+                    <div className="bg-raiz-light p-3 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold text-raiz-dark">
+                          Taxa Administrativa
+                        </Label>
+                        {!isEditingFee && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setIsEditingFee(true)}
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Editar
+                          </Button>
+                        )}
+                      </div>
+                      {isEditingFee ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            value={adminFee}
+                            onChange={(e) => setAdminFee(e.target.value)}
+                            placeholder="Taxa em %"
+                            className="flex-1"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveFee}
+                            disabled={isSaving}
+                          >
+                            <Save className="w-3 h-3 mr-1" />
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setIsEditingFee(false);
+                              setAdminFee(project?.admin_fee_percentage?.toString() || '10');
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-raiz-secondary">
+                          {project.admin_fee_percentage || 10}% sobre os recursos arrecadados
+                        </p>
+                      )}
+                    </div>
                   </div>
                   {project.deadline && (
                     <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
@@ -122,7 +304,7 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModa
                       </div>
                       <div className="flex items-center space-x-1">
                         <DollarSign className="w-4 h-4" />
-                        <span>Meta: {formatTokens(project.goal)} tokens</span>
+                        <span>Meta: {formatTokens(effectiveGoal)} tokens</span>
                       </div>
                     </div>
                   </div>
