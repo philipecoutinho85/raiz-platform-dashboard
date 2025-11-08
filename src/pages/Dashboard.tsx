@@ -6,15 +6,11 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import Footer from '@/components/Footer';
 import PlatformTour from '@/components/PlatformTour';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 const Dashboard = () => {
   const { projects, stats, loading } = useDashboardData();
   const { profile, user } = useAuth();
   const [runTour, setRunTour] = useState(false);
-
-  // Configurar notificações em tempo real
-  useRealtimeNotifications(user?.id);
 
   useEffect(() => {
     // Iniciar tour automaticamente para novos usuários
