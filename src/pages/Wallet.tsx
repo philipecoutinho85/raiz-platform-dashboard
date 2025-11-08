@@ -380,7 +380,7 @@ const Wallet = () => {
                         key={purchase.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
                       >
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium text-raiz-dark">{purchase.amount} tokens</p>
                           <p className="text-sm text-raiz-secondary">
                             {getPaymentMethodLabel(purchase.payment_method)} • R$ {purchase.price.toFixed(2)}
@@ -389,7 +389,37 @@ const Wallet = () => {
                             {new Date(purchase.created_at).toLocaleString('pt-BR')}
                           </p>
                         </div>
-                        {getStatusBadge(purchase.status)}
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(purchase.status)}
+                          {purchase.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  const { data, error } = await supabase.functions.invoke('check-payment-status', {
+                                    body: { purchaseId: purchase.id }
+                                  });
+
+                                  if (error) throw error;
+
+                                  if (data.status === 'paid') {
+                                    toast.success('Pagamento confirmado! Seus tokens foram creditados.');
+                                    await fetchWalletData();
+                                  } else {
+                                    toast.info('Pagamento ainda pendente. Aguarde a confirmação.');
+                                  }
+                                } catch (error) {
+                                  console.error('Error checking payment:', error);
+                                  toast.error('Erro ao verificar pagamento');
+                                }
+                              }}
+                            >
+                              <RefreshCw className="w-3 h-3 mr-1" />
+                              Verificar
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
