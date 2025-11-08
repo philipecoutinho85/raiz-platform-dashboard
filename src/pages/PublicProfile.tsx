@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Calendar, MapPin, ExternalLink, Star } from 'lucide-react';
 import UserBadges from '@/components/UserBadges';
+import ManageBadges from '@/components/admin/ManageBadges';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserProfile {
   id: string;
@@ -45,12 +47,14 @@ interface Testimonial {
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -58,7 +62,29 @@ const PublicProfile = () => {
       fetchUserProjects();
       fetchUserTestimonials();
     }
-  }, [userId]);
+    if (user) {
+      checkAdminStatus();
+    }
+  }, [userId, user]);
+
+  const checkAdminStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!error && data) {
+        setIsAdmin(true);
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -260,6 +286,13 @@ const PublicProfile = () => {
 
         {/* User Badges */}
         <UserBadges userId={userId!} />
+
+        {/* Admin: Manage Badges */}
+        {isAdmin && (
+          <div className="mt-6">
+            <ManageBadges userId={userId!} isAdmin={isAdmin} />
+          </div>
+        )}
 
         {/* Testimonials Section */}
         {testimonials.length > 0 && (

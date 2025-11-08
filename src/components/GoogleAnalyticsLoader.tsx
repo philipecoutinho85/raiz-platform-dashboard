@@ -2,56 +2,68 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const GoogleAnalyticsLoader = () => {
-  const [scriptsLoaded, setScriptsLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Evitar carregar múltiplas vezes
-    if (scriptsLoaded) return;
+    // Evitar carregamento duplicado
+    if (loaded || document.querySelector('script[src*="googletagmanager.com/gtag/js"]')) {
+      return;
+    }
 
     const loadGoogleAnalytics = async () => {
       try {
         const { data, error } = await supabase
           .from('google_analytics_settings')
           .select('gtag_script')
-          .single();
+          .maybeSingle();
 
-        if (error || !data?.gtag_script) return;
-
-        // Verificar se o script já foi carregado
-        if (document.querySelector('script[src*="googletagmanager.com/gtag/js"]')) {
-          setScriptsLoaded(true);
+        if (error) {
+          console.error('Error fetching GA settings:', error);
           return;
         }
 
-        // Inserir o script no head logo após o <head>
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = data.gtag_script.trim();
-        
-        const scripts = tempDiv.querySelectorAll('script');
-        scripts.forEach((script, index) => {
-          const newScript = document.createElement('script');
-          
-          if (script.src) {
-            // Script externo (gtag.js)
-            newScript.src = script.src;
-            newScript.async = true;
-          } else {
-            // Script inline (configuração)
-            newScript.textContent = script.textContent;
-          }
-          
-          // Adicionar ao head
-          document.head.appendChild(newScript);
-        });
+        if (!data?.gtag_script) {
+          console.log('No Google Analytics script configured');
+          return;
+        }
 
-        setScriptsLoaded(true);
+        // Extrair ID do Google Analytics do script
+        const gtagIdMatch = data.gtag_script.match(/gtag\/js\?id=(G-[A-Z0-9]+)/);
+        const configIdMatch = data.gtag_script.match(/gtag\('config',\s*'(G-[A-Z0-9]+)'/);
+        
+        if (!gtagIdMatch || !configIdMatch) {
+          console.error('Invalid Google Analytics script format');
+          return;
+        }
+
+        const gtagId = gtagIdMatch[1];
+        const configId = configIdMatch[1];
+
+        // Criar e adicionar o script externo gtag.js
+        const gtagScript = document.createElement('script');
+        gtagScript.async = true;
+        gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${gtagId}`;
+        document.head.appendChild(gtagScript);
+
+        // Criar e adicionar o script de configuração inline
+        const configScript = document.createElement('script');
+        configScript.textContent = `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${configId}');
+        `;
+        document.head.appendChild(configScript);
+
+        setLoaded(true);
+        console.log('Google Analytics loaded successfully');
       } catch (error) {
-        console.error('Erro ao carregar Google Analytics:', error);
+        console.error('Error loading Google Analytics:', error);
       }
     };
 
     loadGoogleAnalytics();
-  }, [scriptsLoaded]);
+  }, [loaded]);
 
   return null;
 };
