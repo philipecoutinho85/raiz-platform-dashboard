@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users } from 'lucide-react';
 import Footer from '@/components/Footer';
+import ProjectAdminMessages from '@/components/ProjectAdminMessages';
 
 interface Project {
   id: string;
@@ -25,6 +26,8 @@ interface Project {
   created_at: string;
   admin_notes?: string;
   featured_image?: string;
+  rejection_reason?: string;
+  pending_requirements?: string;
 }
 
 const MyProjects = () => {
@@ -61,7 +64,9 @@ const MyProjects = () => {
 
       const formattedProjects = data?.map(project => ({
         ...project,
-        featured_image: project.project_images?.find((img: any) => img.is_featured)?.image_url
+        featured_image: project.project_images?.find((img: any) => img.is_featured)?.image_url,
+        rejection_reason: project.rejection_reason,
+        pending_requirements: project.pending_requirements
       })) || [];
 
       setProjects(formattedProjects);
@@ -274,14 +279,12 @@ const MyProjects = () => {
                             </div>
                           )}
 
-                          {/* Rejection reason */}
-                          {project.status === 'rejected' && project.admin_notes && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                              <p className="text-sm text-red-800">
-                                <strong>Motivo da rejeição:</strong> {project.admin_notes}
-                              </p>
-                            </div>
-                          )}
+                          {/* Admin Messages */}
+                          <ProjectAdminMessages
+                            status={project.status}
+                            rejectionReason={project.rejection_reason}
+                            pendingRequirements={project.pending_requirements}
+                          />
                         </div>
                       </div>
                       

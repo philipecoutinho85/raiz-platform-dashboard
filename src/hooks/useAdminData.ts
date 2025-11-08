@@ -25,6 +25,8 @@ interface Project {
   estado?: string;
   youtube_url?: string;
   featured_image?: string;
+  rejection_reason?: string;
+  pending_requirements?: string;
 }
 
 interface AdminUser {
@@ -111,7 +113,9 @@ export const useAdminData = () => {
               cidade: project.cidade,
               estado: project.estado,
               youtube_url: project.youtube_url,
-              featured_image: featuredImage?.image_url
+              featured_image: featuredImage?.image_url,
+              rejection_reason: project.rejection_reason,
+              pending_requirements: project.pending_requirements
             });
           }
         }

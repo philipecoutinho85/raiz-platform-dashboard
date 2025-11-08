@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ProjectCommunication from './ProjectCommunication';
 
 interface Project {
   id: string;
@@ -31,15 +32,18 @@ interface Project {
   featured_image?: string;
   custom_goal?: number;
   admin_fee_percentage?: number;
+  rejection_reason?: string;
+  pending_requirements?: string;
 }
 
 interface ProjectDetailModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project | null;
+  onUpdate?: () => void;
 }
 
-const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModalProps) => {
+const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: ProjectDetailModalProps) => {
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [isEditingFee, setIsEditingFee] = useState(false);
   const [customGoal, setCustomGoal] = useState(project?.custom_goal?.toString() || '');
@@ -349,6 +353,17 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project }: ProjectDetailModa
               </div>
             </div>
           )}
+
+          {/* Admin Communication */}
+          <ProjectCommunication
+            projectId={project.id}
+            currentStatus={project.status}
+            rejectionReason={project.rejection_reason}
+            pendingRequirements={project.pending_requirements}
+            onUpdate={() => {
+              if (onUpdate) onUpdate();
+            }}
+          />
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">

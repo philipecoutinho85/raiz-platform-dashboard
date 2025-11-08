@@ -26,7 +26,7 @@ import { ReauthenticationModal } from '@/components/ReauthenticationModal';
 import Footer from '@/components/Footer';
 
 const AdminPanel = () => {
-  const { allProjects, users, stats, loading, handleProjectAction } = useAdminData();
+  const { allProjects, users, stats, loading, handleProjectAction, fetchAdminData } = useAdminData();
   const { handleUserAction, handleSaveEdit } = useAdminUserActions();
   const { checkDeviceFingerprint, check2FAStatus } = useAdminSecurity();
   const { isReauthModalOpen, pendingAction, requireReauth, handleReauthSuccess, handleReauthClose } = useReauthentication();
@@ -204,6 +204,7 @@ const AdminPanel = () => {
         isOpen={isProjectDetailModalOpen}
         onOpenChange={setIsProjectDetailModalOpen}
         project={selectedProject}
+        onUpdate={fetchAdminData}
       />
 
       <RejectProjectModal 

@@ -495,7 +495,9 @@ export type Database = {
           goal: number
           id: string
           numero: string | null
+          pending_requirements: string | null
           raised_amount: number
+          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -528,7 +530,9 @@ export type Database = {
           goal: number
           id?: string
           numero?: string | null
+          pending_requirements?: string | null
           raised_amount?: number
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -561,7 +565,9 @@ export type Database = {
           goal?: number
           id?: string
           numero?: string | null
+          pending_requirements?: string | null
           raised_amount?: number
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
