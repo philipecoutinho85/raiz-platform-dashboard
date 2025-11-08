@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
 import { supabase } from '@/integrations/supabase/client';
-import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock, Filter } from 'lucide-react';
+import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock, Filter, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import TokenPurchase from '@/components/TokenPurchase';
 import RefundRequest from '@/components/RefundRequest';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { toast } from 'sonner';
 
 interface Transaction {
   id: string;
@@ -51,6 +52,28 @@ const Wallet = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterDate, setFilterDate] = useState<string>('');
+
+  const handleClearPurchaseHistory = async () => {
+    if (!user) return;
+    
+    const confirmed = window.confirm('Tem certeza que deseja limpar todo o histórico de compras? Esta ação não pode ser desfeita.');
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('token_purchases')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Histórico de compras limpo com sucesso!');
+      await fetchWalletData();
+    } catch (error) {
+      console.error('Error clearing purchase history:', error);
+      toast.error('Erro ao limpar histórico de compras');
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -338,6 +361,15 @@ const Wallet = () => {
                     }}
                   >
                     Limpar Filtros
+                  </Button>
+
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleClearPurchaseHistory}
+                    className="w-full md:w-auto"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Limpar Histórico
                   </Button>
                 </div>
 

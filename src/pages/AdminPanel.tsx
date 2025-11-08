@@ -1,7 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminHeader from '@/components/admin/AdminHeader';
+import { useIsMobile } from '@/hooks/use-mobile';
 import AdminStats from '@/components/admin/AdminStats';
 import UsersTab from '@/components/admin/UsersTab';
 import ProjectsTab from '@/components/admin/ProjectsTab';
@@ -30,6 +32,8 @@ const AdminPanel = () => {
   const { isReauthModalOpen, pendingAction, requireReauth, handleReauthSuccess, handleReauthClose } = useReauthentication();
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
+  const [activeTab, setActiveTab] = useState("projects");
+  const isMobile = useIsMobile();
   
   const {
     selectedUser,
@@ -107,20 +111,39 @@ const AdminPanel = () => {
         isRequired={requires2FA}
       />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-20 md:pb-8">
         <AdminStats stats={stats} />
 
         {/* Main Content */}
-        <Tabs defaultValue="projects" className="space-y-6">
-          <TabsList className="flex md:grid w-full overflow-x-auto md:grid-cols-7 lg:w-auto">
-            <TabsTrigger value="projects" className="whitespace-nowrap text-xs md:text-sm">Projetos</TabsTrigger>
-            <TabsTrigger value="users" className="whitespace-nowrap text-xs md:text-sm">Usuários</TabsTrigger>
-            <TabsTrigger value="badges" className="whitespace-nowrap text-xs md:text-sm">Badges</TabsTrigger>
-            <TabsTrigger value="tokens" className="whitespace-nowrap text-xs md:text-sm">Tokens</TabsTrigger>
-            <TabsTrigger value="transactions" className="whitespace-nowrap text-xs md:text-sm">Transações</TabsTrigger>
-            <TabsTrigger value="logs" className="whitespace-nowrap text-xs md:text-sm">Logs</TabsTrigger>
-            <TabsTrigger value="settings" className="whitespace-nowrap text-xs md:text-sm">Config.</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {isMobile ? (
+            <div className="mb-4">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="projects">Projetos</SelectItem>
+                  <SelectItem value="users">Usuários</SelectItem>
+                  <SelectItem value="badges">Badges</SelectItem>
+                  <SelectItem value="tokens">Tokens</SelectItem>
+                  <SelectItem value="transactions">Transações</SelectItem>
+                  <SelectItem value="logs">Logs</SelectItem>
+                  <SelectItem value="settings">Configurações</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <TabsList className="grid w-full grid-cols-7">
+              <TabsTrigger value="projects">Projetos</TabsTrigger>
+              <TabsTrigger value="users">Usuários</TabsTrigger>
+              <TabsTrigger value="badges">Badges</TabsTrigger>
+              <TabsTrigger value="tokens">Tokens</TabsTrigger>
+              <TabsTrigger value="transactions">Transações</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+              <TabsTrigger value="settings">Config.</TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="projects">
             <ProjectsTab 
