@@ -314,6 +314,11 @@ const ProjectDetail = () => {
               </Card>
             )}
 
+            {/* Badges do Projeto */}
+            {project && (
+              <ProjectBadges projectId={project.id} showTitle={true} compact={false} />
+            )}
+
             {/* Project Info */}
             <Card>
               <CardHeader>
@@ -620,10 +625,6 @@ const ProjectDetail = () => {
               </Card>
             )}
 
-            {/* Badges do Projeto */}
-            {project && (
-              <ProjectBadges projectId={project.id} showTitle={true} compact={false} />
-            )}
           </div>
         </div>
       </div>
