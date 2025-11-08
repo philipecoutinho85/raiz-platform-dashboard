@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UseRealtimeChannelOptions {
   channelName: string;
@@ -12,9 +11,12 @@ interface UseRealtimeChannelOptions {
   onEvent: (payload: any) => void;
 }
 
+// Mapa global para rastrear canais ativos
+const activeChannels = new Map<string, any>();
+
 /**
- * Hook centralizado para gerenciar canais realtime do Supabase
- * Garante que não haja múltiplas subscriptions no mesmo canal
+ * Hook para gerenciar canais realtime do Supabase
+ * Usa estratégia de force-cleanup para evitar múltiplas subscriptions
  */
 export const useRealtimeChannel = ({
   channelName,
@@ -25,51 +27,52 @@ export const useRealtimeChannel = ({
   filter,
   onEvent,
 }: UseRealtimeChannelOptions) => {
-  const channelRef = useRef<RealtimeChannel | null>(null);
-  const isSubscribedRef = useRef(false);
-  const channelNameRef = useRef<string | null>(null);
   const onEventRef = useRef(onEvent);
+  const isSetupRef = useRef(false);
 
-  // Atualizar ref do callback sem causar re-render
+  // Atualizar ref do callback
   useEffect(() => {
     onEventRef.current = onEvent;
   }, [onEvent]);
 
   useEffect(() => {
-    // Se não está habilitado, limpar e retornar
+    // Se não habilitado, limpar tudo
     if (!enabled) {
-      if (channelRef.current && isSubscribedRef.current) {
-        console.log('[Realtime] Disabling channel:', channelNameRef.current);
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        isSubscribedRef.current = false;
-        channelNameRef.current = null;
+      if (activeChannels.has(channelName)) {
+        const channel = activeChannels.get(channelName);
+        console.log('[Realtime] Removing disabled channel:', channelName);
+        channel.unsubscribe();
+        supabase.removeChannel(channel);
+        activeChannels.delete(channelName);
       }
+      isSetupRef.current = false;
       return;
     }
 
-    // Se já está subscrito no mesmo canal, não fazer nada
-    if (isSubscribedRef.current && channelNameRef.current === channelName) {
-      console.log('[Realtime] Channel already subscribed:', channelName);
+    // Se já configurado, não fazer nada
+    if (isSetupRef.current && activeChannels.has(channelName)) {
+      console.log('[Realtime] Channel already active:', channelName);
       return;
     }
 
-    // Limpar canal anterior se existir
-    if (channelRef.current && isSubscribedRef.current) {
-      console.log('[Realtime] Cleaning up previous channel:', channelNameRef.current);
-      channelRef.current.unsubscribe();
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-      isSubscribedRef.current = false;
+    // Force cleanup de qualquer canal com mesmo nome
+    if (activeChannels.has(channelName)) {
+      const oldChannel = activeChannels.get(channelName);
+      console.log('[Realtime] Force cleanup of existing channel:', channelName);
+      try {
+        oldChannel.unsubscribe();
+        supabase.removeChannel(oldChannel);
+      } catch (e) {
+        console.warn('[Realtime] Error during force cleanup:', e);
+      }
+      activeChannels.delete(channelName);
     }
 
     // Criar novo canal
-    console.log('[Realtime] Creating channel:', channelName);
+    console.log('[Realtime] Creating new channel:', channelName);
     
     const channel = supabase.channel(channelName);
 
-    // Configurar listener
     const config: any = {
       event,
       schema,
@@ -80,41 +83,39 @@ export const useRealtimeChannel = ({
       config.filter = filter;
     }
 
-    // Usar ref do callback para evitar re-subscriptions
+    // Configurar listener com ref
     channel.on('postgres_changes', config, (payload) => {
       onEventRef.current(payload);
     });
 
     // Subscribe
     channel.subscribe((status) => {
-      console.log('[Realtime] Subscription status:', status, 'for channel:', channelName);
-      
-      if (status === 'SUBSCRIBED') {
-        isSubscribedRef.current = true;
-        channelNameRef.current = channelName;
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        isSubscribedRef.current = false;
-        channelNameRef.current = null;
-      }
+      console.log('[Realtime] Status:', status, 'Channel:', channelName);
     });
 
-    channelRef.current = channel;
+    // Guardar no mapa global
+    activeChannels.set(channelName, channel);
+    isSetupRef.current = true;
 
     // Cleanup
     return () => {
-      console.log('[Realtime] Effect cleanup for channel:', channelName);
-      if (channelRef.current && isSubscribedRef.current) {
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
+      console.log('[Realtime] Cleanup for:', channelName);
+      isSetupRef.current = false;
+      
+      if (activeChannels.has(channelName)) {
+        const ch = activeChannels.get(channelName);
+        try {
+          ch.unsubscribe();
+          supabase.removeChannel(ch);
+        } catch (e) {
+          console.warn('[Realtime] Error during cleanup:', e);
+        }
+        activeChannels.delete(channelName);
       }
-      channelRef.current = null;
-      isSubscribedRef.current = false;
-      channelNameRef.current = null;
     };
-  }, [channelName, enabled, table, schema, event, filter]); // onEvent não é mais dependência
+  }, [channelName, enabled, table, schema, event, filter]);
 
   return {
-    isSubscribed: isSubscribedRef.current,
-    channel: channelRef.current,
+    isActive: activeChannels.has(channelName),
   };
 };
