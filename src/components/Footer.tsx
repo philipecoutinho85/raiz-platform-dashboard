@@ -28,7 +28,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="bg-raiz-dark text-raiz-light w-full">
+    <footer className="bg-raiz-dark text-raiz-light w-full pb-20 md:pb-0">
       <div className="container mx-auto px-4 py-16 w-full">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
@@ -69,19 +69,37 @@ const Footer = () => {
           {/* Social Links */}
           <div>
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Redes Sociais</h3>
-            <div className="flex space-x-4">
+            <div className="flex space-x-6">
               {socialLinks.linkedin && (
-                <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-raiz-light hover:text-raiz-gold transition-colors">
+                <a 
+                  href={socialLinks.linkedin} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-raiz-light hover:text-raiz-gold transition-colors p-2 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
+                  aria-label="LinkedIn"
+                >
                   <Linkedin className="w-6 h-6" />
                 </a>
               )}
               {socialLinks.instagram && (
-                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-raiz-light hover:text-raiz-gold transition-colors">
+                <a 
+                  href={socialLinks.instagram} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-raiz-light hover:text-raiz-gold transition-colors p-2 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
+                  aria-label="Instagram"
+                >
                   <Instagram className="w-6 h-6" />
                 </a>
               )}
               {socialLinks.twitter && (
-                <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-raiz-light hover:text-raiz-gold transition-colors">
+                <a 
+                  href={socialLinks.twitter} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-raiz-light hover:text-raiz-gold transition-colors p-2 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
+                  aria-label="Twitter"
+                >
                   <Twitter className="w-6 h-6" />
                 </a>
               )}
