@@ -24,9 +24,10 @@ interface UserBadge {
 interface UserBadgesProps {
   userId: string;
   showTitle?: boolean;
+  compact?: boolean;
 }
 
-const UserBadges = ({ userId, showTitle = true }: UserBadgesProps) => {
+const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesProps) => {
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +77,44 @@ const UserBadges = ({ userId, showTitle = true }: UserBadgesProps) => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-raiz-primary mx-auto"></div>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (compact) {
+    // Versão compacta para exibição em linha (ex: na página do projeto)
+    return (
+      <div className="flex flex-wrap gap-2">
+        {allBadges.filter(badge => hasBadge(badge.id)).map((badge) => (
+          <TooltipProvider key={badge.id}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative group cursor-help">
+                  {badge.image_url ? (
+                    <img
+                      src={badge.image_url}
+                      alt={badge.name}
+                      className="w-12 h-12 object-contain drop-shadow-lg transition-transform group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-raiz-gold to-yellow-600 shadow-lg shadow-raiz-gold/50 transition-transform group-hover:scale-110">
+                      <Award className="w-6 h-6 text-white drop-shadow-md" />
+                    </div>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs bg-raiz-dark">
+                <div className="space-y-2">
+                  <p className="font-bold text-raiz-gold">{badge.name}</p>
+                  <p className="text-sm text-gray-200">{badge.description}</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ))}
+        {allBadges.filter(badge => hasBadge(badge.id)).length === 0 && (
+          <p className="text-sm text-gray-500 italic">Nenhuma badge conquistada ainda</p>
+        )}
+      </div>
     );
   }
 

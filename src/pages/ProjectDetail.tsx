@@ -343,8 +343,9 @@ const ProjectDetail = () => {
                         )}
                       </div>
                       {profile && (
-                        <div className="ml-0">
-                          <UserBadges userId={profile.id} showTitle={false} />
+                        <div className="mt-3">
+                          <div className="text-xs font-semibold text-raiz-secondary mb-2">Badges:</div>
+                          <UserBadges userId={profile.id} showTitle={false} compact={true} />
                         </div>
                       )}
                     </div>
