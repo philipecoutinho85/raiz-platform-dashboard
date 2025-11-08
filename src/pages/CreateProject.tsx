@@ -281,9 +281,12 @@ const CreateProject = () => {
                       type="number"
                       {...register('goal', { 
                         required: 'Meta é obrigatória',
-                        min: { value: 1000, message: 'Meta mínima é 1.000 tokens' }
+                        min: { value: 1000, message: 'Meta mínima é 1.000 tokens' },
+                        valueAsNumber: true
                       })}
                       placeholder="50000"
+                      step="1"
+                      min="1000"
                     />
                     <p className="text-xs text-raiz-secondary">
                       1 token = R$ 1,00 | Meta mínima: 1.000 tokens | Taxa administrativa: 10%

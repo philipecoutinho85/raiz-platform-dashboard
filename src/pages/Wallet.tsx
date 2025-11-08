@@ -219,7 +219,7 @@ const Wallet = () => {
                   <span className="text-raiz-secondary">tokens</span>
                 </div>
                 <p className="text-sm text-raiz-secondary mt-2">
-                  ≈ R$ {(tokens * 0.10).toFixed(2)}
+                  1 token = R$ 1,00 | Total: R$ {tokens.toFixed(2)}
                 </p>
               </div>
               <Button onClick={fetchWalletData} variant="outline" size="sm">
@@ -391,34 +391,6 @@ const Wallet = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(purchase.status)}
-                          {purchase.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={async () => {
-                                try {
-                                  const { data, error } = await supabase.functions.invoke('check-payment-status', {
-                                    body: { purchaseId: purchase.id }
-                                  });
-
-                                  if (error) throw error;
-
-                                  if (data.status === 'paid') {
-                                    toast.success('Pagamento confirmado! Seus tokens foram creditados.');
-                                    await fetchWalletData();
-                                  } else {
-                                    toast.info('Pagamento ainda pendente. Aguarde a confirmação.');
-                                  }
-                                } catch (error) {
-                                  console.error('Error checking payment:', error);
-                                  toast.error('Erro ao verificar pagamento');
-                                }
-                              }}
-                            >
-                              <RefreshCw className="w-3 h-3 mr-1" />
-                              Verificar
-                            </Button>
-                          )}
                         </div>
                       </div>
                     ))}

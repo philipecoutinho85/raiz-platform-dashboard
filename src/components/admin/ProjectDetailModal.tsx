@@ -49,9 +49,17 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
   const { isAdmin } = useAuth();
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [isEditingFee, setIsEditingFee] = useState(false);
-  const [customGoal, setCustomGoal] = useState(project?.custom_goal?.toString() || '');
-  const [adminFee, setAdminFee] = useState(project?.admin_fee_percentage?.toString() || '10');
+  const [customGoal, setCustomGoal] = useState('');
+  const [adminFee, setAdminFee] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Atualizar estados quando o projeto mudar
+  useState(() => {
+    if (project) {
+      setCustomGoal(project.custom_goal?.toString() || '');
+      setAdminFee(project.admin_fee_percentage?.toString() || '10');
+    }
+  });
 
   if (!project) return null;
 
