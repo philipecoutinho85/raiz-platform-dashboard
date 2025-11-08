@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useRealtimeChannel } from './useRealtimeChannel';
 
 interface Notification {
   id: string;
@@ -18,12 +19,10 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const channelRef = useRef<any>(null);
-  const userIdRef = useRef<string | null>(null);
 
   // Buscar notificações
-  const fetchNotifications = async () => {
-    if (!user) return;
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
@@ -42,7 +41,7 @@ export const useNotifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
 
   // Marcar como lida
   const markAsRead = async (notificationId: string) => {
@@ -83,86 +82,44 @@ export const useNotifications = () => {
     }
   };
 
-  // Realtime subscription para novas notificações
-  useEffect(() => {
-    const userId = user?.id;
+  // Handler para novas notificações via realtime
+  const handleNewNotification = useCallback((payload: any) => {
+    const newNotification = payload.new as Notification;
     
-    if (!userId) {
+    console.log('[Notifications] New notification received:', newNotification);
+    
+    // Adicionar à lista
+    setNotifications(prev => [newNotification, ...prev]);
+    setUnreadCount(prev => prev + 1);
+    
+    // Mostrar toast
+    toast.success(newNotification.title, {
+      description: newNotification.message,
+      duration: 5000,
+    });
+  }, []);
+
+  // Fetch inicial
+  useEffect(() => {
+    if (user?.id) {
+      fetchNotifications();
+    } else {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
-      
-      // Limpar canal existente se houver
-      if (channelRef.current) {
-        console.log('Cleaning up channel due to no user');
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        userIdRef.current = null;
-      }
-      return;
     }
+  }, [user?.id, fetchNotifications]);
 
-    // Não recriar se for o mesmo userId
-    if (userIdRef.current === userId && channelRef.current) {
-      console.log('Channel already exists for user:', userId);
-      return;
-    }
-
-    // Limpar canal anterior se houver
-    if (channelRef.current) {
-      console.log('Cleaning up previous channel');
-      channelRef.current.unsubscribe();
-      supabase.removeChannel(channelRef.current);
-    }
-
-    fetchNotifications();
-
-    // Criar canal com nome único baseado apenas no user_id
-    const channelName = `notifications-${userId}`;
-    
-    console.log('Creating notifications channel:', channelName);
-    
-    const channel = supabase.channel(channelName);
-
-    channel
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`
-        },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          
-          // Adicionar à lista
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-          
-          // Mostrar toast de notificação
-          toast.success(newNotification.title, {
-            description: newNotification.message,
-            duration: 5000,
-          });
-        }
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-    userIdRef.current = userId;
-
-    return () => {
-      console.log('Effect cleanup - notifications channel:', channelName);
-      if (channelRef.current) {
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        userIdRef.current = null;
-      }
-    };
-  }, [user?.id]);
+  // Configurar realtime
+  useRealtimeChannel({
+    channelName: `notifications-${user?.id || 'none'}`,
+    enabled: !!user?.id,
+    table: 'notifications',
+    schema: 'public',
+    event: 'INSERT',
+    filter: user?.id ? `user_id=eq.${user.id}` : undefined,
+    onEvent: handleNewNotification,
+  });
 
   return {
     notifications,
