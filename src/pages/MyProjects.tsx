@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users } from 'lucide-react';
 import Footer from '@/components/Footer';
 import ProjectAdminMessages from '@/components/ProjectAdminMessages';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface Project {
   id: string;
@@ -38,6 +39,12 @@ const MyProjects = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Configurar notificações em tempo real
+  useRealtimeNotifications(user?.id, () => {
+    console.log('New notification received, refreshing projects...');
+    fetchProjects();
+  });
 
   useEffect(() => {
     if (user) {

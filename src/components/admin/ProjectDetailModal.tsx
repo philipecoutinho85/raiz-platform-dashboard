@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ProjectCommunication from './ProjectCommunication';
+import ManageProjectBadges from './ManageProjectBadges';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Project {
   id: string;
@@ -44,6 +46,7 @@ interface ProjectDetailModalProps {
 }
 
 const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: ProjectDetailModalProps) => {
+  const { isAdmin } = useAuth();
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [isEditingFee, setIsEditingFee] = useState(false);
   const [customGoal, setCustomGoal] = useState(project?.custom_goal?.toString() || '');
@@ -364,6 +367,14 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
               if (onUpdate) onUpdate();
             }}
           />
+
+          {/* Manage Project Badges */}
+          {isAdmin && (
+            <ManageProjectBadges
+              projectId={project.id}
+              isAdmin={isAdmin}
+            />
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">

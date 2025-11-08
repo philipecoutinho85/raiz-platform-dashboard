@@ -302,6 +302,45 @@ export type Database = {
         }
         Relationships: []
       }
+      project_badges: {
+        Row: {
+          badge_id: string
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          project_id: string
+        }
+        Insert: {
+          badge_id: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          project_id: string
+        }
+        Update: {
+          badge_id?: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_badges_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_comments: {
         Row: {
           comment_type: string

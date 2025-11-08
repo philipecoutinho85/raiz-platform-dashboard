@@ -62,6 +62,7 @@ import SocialShare from '@/components/SocialShare';
 import ProjectComments from '@/components/ProjectComments';
 import UserBadges from '@/components/UserBadges';
 import ProjectAccountability from '@/components/ProjectAccountability';
+import ProjectBadges from '@/components/ProjectBadges';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -617,6 +618,11 @@ const ProjectDetail = () => {
                   <UserBadges userId={profile.id} showTitle={false} compact={true} />
                 </CardContent>
               </Card>
+            )}
+
+            {/* Badges do Projeto */}
+            {project && (
+              <ProjectBadges projectId={project.id} showTitle={true} compact={false} />
             )}
           </div>
         </div>
