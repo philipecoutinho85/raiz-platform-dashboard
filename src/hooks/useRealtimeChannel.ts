@@ -28,6 +28,12 @@ export const useRealtimeChannel = ({
   const channelRef = useRef<RealtimeChannel | null>(null);
   const isSubscribedRef = useRef(false);
   const channelNameRef = useRef<string | null>(null);
+  const onEventRef = useRef(onEvent);
+
+  // Atualizar ref do callback sem causar re-render
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  }, [onEvent]);
 
   useEffect(() => {
     // Se não está habilitado, limpar e retornar
@@ -74,7 +80,10 @@ export const useRealtimeChannel = ({
       config.filter = filter;
     }
 
-    channel.on('postgres_changes', config, onEvent);
+    // Usar ref do callback para evitar re-subscriptions
+    channel.on('postgres_changes', config, (payload) => {
+      onEventRef.current(payload);
+    });
 
     // Subscribe
     channel.subscribe((status) => {
@@ -102,7 +111,7 @@ export const useRealtimeChannel = ({
       isSubscribedRef.current = false;
       channelNameRef.current = null;
     };
-  }, [channelName, enabled, table, schema, event, filter]);
+  }, [channelName, enabled, table, schema, event, filter]); // onEvent não é mais dependência
 
   return {
     isSubscribed: isSubscribedRef.current,

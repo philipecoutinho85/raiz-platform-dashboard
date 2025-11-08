@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRealtimeChannel } from '@/hooks/useRealtimeChannel';
 import { 
   QrCode, 
   Clock, 
@@ -43,51 +44,41 @@ const CheckoutPayment = () => {
     loadPurchaseData();
   }, [purchaseId]);
 
-  // Realtime listener para atualizações de pagamento
-  useEffect(() => {
-    if (!purchaseId) return;
+  // Handler para atualizações de pagamento via realtime
+  const handlePaymentUpdate = useCallback((payload: any) => {
+    const newStatus = payload.new.status;
+    
+    console.log('[Payment] Status updated:', newStatus);
+    
+    if (newStatus === 'paid') {
+      toast({
+        title: '🎉 Pagamento Confirmado!',
+        description: 'Seus tokens foram creditados com sucesso. Redirecionando...',
+      });
+      
+      // Redirecionar para carteira imediatamente
+      setTimeout(() => navigate('/carteira'), 100);
+    } else if (newStatus === 'failed' || newStatus === 'cancelled') {
+      toast({
+        title: 'Pagamento não realizado',
+        description: 'O pagamento não foi confirmado. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+    
+    setPurchase(payload.new);
+  }, []); // Dependências removidas - navigate e toast são estáveis
 
-    // Nome único do canal usando o purchaseId
-    const channelName = `token-purchase-${purchaseId}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'token_purchases',
-          filter: `id=eq.${purchaseId}`
-        },
-        (payload) => {
-          const newStatus = payload.new.status;
-          
-          if (newStatus === 'paid') {
-            toast({
-              title: '🎉 Pagamento Confirmado!',
-              description: 'Seus tokens foram creditados com sucesso. Redirecionando...',
-            });
-            
-            // Redirecionar para carteira imediatamente
-            navigate('/carteira');
-          } else if (newStatus === 'failed' || newStatus === 'cancelled') {
-            toast({
-              title: 'Pagamento não realizado',
-              description: 'O pagamento não foi confirmado. Tente novamente.',
-              variant: 'destructive',
-            });
-          }
-          
-          setPurchase(payload.new);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('Cleaning up payment channel:', channelName);
-      supabase.removeChannel(channel);
-    };
-  }, [purchaseId, navigate, toast]);
+  // Configurar realtime para atualizações de pagamento
+  useRealtimeChannel({
+    channelName: `token-purchase-${purchaseId || 'none'}`,
+    enabled: !!purchaseId,
+    table: 'token_purchases',
+    schema: 'public',
+    event: 'UPDATE',
+    filter: purchaseId ? `id=eq.${purchaseId}` : undefined,
+    onEvent: handlePaymentUpdate,
+  });
 
   // Timer de expiração
   useEffect(() => {
