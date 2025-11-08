@@ -28,7 +28,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="bg-raiz-dark text-raiz-light mb-16 md:mb-0 w-full min-h-[400px] md:min-h-0">
+    <footer className="bg-raiz-dark text-raiz-light w-full">
       <div className="container mx-auto px-4 py-16 w-full">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
@@ -71,18 +71,18 @@ const Footer = () => {
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Redes Sociais</h3>
             <div className="flex space-x-4">
               {socialLinks.linkedin && (
-                <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-raiz-accent hover:text-raiz-gold transition-colors">
-                  <Linkedin className="w-5 h-5" />
+                <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-raiz-light hover:text-raiz-gold transition-colors">
+                  <Linkedin className="w-6 h-6" />
                 </a>
               )}
               {socialLinks.instagram && (
-                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-raiz-accent hover:text-raiz-gold transition-colors">
-                  <Instagram className="w-5 h-5" />
+                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-raiz-light hover:text-raiz-gold transition-colors">
+                  <Instagram className="w-6 h-6" />
                 </a>
               )}
               {socialLinks.twitter && (
-                <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-raiz-accent hover:text-raiz-gold transition-colors">
-                  <Twitter className="w-5 h-5" />
+                <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-raiz-light hover:text-raiz-gold transition-colors">
+                  <Twitter className="w-6 h-6" />
                 </a>
               )}
             </div>

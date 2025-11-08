@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import TokenPurchase from '@/components/TokenPurchase';
 import RefundRequest from '@/components/RefundRequest';
-import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
 
@@ -189,7 +188,6 @@ const Wallet = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-raiz-light">
-        <Header />
         <div className="container mx-auto px-4 py-20 text-center">
           <h1 className="text-2xl font-bold text-raiz-dark mb-4">Acesso Restrito</h1>
           <p className="text-raiz-secondary">Você precisa estar logado para acessar sua carteira.</p>
@@ -201,8 +199,6 @@ const Wallet = () => {
 
   return (
     <div className="min-h-screen bg-raiz-light">
-      <Header />
-      
       <main className="container mx-auto px-4 py-8 mb-16 md:mb-0">
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-raiz-dark mb-2">Minha Carteira</h1>
