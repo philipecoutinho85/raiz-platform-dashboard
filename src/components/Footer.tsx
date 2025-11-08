@@ -29,7 +29,7 @@ const Footer = () => {
 
   return (
     <footer className="bg-raiz-dark text-raiz-light w-full">
-      <div className="container mx-auto px-4 py-16 w-full">
+      <div className="container mx-auto px-4 py-8 md:py-16 w-full">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}
           <div className="space-y-4">
@@ -67,18 +67,18 @@ const Footer = () => {
           </div>
           
           {/* Social Links */}
-          <div>
+          <div className="md:col-span-1">
             <h3 className="text-lg font-semibold text-raiz-gold mb-4">Redes Sociais</h3>
-            <div className="flex space-x-6">
+            <div className="flex flex-wrap gap-4">
               {socialLinks.linkedin && (
                 <a 
                   href={socialLinks.linkedin} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="text-raiz-light hover:text-raiz-gold transition-colors p-2 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
+                  className="text-raiz-light hover:text-raiz-gold transition-colors p-3 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
                   aria-label="LinkedIn"
                 >
-                  <Linkedin className="w-6 h-6" />
+                  <Linkedin className="w-7 h-7" />
                 </a>
               )}
               {socialLinks.instagram && (
@@ -86,10 +86,10 @@ const Footer = () => {
                   href={socialLinks.instagram} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="text-raiz-light hover:text-raiz-gold transition-colors p-2 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
+                  className="text-raiz-light hover:text-raiz-gold transition-colors p-3 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
                   aria-label="Instagram"
                 >
-                  <Instagram className="w-6 h-6" />
+                  <Instagram className="w-7 h-7" />
                 </a>
               )}
               {socialLinks.twitter && (
@@ -97,18 +97,18 @@ const Footer = () => {
                   href={socialLinks.twitter} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="text-raiz-light hover:text-raiz-gold transition-colors p-2 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
+                  className="text-raiz-light hover:text-raiz-gold transition-colors p-3 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20"
                   aria-label="Twitter"
                 >
-                  <Twitter className="w-6 h-6" />
+                  <Twitter className="w-7 h-7" />
                 </a>
               )}
             </div>
           </div>
         </div>
         
-        <div className="border-t border-raiz-accent/20 mt-12 pt-8 text-center">
-          <p className="text-raiz-light/60">
+        <div className="border-t border-raiz-accent/20 mt-8 md:mt-12 pt-6 md:pt-8 text-center">
+          <p className="text-raiz-light/60 text-sm">
             © 2025 Plataforma Raiz Token. Todos os direitos reservados.
           </p>
         </div>
