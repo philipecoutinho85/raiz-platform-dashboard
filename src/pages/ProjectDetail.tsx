@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Calendar, DollarSign, MapPin, Youtube, User, Users, Target, Clock, Edit, Save, X } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, MapPin, Youtube, User, Users, Target, Clock, Edit, Save, X, Award } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -342,12 +342,6 @@ const ProjectDetail = () => {
                           </Link>
                         )}
                       </div>
-                      {profile && (
-                        <div className="mt-3">
-                          <div className="text-xs font-semibold text-raiz-secondary mb-2">Badges:</div>
-                          <UserBadges userId={profile.id} showTitle={false} compact={true} />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -603,6 +597,24 @@ const ProjectDetail = () => {
                     <p className="font-medium">{profile.nome} {profile.sobrenome}</p>
                     <p className="text-sm text-raiz-secondary">{profile.email}</p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Credibilidade do Criador */}
+            {profile && (
+              <Card className="border-2 border-raiz-gold/30 bg-gradient-to-br from-raiz-gold/5 to-transparent">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-raiz-gold">
+                    <Award className="w-5 h-5" />
+                    Credibilidade do Criador
+                  </CardTitle>
+                  <CardDescription>
+                    Reconhecimentos conquistados por {profile.nome}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <UserBadges userId={profile.id} showTitle={false} compact={true} />
                 </CardContent>
               </Card>
             )}
