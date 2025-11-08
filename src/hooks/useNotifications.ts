@@ -87,8 +87,11 @@ export const useNotifications = () => {
 
     fetchNotifications();
 
-    const channel = supabase
-      .channel('notifications-channel')
+    // Criar canal com nome único baseado no user_id e timestamp
+    const channelName = `notifications-${user.id}-${Date.now()}`;
+    const channel = supabase.channel(channelName);
+
+    channel
       .on(
         'postgres_changes',
         {
@@ -114,6 +117,7 @@ export const useNotifications = () => {
       .subscribe();
 
     return () => {
+      channel.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, [user]);
