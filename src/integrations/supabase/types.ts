@@ -460,6 +460,8 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string
+          description_edit_count: number | null
+          description_edited_at: string | null
           endereco: string | null
           estado: string | null
           goal: number
@@ -484,6 +486,8 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description: string
+          description_edit_count?: number | null
+          description_edited_at?: string | null
           endereco?: string | null
           estado?: string | null
           goal: number
@@ -508,6 +512,8 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string
+          description_edit_count?: number | null
+          description_edited_at?: string | null
           endereco?: string | null
           estado?: string | null
           goal?: number

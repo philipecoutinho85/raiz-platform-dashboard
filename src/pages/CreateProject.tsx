@@ -255,8 +255,11 @@ const CreateProject = () => {
                   id="description"
                   {...register('description', { required: 'Descrição é obrigatória' })}
                   placeholder="Descreva seu projeto em detalhes..."
-                  className="min-h-[120px]"
+                  className="min-h-[200px] resize-y"
                 />
+                <p className="text-xs text-raiz-secondary">
+                  Dica: Use quebras de linha para organizar sua descrição em parágrafos e facilitar a leitura.
+                </p>
                 {errors.description && (
                   <p className="text-red-500 text-sm">{errors.description.message}</p>
                 )}

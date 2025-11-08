@@ -28,7 +28,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="bg-raiz-dark text-raiz-light w-full pb-20 md:pb-0">
+    <footer className="bg-raiz-dark text-raiz-light w-full">
       <div className="container mx-auto px-4 py-16 w-full">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo and Description */}

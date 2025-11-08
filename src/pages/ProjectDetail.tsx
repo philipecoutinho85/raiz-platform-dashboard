@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Calendar, DollarSign, MapPin, Youtube, User, Users, Target, Clock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Calendar, DollarSign, MapPin, Youtube, User, Users, Target, Clock, Edit, Save, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +32,8 @@ interface Project {
   cidade?: string;
   estado?: string;
   user_id: string;
+  description_edited_at?: string;
+  description_edit_count?: number;
 }
 
 interface Profile {
@@ -62,6 +65,8 @@ const ProjectDetail = () => {
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -89,6 +94,7 @@ const ProjectDetail = () => {
       }
 
       setProject(project);
+      setEditedDescription(project.description);
 
       // Fetch project owner profile
       const { data: profile, error: profileError } = await supabase
@@ -168,6 +174,55 @@ const ProjectDetail = () => {
   };
 
   const isOwner = user?.id === project?.user_id;
+
+  const handleSaveDescription = async () => {
+    if (!project || !editedDescription.trim()) {
+      toast({
+        title: "Erro",
+        description: "A descrição não pode estar vazia.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          description: editedDescription,
+          description_edited_at: new Date().toISOString(),
+          description_edit_count: (project.description_edit_count || 0) + 1
+        })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      setProject({
+        ...project,
+        description: editedDescription,
+        description_edited_at: new Date().toISOString(),
+        description_edit_count: (project.description_edit_count || 0) + 1
+      });
+      setIsEditingDescription(false);
+
+      toast({
+        title: "Sucesso",
+        description: "Descrição atualizada com sucesso!"
+      });
+    } catch (error: any) {
+      console.error('Error updating description:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar descrição.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedDescription(project?.description || '');
+    setIsEditingDescription(false);
+  };
 
   if (loading) {
     return (
@@ -289,9 +344,48 @@ const ProjectDetail = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-raiz-secondary leading-relaxed">
-                  {project.description}
-                </p>
+                {isEditingDescription ? (
+                  <div className="space-y-4">
+                    <Textarea
+                      value={editedDescription}
+                      onChange={(e) => setEditedDescription(e.target.value)}
+                      className="min-h-[200px] resize-y"
+                      placeholder="Descreva seu projeto em detalhes..."
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button onClick={handleSaveDescription} size="sm">
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar
+                      </Button>
+                      <Button onClick={handleCancelEdit} variant="outline" size="sm">
+                        <X className="w-4 h-4 mr-2" />
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-raiz-secondary leading-relaxed whitespace-pre-wrap">
+                      {project.description}
+                    </p>
+                    {project.description_edited_at && (
+                      <p className="text-xs text-raiz-secondary italic">
+                        Descrição editada em {formatDate(project.description_edited_at)}
+                      </p>
+                    )}
+                    {isOwner && (
+                      <Button 
+                        onClick={() => setIsEditingDescription(true)} 
+                        variant="outline" 
+                        size="sm"
+                        className="mt-2"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar Descrição
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
