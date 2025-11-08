@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, Shield } from 'lucide-react';
+import { Award, Shield, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Tooltip,
@@ -29,6 +29,7 @@ interface ProjectBadgesProps {
 }
 
 const ProjectBadges = ({ projectId, showTitle = true, compact = false }: ProjectBadgesProps) => {
+  const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
   const [projectBadges, setProjectBadges] = useState<ProjectBadge[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +39,17 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
 
   const fetchBadges = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch all active badges
+      const { data: allBadgesData, error: allBadgesError } = await supabase
+        .from('badges')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      if (allBadgesError) throw allBadgesError;
+
+      // Fetch project's earned badges
+      const { data: projectBadgesData, error: projectBadgesError } = await supabase
         .from('project_badges')
         .select(`
           *,
@@ -46,9 +57,10 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
         `)
         .eq('project_id', projectId);
 
-      if (error) throw error;
+      if (projectBadgesError) throw projectBadgesError;
 
-      setProjectBadges(data || []);
+      setAllBadges(allBadgesData || []);
+      setProjectBadges(projectBadgesData || []);
     } catch (error) {
       console.error('Error fetching project badges:', error);
     } finally {
@@ -56,13 +68,17 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
     }
   };
 
+  const hasBadge = (badgeId: string) => {
+    return projectBadges.some(pb => pb.badge_id === badgeId);
+  };
+
   if (loading) {
     return (
-      <div className="animate-pulse h-8 bg-muted rounded"></div>
+      <div className="animate-pulse h-24 bg-muted rounded"></div>
     );
   }
 
-  if (projectBadges.length === 0) {
+  if (allBadges.length === 0) {
     return null;
   }
 
@@ -70,41 +86,55 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
     return (
       <TooltipProvider>
         <div className="flex flex-wrap gap-2">
-          {projectBadges.map(({ badges }) => (
-            <Tooltip key={badges.id}>
-              <TooltipTrigger>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors border-2 border-primary/30">
-                  {badges.image_url ? (
-                    <img 
-                      src={badges.image_url} 
-                      alt={badges.name}
-                      className="w-8 h-8 object-contain"
-                    />
-                  ) : (
-                    <Award className="w-6 h-6 text-primary" />
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-center max-w-xs">
-                  <p className="font-semibold">{badges.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{badges.description}</p>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          ))}
+          {allBadges.map((badge) => {
+            const isUnlocked = hasBadge(badge.id);
+            return (
+              <Tooltip key={badge.id}>
+                <TooltipTrigger>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 ${
+                    isUnlocked 
+                      ? 'bg-white border-primary shadow-md hover:shadow-lg' 
+                      : 'bg-muted border-muted-foreground/20 opacity-50 grayscale'
+                  }`}>
+                    {isUnlocked ? (
+                      badge.image_url ? (
+                        <img 
+                          src={badge.image_url} 
+                          alt={badge.name}
+                          className="w-8 h-8 object-contain"
+                        />
+                      ) : (
+                        <Award className="w-6 h-6 text-primary" />
+                      )
+                    ) : (
+                      <Lock className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="text-center max-w-xs">
+                    <p className="font-semibold">{badge.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{badge.description}</p>
+                    {!isUnlocked && (
+                      <p className="text-xs text-muted-foreground mt-1 italic">Bloqueado</p>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
       </TooltipProvider>
     );
   }
 
   return (
-    <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-      <CardHeader className="pb-3">
+    <Card className="border-none shadow-none bg-transparent">
+      <CardHeader className="px-0 pt-0 pb-4">
         {showTitle && (
           <>
-            <CardTitle className="flex items-center gap-2 text-primary">
-              <Shield className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <Shield className="w-5 h-5 text-primary" />
               Badges do Projeto
             </CardTitle>
             <CardDescription>
@@ -113,39 +143,53 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
           </>
         )}
       </CardHeader>
-      <CardContent>
-        {projectBadges.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Este projeto ainda não possui badges
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {projectBadges.map(({ badges }) => (
-              <div
-                key={badges.id}
-                className="flex items-start gap-3 p-4 rounded-lg border-2 border-primary/30 bg-card hover:shadow-md transition-all"
-              >
-                <div className="flex-shrink-0 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/40">
-                  {badges.image_url ? (
-                    <img 
-                      src={badges.image_url} 
-                      alt={badges.name}
-                      className="w-12 h-12 object-contain"
-                    />
-                  ) : (
-                    <Award className="w-8 h-8 text-primary" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground mb-1">{badges.name}</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {badges.description}
-                  </p>
-                </div>
-              </div>
-            ))}
+      <CardContent className="px-0">
+        <TooltipProvider>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+            {allBadges.map((badge) => {
+              const isUnlocked = hasBadge(badge.id);
+              return (
+                <Tooltip key={badge.id}>
+                  <TooltipTrigger>
+                    <div className="flex flex-col items-center gap-2 group">
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all border-2 ${
+                        isUnlocked 
+                          ? 'bg-white border-primary shadow-lg hover:shadow-xl hover:scale-105' 
+                          : 'bg-muted border-muted-foreground/20 opacity-40 grayscale'
+                      }`}>
+                        {isUnlocked ? (
+                          badge.image_url ? (
+                            <img 
+                              src={badge.image_url} 
+                              alt={badge.name}
+                              className="w-14 h-14 object-contain"
+                            />
+                          ) : (
+                            <Award className="w-10 h-10 text-primary" />
+                          )
+                        ) : (
+                          <Lock className="w-8 h-8 text-muted-foreground" />
+                        )}
+                      </div>
+                      <p className={`text-xs text-center font-medium leading-tight ${
+                        isUnlocked ? 'text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        {badge.name}
+                      </p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="font-semibold mb-1">{badge.name}</p>
+                    <p className="text-xs text-muted-foreground">{badge.description}</p>
+                    {!isUnlocked && (
+                      <p className="text-xs text-muted-foreground mt-2 italic font-semibold">🔒 Bloqueado</p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
-        )}
+        </TooltipProvider>
       </CardContent>
     </Card>
   );
