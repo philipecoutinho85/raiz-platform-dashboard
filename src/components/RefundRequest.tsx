@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,11 +26,11 @@ const RefundRequest = () => {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     if (user) {
       fetchPurchases();
     }
-  });
+  }, [user]);
 
   const fetchPurchases = async () => {
     if (!user) return;

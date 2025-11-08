@@ -143,6 +143,30 @@ export const useTokens = () => {
 
   useEffect(() => {
     fetchTokens();
+
+    // Configurar listener para mudanças na tabela user_tokens
+    if (!user) return;
+
+    const channel = supabase
+      .channel('user-tokens-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_tokens',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Token balance updated:', payload);
+          setTokens(payload.new.balance);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

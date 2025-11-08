@@ -82,6 +82,10 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
       if (project) {
         project.custom_goal = customGoal ? parseFloat(customGoal) : undefined;
       }
+      // Chamar callback para atualizar lista no painel admin
+      if (onUpdate) {
+        onUpdate();
+      }
     } catch (error) {
       console.error('Error updating custom goal:', error);
       toast.error('Erro ao atualizar meta customizada');
@@ -107,6 +111,10 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
       // Atualizar o projeto localmente
       if (project) {
         project.admin_fee_percentage = adminFee ? parseFloat(adminFee) : 10;
+      }
+      // Chamar callback para atualizar lista no painel admin
+      if (onUpdate) {
+        onUpdate();
       }
     } catch (error) {
       console.error('Error updating admin fee:', error);

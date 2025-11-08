@@ -63,13 +63,11 @@ const CheckoutPayment = () => {
           if (newStatus === 'paid') {
             toast({
               title: '🎉 Pagamento Confirmado!',
-              description: 'Seus tokens foram creditados com sucesso.',
+              description: 'Seus tokens foram creditados com sucesso. Redirecionando...',
             });
             
-            // Redirecionar para carteira após 2 segundos
-            setTimeout(() => {
-              navigate('/carteira');
-            }, 2000);
+            // Redirecionar para carteira imediatamente
+            navigate('/carteira');
           } else if (newStatus === 'failed' || newStatus === 'cancelled') {
             toast({
               title: 'Pagamento não realizado',

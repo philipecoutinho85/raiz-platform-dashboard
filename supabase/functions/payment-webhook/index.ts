@@ -20,10 +20,19 @@ serve(async (req) => {
     
     console.log('Webhook recebido do Pagar.me:', JSON.stringify(webhookData, null, 2));
     
-    const { id: orderId, status, metadata } = webhookData;
+    // Pagar.me envia dados em estruturas diferentes dependendo do evento
+    // Para webhooks de order.paid, os dados vem dentro de 'data'
+    const eventData = webhookData.data || webhookData;
+    const orderId = eventData.id;
+    const status = eventData.status;
+    const metadata = eventData.metadata;
     
     if (!orderId || !metadata?.purchase_id) {
-      console.error('Webhook inválido - faltando dados obrigatórios');
+      console.error('Webhook inválido - faltando dados obrigatórios', {
+        orderId,
+        metadata,
+        hasData: !!webhookData.data
+      });
       return new Response(
         JSON.stringify({ error: 'Invalid webhook data' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
