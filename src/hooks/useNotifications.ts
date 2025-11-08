@@ -83,12 +83,17 @@ export const useNotifications = () => {
 
   // Realtime subscription para novas notificações
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoading(false);
+      return;
+    }
 
     fetchNotifications();
 
-    // Criar canal com nome único baseado no user_id e timestamp
-    const channelName = `notifications-${user.id}-${Date.now()}`;
+    // Criar canal com nome único baseado apenas no user_id
+    const channelName = `notifications-${user.id}`;
     const channel = supabase.channel(channelName);
 
     channel
@@ -117,6 +122,7 @@ export const useNotifications = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up notifications channel:', channelName);
       channel.unsubscribe();
       supabase.removeChannel(channel);
     };

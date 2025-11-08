@@ -47,8 +47,10 @@ const CheckoutPayment = () => {
   useEffect(() => {
     if (!purchaseId) return;
 
+    // Nome único do canal usando o purchaseId
+    const channelName = `token-purchase-${purchaseId}`;
     const channel = supabase
-      .channel('token-purchase-updates')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -82,6 +84,7 @@ const CheckoutPayment = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up payment channel:', channelName);
       supabase.removeChannel(channel);
     };
   }, [purchaseId, navigate, toast]);
