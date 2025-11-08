@@ -142,13 +142,20 @@ export const useTokens = () => {
   };
 
   useEffect(() => {
+    if (!user) {
+      setTokens(0);
+      setLoading(false);
+      return;
+    }
+
     fetchTokens();
 
     // Configurar listener para mudanças na tabela user_tokens
-    if (!user) return;
-
+    // Usar um nome único baseado no user.id para evitar conflitos
+    const channelName = `user-tokens-${user.id}`;
+    
     const channel = supabase
-      .channel('user-tokens-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -165,6 +172,7 @@ export const useTokens = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up channel:', channelName);
       supabase.removeChannel(channel);
     };
   }, [user]);
