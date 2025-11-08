@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award } from 'lucide-react';
+import { Award, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Tooltip,
@@ -8,7 +8,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 interface BadgeData {
   id: string;
@@ -74,14 +73,22 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
           {projectBadges.map(({ badges }) => (
             <Tooltip key={badges.id}>
               <TooltipTrigger>
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors">
-                  <Award className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors border-2 border-primary/30">
+                  {badges.image_url ? (
+                    <img 
+                      src={badges.image_url} 
+                      alt={badges.name}
+                      className="w-8 h-8 object-contain"
+                    />
+                  ) : (
+                    <Award className="w-6 h-6 text-primary" />
+                  )}
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <div className="text-center">
+                <div className="text-center max-w-xs">
                   <p className="font-semibold">{badges.name}</p>
-                  <p className="text-xs text-muted-foreground">{badges.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{badges.description}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -92,12 +99,12 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
   }
 
   return (
-    <Card className="border-2 border-primary/20">
+    <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
       <CardHeader className="pb-3">
         {showTitle && (
           <>
             <CardTitle className="flex items-center gap-2 text-primary">
-              <Award className="w-5 h-5" />
+              <Shield className="w-5 h-5" />
               Badges do Projeto
             </CardTitle>
             <CardDescription>
@@ -107,23 +114,38 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
         )}
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-3">
-          {projectBadges.map(({ badges }) => (
-            <TooltipProvider key={badges.id}>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Badge variant="outline" className="px-4 py-2 text-sm">
-                    <Award className="w-4 h-4 mr-2 text-primary" />
-                    {badges.name}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-sm">{badges.description}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ))}
-        </div>
+        {projectBadges.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Este projeto ainda não possui badges
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {projectBadges.map(({ badges }) => (
+              <div
+                key={badges.id}
+                className="flex items-start gap-3 p-4 rounded-lg border-2 border-primary/30 bg-card hover:shadow-md transition-all"
+              >
+                <div className="flex-shrink-0 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/40">
+                  {badges.image_url ? (
+                    <img 
+                      src={badges.image_url} 
+                      alt={badges.name}
+                      className="w-12 h-12 object-contain"
+                    />
+                  ) : (
+                    <Award className="w-8 h-8 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-foreground mb-1">{badges.name}</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {badges.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
