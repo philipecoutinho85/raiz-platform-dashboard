@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/Footer';
+import TokenSimulator from '@/components/TokenSimulator';
 
 interface ProjectFormData {
   title: string;
@@ -266,33 +267,40 @@ const CreateProject = () => {
               </div>
 
               {/* Financial Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="goal">Meta em Tokens *</Label>
-                  <Input
-                    id="goal"
-                    type="number"
-                    {...register('goal', { 
-                      required: 'Meta é obrigatória',
-                      min: { value: 1000, message: 'Meta mínima é 1.000 tokens' }
-                    })}
-                    placeholder="50000"
-                  />
-                  <p className="text-xs text-raiz-secondary">
-                    1 token = R$ 0,10 | Meta mínima: 1.000 tokens
-                  </p>
-                  {errors.goal && (
-                    <p className="text-red-500 text-sm">{errors.goal.message}</p>
-                  )}
-                </div>
+              <div className="space-y-6">
+                <TokenSimulator onGoalChange={(goal) => {
+                  const goalInput = document.getElementById('goal') as HTMLInputElement;
+                  if (goalInput) goalInput.value = goal.toString();
+                }} />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="goal">Meta em Tokens *</Label>
+                    <Input
+                      id="goal"
+                      type="number"
+                      {...register('goal', { 
+                        required: 'Meta é obrigatória',
+                        min: { value: 1000, message: 'Meta mínima é 1.000 tokens' }
+                      })}
+                      placeholder="50000"
+                    />
+                    <p className="text-xs text-raiz-secondary">
+                      1 token = R$ 1,00 | Meta mínima: 1.000 tokens | Taxa administrativa: 10%
+                    </p>
+                    {errors.goal && (
+                      <p className="text-red-500 text-sm">{errors.goal.message}</p>
+                    )}
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="deadline">Prazo Final</Label>
-                  <Input
-                    id="deadline"
-                    type="date"
-                    {...register('deadline')}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="deadline">Prazo Final</Label>
+                    <Input
+                      id="deadline"
+                      type="date"
+                      {...register('deadline')}
+                    />
+                  </div>
                 </div>
               </div>
 

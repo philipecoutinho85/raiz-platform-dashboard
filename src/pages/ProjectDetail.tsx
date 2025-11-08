@@ -34,6 +34,13 @@ interface Project {
   user_id: string;
   description_edited_at?: string;
   description_edit_count?: number;
+  accountability_report?: string;
+  accountability_images?: string[];
+  accountability_submitted_at?: string;
+  accountability_approved?: boolean;
+  can_create_new_project?: boolean;
+  admin_fee_percentage?: number;
+  custom_goal?: number;
 }
 
 interface Profile {
@@ -54,6 +61,7 @@ import ProjectGallery from '@/components/ProjectGallery';
 import SocialShare from '@/components/SocialShare';
 import ProjectComments from '@/components/ProjectComments';
 import UserBadges from '@/components/UserBadges';
+import ProjectAccountability from '@/components/ProjectAccountability';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -430,6 +438,19 @@ const ProjectDetail = () => {
 
             {/* Contributors */}
             <ProjectContributors projectId={project.id} />
+
+            {/* Accountability */}
+            <ProjectAccountability
+              projectId={project.id}
+              projectUserId={project.user_id}
+              currentUserId={user?.id}
+              accountabilityReport={project.accountability_report}
+              accountabilityImages={project.accountability_images}
+              accountabilitySubmittedAt={project.accountability_submitted_at}
+              accountabilityApproved={project.accountability_approved}
+              goalReached={project.raised_amount >= project.goal}
+              projectStatus={project.status}
+            />
 
             {/* Location */}
             {(project.endereco || project.cidade || project.estado) && (

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AnalyticsScripts from "./components/AnalyticsScripts";
+import GoogleAnalyticsLoader from "./components/GoogleAnalyticsLoader";
 import Header from "./components/Header";
 import MobileNavigation from "./components/MobileNavigation";
 import Index from "./pages/Index";
@@ -43,6 +44,7 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <AnalyticsScripts />
+        <GoogleAnalyticsLoader />
         <BrowserRouter>
           <CookieConsent />
           <div className="min-h-screen flex flex-col">

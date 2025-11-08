@@ -155,6 +155,27 @@ export type Database = {
         }
         Relationships: []
       }
+      google_analytics_settings: {
+        Row: {
+          gtag_script: string | null
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          gtag_script?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          gtag_script?: string | null
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       moderator_permissions: {
         Row: {
           can_manage_users: boolean | null
@@ -451,13 +472,20 @@ export type Database = {
       }
       projects: {
         Row: {
+          accountability_approved: boolean | null
+          accountability_images: string[] | null
+          accountability_report: string | null
+          accountability_submitted_at: string | null
+          admin_fee_percentage: number | null
           admin_notes: string | null
           backers_count: number
           bairro: string | null
+          can_create_new_project: boolean | null
           category: string
           cidade: string | null
           complemento: string | null
           created_at: string
+          custom_goal: number | null
           deadline: string | null
           description: string
           description_edit_count: number | null
@@ -477,13 +505,20 @@ export type Database = {
           youtube_url: string
         }
         Insert: {
+          accountability_approved?: boolean | null
+          accountability_images?: string[] | null
+          accountability_report?: string | null
+          accountability_submitted_at?: string | null
+          admin_fee_percentage?: number | null
           admin_notes?: string | null
           backers_count?: number
           bairro?: string | null
+          can_create_new_project?: boolean | null
           category: string
           cidade?: string | null
           complemento?: string | null
           created_at?: string
+          custom_goal?: number | null
           deadline?: string | null
           description: string
           description_edit_count?: number | null
@@ -503,13 +538,20 @@ export type Database = {
           youtube_url: string
         }
         Update: {
+          accountability_approved?: boolean | null
+          accountability_images?: string[] | null
+          accountability_report?: string | null
+          accountability_submitted_at?: string | null
+          admin_fee_percentage?: number | null
           admin_notes?: string | null
           backers_count?: number
           bairro?: string | null
+          can_create_new_project?: boolean | null
           category?: string
           cidade?: string | null
           complemento?: string | null
           created_at?: string
+          custom_goal?: number | null
           deadline?: string | null
           description?: string
           description_edit_count?: number | null

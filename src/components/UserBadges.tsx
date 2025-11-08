@@ -100,8 +100,8 @@ const UserBadges = ({ userId, showTitle = true }: UserBadgesProps) => {
                     <div
                       className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all cursor-help ${
                         hasIt
-                          ? 'border-raiz-gold bg-raiz-gold/10'
-                          : 'border-gray-300 bg-gray-50 opacity-50'
+                          ? 'border-raiz-gold bg-raiz-gold/20 shadow-lg'
+                          : 'border-gray-300 bg-gray-50 opacity-40'
                       }`}
                     >
                       <div className="relative mb-2">
@@ -109,16 +109,16 @@ const UserBadges = ({ userId, showTitle = true }: UserBadgesProps) => {
                           <img
                             src={badge.image_url}
                             alt={badge.name}
-                            className="w-16 h-16 object-contain"
+                            className={hasIt ? 'w-20 h-20 object-contain' : 'w-16 h-16 object-contain opacity-50'}
                           />
                         ) : (
                           <div
-                            className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                            className={`${hasIt ? 'w-20 h-20' : 'w-16 h-16'} rounded-full flex items-center justify-center ${
                               hasIt ? 'bg-raiz-gold' : 'bg-gray-300'
                             }`}
                           >
                             {hasIt ? (
-                              <Award className="w-8 h-8 text-white" />
+                              <Award className={hasIt ? 'w-10 h-10 text-white' : 'w-8 h-8 text-white'} />
                             ) : (
                               <Lock className="w-8 h-8 text-gray-500" />
                             )}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Linkedin, Instagram, Twitter, Mail } from 'lucide-react';
+import { Linkedin, Instagram } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import raizLogo from '@/assets/raiz-logo-light.png';
@@ -7,8 +7,7 @@ import raizLogo from '@/assets/raiz-logo-light.png';
 const Footer = () => {
   const [socialLinks, setSocialLinks] = useState({
     linkedin: '',
-    instagram: '',
-    twitter: ''
+    instagram: ''
   });
 
   useEffect(() => {
@@ -87,15 +86,6 @@ const Footer = () => {
                 aria-label="Instagram"
               >
                 <Instagram className="w-6 h-6" />
-              </a>
-              <a 
-                href={socialLinks.twitter || '#'} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-raiz-light hover:text-raiz-gold transition-colors p-3 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20 flex items-center justify-center"
-                aria-label="Twitter"
-              >
-                <Twitter className="w-6 h-6" />
               </a>
             </div>
           </div>

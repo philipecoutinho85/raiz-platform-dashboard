@@ -3,6 +3,8 @@ import AnalyticsSettings from './AnalyticsSettings';
 import ModeratorsSettings from './ModeratorsSettings';
 import SocialLinksSettings from './SocialLinksSettings';
 import Admin2FAManagement from './Admin2FAManagement';
+import BackupSettings from './BackupSettings';
+import GoogleAnalyticsSettings from './GoogleAnalyticsSettings';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 const SettingsTab = () => {
@@ -20,9 +22,11 @@ const SettingsTab = () => {
     <div className="space-y-6">
       <Admin2FAManagement />
       <MaintenanceSettings settings={maintenanceMode} onUpdate={updateMaintenanceMode} />
+      <GoogleAnalyticsSettings />
       <AnalyticsSettings settings={analytics} onUpdate={updateAnalytics} />
       <SocialLinksSettings settings={socialLinks} onUpdate={updateSocialLinks} />
       <ModeratorsSettings />
+      <BackupSettings />
     </div>
   );
 };
