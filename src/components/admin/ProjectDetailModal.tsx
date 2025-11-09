@@ -46,12 +46,32 @@ interface ProjectDetailModalProps {
 }
 
 const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: ProjectDetailModalProps) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [isEditingFee, setIsEditingFee] = useState(false);
   const [customGoal, setCustomGoal] = useState('');
   const [adminFee, setAdminFee] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [userIsAdmin, setUserIsAdmin] = useState(false);
+
+  // Verificar se o usuário é admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+      
+      setUserIsAdmin(!!data);
+      console.log('User is admin:', !!data);
+    };
+    
+    checkAdminStatus();
+  }, [user]);
 
   // Atualizar estados quando o projeto mudar
   useEffect(() => {
@@ -77,14 +97,19 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
     try {
       const newGoalValue = customGoal ? parseFloat(customGoal) : null;
       
+      console.log('Tentando salvar meta:', newGoalValue);
+      console.log('User is admin:', userIsAdmin);
+      
       // Validação: apenas admins podem definir metas menores que 1000
-      if (newGoalValue && newGoalValue < 1000 && !isAdmin) {
+      if (newGoalValue && newGoalValue < 1000 && !userIsAdmin) {
         toast.error('Apenas administradores podem definir metas menores que 1000 tokens');
+        setIsSaving(false);
         return;
       }
       
       if (newGoalValue && newGoalValue <= 0) {
         toast.error('A meta deve ser maior que zero');
+        setIsSaving(false);
         return;
       }
       
@@ -100,6 +125,7 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
         throw error;
       }
 
+      console.log('Meta salva com sucesso!');
       toast.success('Meta customizada atualizada com sucesso!');
       setIsEditingGoal(false);
       
@@ -218,9 +244,9 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
                               type="number"
                               value={customGoal}
                               onChange={(e) => setCustomGoal(e.target.value)}
-                              placeholder={isAdmin ? "Qualquer valor" : "Mínimo: 1000 tokens"}
+                              placeholder={userIsAdmin ? "Qualquer valor (mín: 1)" : "Mínimo: 1000 tokens"}
                               className="flex-1"
-                              min={isAdmin ? "1" : "1000"}
+                              min="1"
                               step="1"
                             />
                             <Button
@@ -229,7 +255,7 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
                               disabled={isSaving}
                             >
                               <Save className="w-3 h-3 mr-1" />
-                              Salvar
+                              {isSaving ? 'Salvando...' : 'Salvar'}
                             </Button>
                             <Button
                               size="sm"
@@ -242,9 +268,14 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
                               Cancelar
                             </Button>
                           </div>
-                          {isAdmin && (
-                            <p className="text-xs text-raiz-gold">
-                              Como administrador, você pode definir qualquer meta (incluindo valores abaixo de 1000 tokens)
+                          {userIsAdmin && (
+                            <p className="text-xs text-raiz-gold font-semibold">
+                              ✓ Como administrador, você pode definir qualquer meta (incluindo valores abaixo de 1000 tokens)
+                            </p>
+                          )}
+                          {!userIsAdmin && (
+                            <p className="text-xs text-raiz-secondary">
+                              Meta mínima: 1000 tokens
                             </p>
                           )}
                         </div>
