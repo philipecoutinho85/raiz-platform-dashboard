@@ -86,6 +86,7 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
 
   const fetchComments = async () => {
     try {
+      // Get all top-level comments
       const { data, error } = await supabase
         .from('project_comments')
         .select('*')
@@ -96,51 +97,56 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
 
       if (error) throw error;
 
-      const commentsWithProfilesAndReplies = await Promise.all(
-        (data || []).map(async (comment) => {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('nome, sobrenome, avatar_url')
-            .eq('id', comment.user_id)
-            .single();
+      // Get all user IDs
+      const allUserIds = new Set<string>();
+      data?.forEach(comment => allUserIds.add(comment.user_id));
 
-          if (profileError) {
-            console.error('Error fetching profile for comment:', profileError);
-          }
+      // Get all replies and their user IDs
+      const commentIds = data?.map(c => c.id) || [];
+      const { data: allReplies } = await supabase
+        .from('project_comments')
+        .select('*')
+        .in('parent_comment_id', commentIds)
+        .eq('is_hidden', false)
+        .order('created_at', { ascending: true });
+      
+      allReplies?.forEach(reply => allUserIds.add(reply.user_id));
 
-          const { data: replies } = await supabase
-            .from('project_comments')
-            .select('*')
-            .eq('parent_comment_id', comment.id)
-            .eq('is_hidden', false)
-            .order('created_at', { ascending: true });
+      // Fetch all profiles in one query
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nome, sobrenome, avatar_url')
+        .in('id', Array.from(allUserIds));
 
-          const repliesWithProfiles = await Promise.all(
-            (replies || []).map(async (reply) => {
-              const { data: replyProfile, error: replyProfileError } = await supabase
-                .from('profiles')
-                .select('nome, sobrenome, avatar_url')
-                .eq('id', reply.user_id)
-                .single();
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const repliesMap = new Map<string, any[]>();
+      
+      allReplies?.forEach(reply => {
+        if (!repliesMap.has(reply.parent_comment_id)) {
+          repliesMap.set(reply.parent_comment_id, []);
+        }
+        repliesMap.get(reply.parent_comment_id)!.push(reply);
+      });
 
-              if (replyProfileError) {
-                console.error('Error fetching profile for reply:', replyProfileError);
-              }
+      const commentsWithProfilesAndReplies = (data || []).map((comment) => {
+        const profile = profileMap.get(comment.user_id);
+        const replies = repliesMap.get(comment.id) || [];
 
-              return {
-                ...reply,
-                profiles: replyProfile || null,
-              };
-            })
-          );
-
+        const repliesWithProfiles = replies.map((reply) => {
+          const replyProfile = profileMap.get(reply.user_id);
+          
           return {
-            ...comment,
-            profiles: profile || null,
-            replies: repliesWithProfiles,
+            ...reply,
+            profiles: replyProfile || null,
           };
-        })
-      );
+        });
+
+        return {
+          ...comment,
+          profiles: profile || null,
+          replies: repliesWithProfiles,
+        };
+      });
 
       setComments(commentsWithProfilesAndReplies as Comment[]);
     } catch (error) {

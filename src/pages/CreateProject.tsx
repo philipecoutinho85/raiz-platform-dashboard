@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,21 @@ const CreateProject = () => {
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [featuredImageUrl, setFeaturedImageUrl] = useState<string>('');
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+      setIsAdmin(!!data);
+    };
+    checkAdminStatus();
+  }, [user]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ProjectFormData>();
 
@@ -281,15 +296,21 @@ const CreateProject = () => {
                       type="number"
                       {...register('goal', { 
                         required: 'Meta é obrigatória',
-                        min: { value: 1000, message: 'Meta mínima é 1.000 tokens' },
+                        min: { 
+                          value: isAdmin ? 1 : 1000, 
+                          message: isAdmin ? 'Meta deve ser maior que zero' : 'Meta mínima é 1.000 tokens' 
+                        },
                         valueAsNumber: true
                       })}
-                      placeholder="50000"
+                      placeholder={isAdmin ? "Qualquer valor" : "50000"}
                       step="1"
-                      min="1000"
+                      min={isAdmin ? "1" : "1000"}
                     />
                     <p className="text-xs text-raiz-secondary">
-                      1 token = R$ 1,00 | Meta mínima: 1.000 tokens | Taxa administrativa: 10%
+                      {isAdmin 
+                        ? "Como administrador, você pode definir qualquer meta"
+                        : "1 token = R$ 1,00 | Meta mínima: 1.000 tokens | Taxa administrativa: 10%"
+                      }
                     </p>
                     {errors.goal && (
                       <p className="text-red-500 text-sm">{errors.goal.message}</p>
