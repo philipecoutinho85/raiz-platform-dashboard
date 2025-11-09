@@ -11,6 +11,8 @@ import TokensTab from '@/components/admin/TokensTab';
 import TransactionsTab from '@/components/admin/TransactionsTab';
 import SettingsTab from '@/components/admin/SettingsTab';
 import BadgesTab from '@/components/admin/BadgesTab';
+import RefundsTab from '@/components/admin/RefundsTab';
+import AdminTestPanel from '@/components/admin/AdminTestPanel';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -128,19 +130,23 @@ const AdminPanel = () => {
                   <SelectItem value="badges">Badges</SelectItem>
                   <SelectItem value="tokens">Tokens</SelectItem>
                   <SelectItem value="transactions">Transações</SelectItem>
+                  <SelectItem value="refunds">Reembolsos</SelectItem>
                   <SelectItem value="logs">Logs</SelectItem>
+                  <SelectItem value="tests">Testes</SelectItem>
                   <SelectItem value="settings">Configurações</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           ) : (
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="projects">Projetos</TabsTrigger>
               <TabsTrigger value="users">Usuários</TabsTrigger>
               <TabsTrigger value="badges">Badges</TabsTrigger>
               <TabsTrigger value="tokens">Tokens</TabsTrigger>
               <TabsTrigger value="transactions">Transações</TabsTrigger>
+              <TabsTrigger value="refunds">Reembolsos</TabsTrigger>
               <TabsTrigger value="logs">Logs</TabsTrigger>
+              <TabsTrigger value="tests">Testes</TabsTrigger>
               <TabsTrigger value="settings">Config.</TabsTrigger>
             </TabsList>
           )}
@@ -175,8 +181,16 @@ const AdminPanel = () => {
             <TransactionsTab />
           </TabsContent>
 
+          <TabsContent value="refunds">
+            <RefundsTab />
+          </TabsContent>
+
           <TabsContent value="logs">
             <AdminLogsViewer />
+          </TabsContent>
+
+          <TabsContent value="tests">
+            <AdminTestPanel />
           </TabsContent>
 
           <TabsContent value="settings">

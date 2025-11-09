@@ -63,6 +63,7 @@ import ProjectComments from '@/components/ProjectComments';
 import UserBadges from '@/components/UserBadges';
 import ProjectAccountability from '@/components/ProjectAccountability';
 import ProjectBadges from '@/components/ProjectBadges';
+import TokenSupportDialog from '@/components/TokenSupportDialog';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -76,6 +77,7 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
+  const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -529,7 +531,10 @@ const ProjectDetail = () => {
                 </div>
 
                 {project.status === 'approved' && !isOwner && (
-                  <Button className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3">
+                  <Button 
+                    onClick={() => setIsSupportDialogOpen(true)}
+                    className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3"
+                  >
                     Apoiar com Tokens
                   </Button>
                 )}
@@ -630,6 +635,15 @@ const ProjectDetail = () => {
           </div>
         </div>
       </div>
+
+      <TokenSupportDialog
+        isOpen={isSupportDialogOpen}
+        onClose={() => setIsSupportDialogOpen(false)}
+        projectId={project.id}
+        projectTitle={project.title}
+        onSuccess={fetchProject}
+      />
+
       <Footer />
     </div>
   );
