@@ -83,6 +83,32 @@ export const useTokens = () => {
     }
 
     try {
+      // Verificar se o projeto é do próprio usuário
+      const { data: project } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single();
+
+      if (project && project.user_id === user.id) {
+        // Verificar se é admin
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (!adminRole) {
+          toast({
+            title: "Ação não permitida",
+            description: "Você não pode investir em seu próprio projeto. Apenas administradores podem fazer isso para fins de teste.",
+            variant: "destructive"
+          });
+          return false;
+        }
+      }
+
       const newBalance = tokens - amount;
 
       // Criar contribuição
