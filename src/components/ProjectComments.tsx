@@ -98,11 +98,15 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
 
       const commentsWithProfilesAndReplies = await Promise.all(
         (data || []).map(async (comment) => {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('nome, sobrenome, avatar_url')
             .eq('id', comment.user_id)
             .single();
+
+          if (profileError) {
+            console.error('Error fetching profile for comment:', profileError);
+          }
 
           const { data: replies } = await supabase
             .from('project_comments')
@@ -113,22 +117,26 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
 
           const repliesWithProfiles = await Promise.all(
             (replies || []).map(async (reply) => {
-              const { data: replyProfile } = await supabase
+              const { data: replyProfile, error: replyProfileError } = await supabase
                 .from('profiles')
                 .select('nome, sobrenome, avatar_url')
                 .eq('id', reply.user_id)
                 .single();
 
+              if (replyProfileError) {
+                console.error('Error fetching profile for reply:', replyProfileError);
+              }
+
               return {
                 ...reply,
-                profiles: replyProfile,
+                profiles: replyProfile || null,
               };
             })
           );
 
           return {
             ...comment,
-            profiles: profile,
+            profiles: profile || null,
             replies: repliesWithProfiles,
           };
         })

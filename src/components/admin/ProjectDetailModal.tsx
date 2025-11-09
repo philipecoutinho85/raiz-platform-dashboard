@@ -75,10 +75,12 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
   const handleSaveGoal = async () => {
     setIsSaving(true);
     try {
+      const newGoalValue = customGoal ? parseFloat(customGoal) : null;
+      
       const { error } = await supabase
         .from('projects')
         .update({ 
-          custom_goal: customGoal ? parseFloat(customGoal) : null 
+          custom_goal: newGoalValue
         })
         .eq('id', project.id);
 
@@ -86,13 +88,15 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
 
       toast.success('Meta customizada atualizada com sucesso!');
       setIsEditingGoal(false);
-      // Atualizar o projeto localmente
+      
+      // Atualizar o projeto localmente para refletir imediatamente
       if (project) {
-        project.custom_goal = customGoal ? parseFloat(customGoal) : undefined;
+        project.custom_goal = newGoalValue || undefined;
       }
+      
       // Chamar callback para atualizar lista no painel admin
       if (onUpdate) {
-        onUpdate();
+        await onUpdate();
       }
     } catch (error) {
       console.error('Error updating custom goal:', error);
@@ -105,10 +109,12 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
   const handleSaveFee = async () => {
     setIsSaving(true);
     try {
+      const newFeeValue = adminFee ? parseFloat(adminFee) : 10;
+      
       const { error } = await supabase
         .from('projects')
         .update({ 
-          admin_fee_percentage: adminFee ? parseFloat(adminFee) : 10 
+          admin_fee_percentage: newFeeValue
         })
         .eq('id', project.id);
 
@@ -116,13 +122,15 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
 
       toast.success('Taxa administrativa atualizada com sucesso!');
       setIsEditingFee(false);
-      // Atualizar o projeto localmente
+      
+      // Atualizar o projeto localmente para refletir imediatamente
       if (project) {
-        project.admin_fee_percentage = adminFee ? parseFloat(adminFee) : 10;
+        project.admin_fee_percentage = newFeeValue;
       }
+      
       // Chamar callback para atualizar lista no painel admin
       if (onUpdate) {
-        onUpdate();
+        await onUpdate();
       }
     } catch (error) {
       console.error('Error updating admin fee:', error);

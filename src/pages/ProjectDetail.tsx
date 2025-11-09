@@ -112,7 +112,9 @@ const ProjectDetail = () => {
         .eq('id', project.user_id)
         .single();
 
-      if (!profileError) {
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      } else if (profile) {
         setProfile(profile);
       }
 

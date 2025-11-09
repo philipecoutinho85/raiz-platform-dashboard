@@ -40,43 +40,9 @@ const ProjectCommunication = ({
 
       if (error) throw error;
 
-      // Buscar informações do projeto para criar notificação
-      const { data: projectData } = await supabase
-        .from('projects')
-        .select('user_id, title')
-        .eq('id', projectId)
-        .single();
-
-      if (projectData) {
-        // Criar notificação para o criador do projeto
-        let notificationTitle = 'Atualização do Projeto';
-        let notificationMessage = '';
-
-        if (currentStatus === 'rejected' && reason) {
-          notificationTitle = 'Projeto Rejeitado';
-          notificationMessage = `Seu projeto "${projectData.title}" foi rejeitado. Verifique os motivos na página de Meus Projetos.`;
-        } else if (requirements) {
-          notificationTitle = 'Requisitos Pendentes';
-          notificationMessage = `O administrador solicitou alterações no projeto "${projectData.title}". Verifique os detalhes na página de Meus Projetos.`;
-        }
-
-        if (notificationMessage) {
-          const { error: notifError } = await supabase
-            .from('notifications')
-            .insert({
-              user_id: projectData.user_id,
-              type: currentStatus === 'rejected' ? 'project_rejected' : 'project_update',
-              title: notificationTitle,
-              message: notificationMessage,
-              related_id: projectId,
-            });
-
-          if (notifError) {
-            console.error('Error creating notification:', notifError);
-          }
-        }
-      }
-
+      // As notificações são criadas automaticamente pelos triggers do banco de dados
+      // quando rejection_reason ou pending_requirements são atualizados
+      
       toast.success('Comunicação atualizada com sucesso!');
       onUpdate();
     } catch (error) {
