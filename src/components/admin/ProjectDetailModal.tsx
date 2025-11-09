@@ -77,6 +77,17 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
     try {
       const newGoalValue = customGoal ? parseFloat(customGoal) : null;
       
+      // Validação: apenas admins podem definir metas menores que 1000
+      if (newGoalValue && newGoalValue < 1000 && !isAdmin) {
+        toast.error('Apenas administradores podem definir metas menores que 1000 tokens');
+        return;
+      }
+      
+      if (newGoalValue && newGoalValue <= 0) {
+        toast.error('A meta deve ser maior que zero');
+        return;
+      }
+      
       const { error } = await supabase
         .from('projects')
         .update({ 
@@ -84,7 +95,10 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
         })
         .eq('id', project.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast.success('Meta customizada atualizada com sucesso!');
       setIsEditingGoal(false);
@@ -198,32 +212,41 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
                         )}
                       </div>
                       {isEditingGoal ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            value={customGoal}
-                            onChange={(e) => setCustomGoal(e.target.value)}
-                            placeholder="Meta em tokens"
-                            className="flex-1"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={handleSaveGoal}
-                            disabled={isSaving}
-                          >
-                            <Save className="w-3 h-3 mr-1" />
-                            Salvar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setIsEditingGoal(false);
-                              setCustomGoal(project?.custom_goal?.toString() || '');
-                            }}
-                          >
-                            Cancelar
-                          </Button>
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              value={customGoal}
+                              onChange={(e) => setCustomGoal(e.target.value)}
+                              placeholder={isAdmin ? "Qualquer valor" : "Mínimo: 1000 tokens"}
+                              className="flex-1"
+                              min={isAdmin ? "1" : "1000"}
+                              step="1"
+                            />
+                            <Button
+                              size="sm"
+                              onClick={handleSaveGoal}
+                              disabled={isSaving}
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Salvar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setIsEditingGoal(false);
+                                setCustomGoal(project?.custom_goal?.toString() || '');
+                              }}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                          {isAdmin && (
+                            <p className="text-xs text-raiz-gold">
+                              Como administrador, você pode definir qualquer meta (incluindo valores abaixo de 1000 tokens)
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-raiz-secondary">
