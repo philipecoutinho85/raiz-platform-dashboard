@@ -14,7 +14,7 @@ const HowItWorks = () => {
     {
       icon: <Coins className="w-8 h-8 text-raiz-accent" />,
       title: "2. Compre Tokens",
-      description: "Adquira tokens digitais: cada R$ 1,00 equivale a 10 tokens (1 token = R$ 0,10). Valor mínimo de R$ 5,00 (50 tokens)."
+      description: "Adquira tokens digitais: 1 token = R$ 1,00. Valor mínimo de R$ 50,00 (50 tokens)."
     },
     {
       icon: <ArrowRight className="w-8 h-8 text-raiz-accent" />,

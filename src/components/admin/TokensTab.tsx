@@ -32,7 +32,7 @@ const TokensTab = ({ stats }: TokensTabProps) => {
               <TrendingUp className="w-10 h-10 text-raiz-gold" />
               <div>
                 <p className="text-sm text-raiz-secondary">Valor Total (R$)</p>
-                <p className="text-2xl font-bold text-raiz-dark">R$ {(stats.totalTokens * 0.10).toFixed(2)}</p>
+                <p className="text-2xl font-bold text-raiz-dark">R$ {(stats.totalTokens * 1.00).toFixed(2)}</p>
               </div>
             </div>
             

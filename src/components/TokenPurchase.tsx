@@ -26,17 +26,17 @@ const TokenPurchase = () => {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
 
-  // Calcular valor em reais baseado na quantidade de tokens
+  // Calcular valor em reais baseado na quantidade de tokens (1 token = R$ 1,00)
   const calculatePrice = (tokens: number) => {
-    return (tokens * 0.10).toFixed(2);
+    return (tokens * 1.00).toFixed(2);
   };
 
   const tokenPackages = [
-    { tokens: 50, price: 5, bonus: 0 }, // Valor mínimo
-    { tokens: 100, price: 10, bonus: 0 },
-    { tokens: 500, price: 50, bonus: 0 },
-    { tokens: 1000, price: 100, bonus: 0 },
-    { tokens: 2000, price: 200, bonus: 0 },
+    { tokens: 50, price: 50, bonus: 0 }, // Valor mínimo
+    { tokens: 100, price: 100, bonus: 0 },
+    { tokens: 500, price: 500, bonus: 0 },
+    { tokens: 1000, price: 1000, bonus: 0 },
+    { tokens: 2000, price: 2000, bonus: 0 },
   ];
 
   const handlePurchase = async (tokens: number) => {
@@ -127,7 +127,7 @@ const TokenPurchase = () => {
           <Alert className="bg-raiz-primary/5 border-raiz-primary/20">
             <Coins className="h-4 w-4" />
             <AlertDescription>
-              Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 0,10. Valor mínimo de compra: R$ 5,00 (50 tokens).
+              Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 1,00. Valor mínimo de compra: R$ 50,00 (50 tokens).
             </AlertDescription>
           </Alert>
 
@@ -211,7 +211,7 @@ const TokenPurchase = () => {
                   Valor total: R$ {calculatePrice(parseInt(amount))}
                 </p>
                 <p className="text-xs text-raiz-secondary mt-1">
-                  {amount} tokens × R$ 0,10
+                  {amount} tokens × R$ 1,00
                 </p>
               </div>
             )}
@@ -230,7 +230,7 @@ const TokenPurchase = () => {
             </Button>
           </div>
           <p className="text-xs text-raiz-secondary mt-2">
-            R$ 0,10 por token (mínimo: R$ 5,00 = 50 tokens)
+            R$ 1,00 por token (mínimo: R$ 50,00 = 50 tokens)
           </p>
         </div>
 

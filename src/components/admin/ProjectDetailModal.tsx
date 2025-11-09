@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -54,12 +54,12 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
   const [isSaving, setIsSaving] = useState(false);
 
   // Atualizar estados quando o projeto mudar
-  useState(() => {
+  useEffect(() => {
     if (project) {
       setCustomGoal(project.custom_goal?.toString() || '');
       setAdminFee(project.admin_fee_percentage?.toString() || '10');
     }
-  });
+  }, [project]);
 
   if (!project) return null;
 

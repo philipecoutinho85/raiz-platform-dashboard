@@ -9,11 +9,11 @@ const FAQ = () => {
   const faqs = [
     {
       question: "O que é um token?",
-      answer: "Um token é uma unidade digital simbólica dentro da nossa plataforma. Cada token equivale a R$ 0,10 e representa seu apoio a um projeto. Os tokens são uma forma moderna e transparente de registrar suas contribuições para causas sociais importantes."
+      answer: "Um token é uma unidade digital simbólica dentro da nossa plataforma. Cada token equivale a R$ 1,00 e representa seu apoio a um projeto. Os tokens são uma forma moderna e transparente de registrar suas contribuições para causas sociais importantes."
     },
     {
       question: "Qual o valor mínimo para apoiar?",
-      answer: "O valor mínimo é de R$ 5,00, que gera 50 tokens. Essa quantidade permite que você já faça uma contribuição significativa para projetos menores ou combine com outros apoiadores em projetos maiores."
+      answer: "O valor mínimo é de R$ 50,00, que gera 50 tokens. Essa quantidade permite que você já faça uma contribuição significativa para projetos menores ou combine com outros apoiadores em projetos maiores."
     },
     {
       question: "O que acontece se o projeto não atingir a meta?",
