@@ -599,20 +599,6 @@ const ProjectDetail = () => {
               </Card>
             )}
 
-            {/* Contact */}
-            {profile && !isOwner && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contato</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p className="font-medium">{profile.nome} {profile.sobrenome}</p>
-                    <p className="text-sm text-raiz-secondary">{profile.email}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Credibilidade do Criador */}
             {profile && (

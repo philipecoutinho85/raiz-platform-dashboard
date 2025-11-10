@@ -18,22 +18,24 @@ serve(async (req) => {
 
     console.log('[Check Expired Projects] Starting check...');
 
-    // Buscar projetos aprovados que venceram e não atingiram a meta
-    const { data: expiredProjects, error: projectsError } = await supabase
+    // Buscar projetos aprovados que venceram
+    const { data: allExpiredProjects, error: projectsError } = await supabase
       .from('projects')
       .select('id, title, user_id, goal, raised_amount, deadline')
       .eq('status', 'approved')
-      .lt('deadline', new Date().toISOString().split('T')[0])
-      .lt('raised_amount', supabase.rpc('goal'));
+      .lt('deadline', new Date().toISOString().split('T')[0]);
 
     if (projectsError) {
       console.error('[Check Expired Projects] Error fetching projects:', projectsError);
       throw projectsError;
     }
 
-    console.log(`[Check Expired Projects] Found ${expiredProjects?.length || 0} expired projects`);
+    // Filtrar apenas projetos que não atingiram a meta
+    const expiredProjects = allExpiredProjects?.filter(p => p.raised_amount < p.goal) || [];
 
-    if (!expiredProjects || expiredProjects.length === 0) {
+    console.log(`[Check Expired Projects] Found ${expiredProjects.length} expired projects without reaching goal`);
+
+    if (expiredProjects.length === 0) {
       return new Response(
         JSON.stringify({ message: 'No expired projects found', processed: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
