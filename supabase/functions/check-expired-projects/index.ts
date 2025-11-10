@@ -19,7 +19,7 @@ serve(async (req) => {
     console.log('[Check Expired Projects] Starting check...');
 
     // Buscar projetos aprovados que venceram
-    const { data: allExpiredProjects, error: projectsError } = await supabase
+    const { data: allProjects, error: projectsError } = await supabase
       .from('projects')
       .select('id, title, user_id, goal, raised_amount, deadline')
       .eq('status', 'approved')
@@ -30,8 +30,12 @@ serve(async (req) => {
       throw projectsError;
     }
 
-    // Filtrar apenas projetos que não atingiram a meta
-    const expiredProjects = allExpiredProjects?.filter(p => p.raised_amount < p.goal) || [];
+    // Filtrar projetos que não atingiram a meta (comparação em JS)
+    const expiredProjects = (allProjects || []).filter(p => {
+      const raised = Number(p.raised_amount) || 0;
+      const goal = Number(p.goal) || 0;
+      return raised < goal;
+    });
 
     console.log(`[Check Expired Projects] Found ${expiredProjects.length} expired projects without reaching goal`);
 
@@ -45,11 +49,6 @@ serve(async (req) => {
     let processedCount = 0;
 
     for (const project of expiredProjects) {
-      // Verificar se já não atingiu a meta
-      if (project.raised_amount >= project.goal) {
-        console.log(`[Check Expired Projects] Project ${project.id} reached goal, skipping`);
-        continue;
-      }
 
       console.log(`[Check Expired Projects] Processing project: ${project.title} (${project.id})`);
 

@@ -41,8 +41,12 @@ const ExpiredProjectsTab = () => {
 
       if (error) throw error;
 
-      // Filtrar projetos que não atingiram a meta
-      const projectsNotReachedGoal = data?.filter(p => p.raised_amount < p.goal) || [];
+      // Filtrar projetos que não atingiram a meta (conversão explícita para número)
+      const projectsNotReachedGoal = (data || []).filter(p => {
+        const raised = Number(p.raised_amount) || 0;
+        const goal = Number(p.goal) || 0;
+        return raised < goal;
+      });
       setExpiredProjects(projectsNotReachedGoal);
     } catch (error: any) {
       console.error('Error fetching expired projects:', error);
@@ -92,8 +96,9 @@ const ExpiredProjectsTab = () => {
           continue;
         }
 
-        const currentBalance = userTokens?.balance || 0;
-        const newBalance = currentBalance + contribution.amount;
+        const currentBalance = Number(userTokens?.balance) || 0;
+        const contributionAmount = Number(contribution.amount) || 0;
+        const newBalance = currentBalance + contributionAmount;
 
         // Atualizar saldo do usuário
         const { error: updateError } = await supabase
@@ -114,7 +119,7 @@ const ExpiredProjectsTab = () => {
           .from('token_transactions')
           .insert({
             user_id: contribution.user_id,
-            amount: contribution.amount,
+            amount: contributionAmount,
             transaction_type: 'refund',
             reference_id: project.id,
             description: `Reembolso manual: Projeto "${project.title}" não atingiu a meta`,
@@ -139,9 +144,11 @@ const ExpiredProjectsTab = () => {
             user_id: contribution.user_id,
             type: 'refund_processed',
             title: 'Tokens Devolvidos',
-            message: `Seus ${contribution.amount} tokens investidos no projeto "${project.title}" foram devolvidos à sua carteira. O projeto não atingiu a meta dentro do prazo estabelecido. Agradecemos seu apoio e esperamos contar com você em novos projetos! 💚`,
+            message: `Seus ${contributionAmount} tokens investidos no projeto "${project.title}" foram devolvidos à sua carteira. O projeto não atingiu a meta dentro do prazo estabelecido. Agradecemos seu apoio e esperamos contar com você em novos projetos! 💚`,
             related_id: project.id
           });
+        
+        console.log(`[Manual Refund] Refunded ${contributionAmount} tokens to user ${contribution.user_id}`);
       }
 
       // Atualizar status do projeto para 'cancelled'
