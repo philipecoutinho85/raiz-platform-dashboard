@@ -14,6 +14,7 @@ import BadgesTab from '@/components/admin/BadgesTab';
 import RefundsTab from '@/components/admin/RefundsTab';
 import ExpiredProjectsTab from '@/components/admin/ExpiredProjectsTab';
 import AdminTestPanel from '@/components/admin/AdminTestPanel';
+import { WithdrawalsTab } from '@/components/admin/WithdrawalsTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -132,6 +133,7 @@ const AdminPanel = () => {
                   <SelectItem value="tokens">Tokens</SelectItem>
                   <SelectItem value="transactions">Transações</SelectItem>
                   <SelectItem value="refunds">Reembolsos</SelectItem>
+                  <SelectItem value="withdrawals">Resgates</SelectItem>
                   <SelectItem value="expired">Proj. Expirados</SelectItem>
                   <SelectItem value="logs">Logs</SelectItem>
                   <SelectItem value="tests">Testes</SelectItem>
@@ -140,13 +142,14 @@ const AdminPanel = () => {
               </Select>
             </div>
           ) : (
-            <TabsList className="grid w-full grid-cols-10">
+            <TabsList className="grid w-full grid-cols-11">
               <TabsTrigger value="projects">Projetos</TabsTrigger>
               <TabsTrigger value="users">Usuários</TabsTrigger>
               <TabsTrigger value="badges">Badges</TabsTrigger>
               <TabsTrigger value="tokens">Tokens</TabsTrigger>
               <TabsTrigger value="transactions">Transações</TabsTrigger>
               <TabsTrigger value="refunds">Reembolsos</TabsTrigger>
+              <TabsTrigger value="withdrawals">Resgates</TabsTrigger>
               <TabsTrigger value="expired">Expirados</TabsTrigger>
               <TabsTrigger value="logs">Logs</TabsTrigger>
               <TabsTrigger value="tests">Testes</TabsTrigger>
@@ -186,6 +189,10 @@ const AdminPanel = () => {
 
           <TabsContent value="refunds">
             <RefundsTab />
+          </TabsContent>
+
+          <TabsContent value="withdrawals">
+            <WithdrawalsTab />
           </TabsContent>
 
           <TabsContent value="expired">

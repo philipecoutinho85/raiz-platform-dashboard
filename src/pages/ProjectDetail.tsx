@@ -64,6 +64,7 @@ import UserBadges from '@/components/UserBadges';
 import ProjectAccountability from '@/components/ProjectAccountability';
 import ProjectBadges from '@/components/ProjectBadges';
 import TokenSupportDialog from '@/components/TokenSupportDialog';
+import { ProjectWithdrawal } from '@/components/ProjectWithdrawal';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -622,6 +623,17 @@ const ProjectDetail = () => {
               </Card>
             )}
 
+
+            {/* Withdrawal Request - apenas para projetos que atingiram a meta */}
+            {isOwner && project.status === 'approved' && progressPercentage >= 100 && (
+              <ProjectWithdrawal
+                projectId={project.id}
+                userId={user?.id || ''}
+                raisedAmount={project.raised_amount}
+                adminFee={project.admin_fee_percentage || 10}
+                isOwner={isOwner}
+              />
+            )}
 
             {/* Credibilidade do Criador */}
             {profile && (
