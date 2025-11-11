@@ -52,7 +52,7 @@ serve(async (req) => {
 
       console.log(`[Check Expired Projects] Processing project: ${project.title} (${project.id})`);
 
-      // Buscar todas as contribuições do projeto
+      // Buscar apenas contribuições não estornadas (status = 'completed')
       const { data: contributions, error: contributionsError } = await supabase
         .from('project_contributions')
         .select('id, user_id, amount')
@@ -114,14 +114,15 @@ serve(async (req) => {
             console.error(`[Check Expired Projects] Error creating transaction:`, transactionError);
           }
 
-          // Buscar informações do perfil do apoiador
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('nome, sobrenome')
-            .eq('id', contribution.user_id)
-            .single();
+          // Marcar contribuição como estornada
+          const { error: updateContributionError } = await supabase
+            .from('project_contributions')
+            .update({ status: 'refunded' })
+            .eq('id', contribution.id);
 
-          const backerName = profile ? `${profile.nome} ${profile.sobrenome}` : 'Apoiador';
+          if (updateContributionError) {
+            console.error(`[Check Expired Projects] Error updating contribution status:`, updateContributionError);
+          }
 
           // Criar notificação para o apoiador
           await supabase
@@ -130,11 +131,11 @@ serve(async (req) => {
               user_id: contribution.user_id,
               type: 'refund_processed',
               title: 'Tokens Devolvidos',
-              message: `Seus ${contribution.amount} tokens investidos no projeto "${project.title}" foram devolvidos à sua carteira. O projeto não atingiu a meta dentro do prazo estabelecido. Agradecemos seu apoio e esperamos contar com você em novos projetos! 💚`,
+              message: `Seus ${contributionAmount} tokens investidos no projeto "${project.title}" foram devolvidos à sua carteira. O projeto não atingiu a meta dentro do prazo estabelecido. Agradecemos seu apoio e esperamos contar com você em novos projetos! 💚`,
               related_id: project.id
             });
 
-          console.log(`[Check Expired Projects] Refunded ${contribution.amount} tokens to user ${contribution.user_id}`);
+          console.log(`[Check Expired Projects] Refunded ${contributionAmount} tokens to user ${contribution.user_id}`);
         } catch (error) {
           console.error(`[Check Expired Projects] Error processing contribution:`, error);
         }

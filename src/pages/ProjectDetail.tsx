@@ -186,6 +186,26 @@ const ProjectDetail = () => {
     return diffDays > 0 ? diffDays : 0;
   };
 
+  const isProjectExpired = () => {
+    if (!project?.deadline) return false;
+    const today = new Date();
+    const endDate = new Date(project.deadline);
+    return today > endDate;
+  };
+
+  const isProjectCompleted = () => {
+    if (!project) return false;
+    return project.raised_amount >= project.goal;
+  };
+
+  const canSupportProject = () => {
+    if (!project || isOwner) return false;
+    if (project.status !== 'approved') return false;
+    if (isProjectExpired()) return false;
+    if (isProjectCompleted()) return false;
+    return true;
+  };
+
   const isOwner = user?.id === project?.user_id;
 
   const handleSaveDescription = async () => {
@@ -530,12 +550,15 @@ const ProjectDetail = () => {
                   )}
                 </div>
 
-                {project.status === 'approved' && !isOwner && (
+                {!isOwner && (
                   <Button 
                     onClick={() => setIsSupportDialogOpen(true)}
-                    className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3"
+                    disabled={!canSupportProject()}
+                    className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Apoiar com Tokens
+                    {isProjectExpired() ? 'Projeto Expirado' : 
+                     isProjectCompleted() ? 'Meta Atingida' : 
+                     'Apoiar com Tokens'}
                   </Button>
                 )}
               </CardContent>

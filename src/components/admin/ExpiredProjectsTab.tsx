@@ -64,7 +64,7 @@ const ExpiredProjectsTab = () => {
     try {
       setProcessing(project.id);
 
-      // Buscar todas as contribuições do projeto
+      // Buscar apenas contribuições não estornadas (status = 'completed')
       const { data: contributions, error: contributionsError } = await supabase
         .from('project_contributions')
         .select('id, user_id, amount')
@@ -76,11 +76,13 @@ const ExpiredProjectsTab = () => {
       if (!contributions || contributions.length === 0) {
         toast({
           title: "Aviso",
-          description: "Não há contribuições para reembolsar neste projeto.",
+          description: "Não há contribuições ativas para reembolsar neste projeto.",
         });
         setProcessing(null);
         return;
       }
+
+      console.log(`[Manual Refund] Found ${contributions.length} active contributions to refund`);
 
       // Processar devolução para cada apoiador
       for (const contribution of contributions) {
@@ -130,12 +132,15 @@ const ExpiredProjectsTab = () => {
           console.error('Error creating transaction:', transactionError);
         }
 
-        // Buscar informações do perfil do apoiador
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('nome, sobrenome')
-          .eq('id', contribution.user_id)
-          .single();
+        // Marcar contribuição como estornada
+        const { error: updateContributionError } = await supabase
+          .from('project_contributions')
+          .update({ status: 'refunded' })
+          .eq('id', contribution.id);
+
+        if (updateContributionError) {
+          console.error('Error updating contribution status:', updateContributionError);
+        }
 
         // Criar notificação para o apoiador
         await supabase

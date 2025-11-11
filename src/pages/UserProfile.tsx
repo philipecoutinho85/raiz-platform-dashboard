@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Camera, MapPin, Coins } from 'lucide-react';
+import { User, Camera, MapPin, Coins, Lock } from 'lucide-react';
 import TokenPurchase from '@/components/TokenPurchase';
 import Footer from '@/components/Footer';
 
@@ -37,6 +37,10 @@ const UserProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [profile, setProfile] = useState<any>(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileFormData>();
 
@@ -167,6 +171,56 @@ const UserProfile = () => {
     }
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Erro',
+        description: 'As senhas não coincidem.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Erro',
+        description: 'A senha deve ter no mínimo 6 caracteres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setPasswordLoading(true);
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+      toast({
+        title: 'Senha alterada',
+        description: 'Sua senha foi atualizada com sucesso.',
+      });
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao alterar senha.',
+        variant: 'destructive',
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const getInitials = (nome: string, sobrenome: string) => {
     return `${nome?.charAt(0) || ''}${sobrenome?.charAt(0) || ''}`.toUpperCase();
   };
@@ -190,9 +244,10 @@ const UserProfile = () => {
         </div>
 
         <Tabs defaultValue="personal" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
             <TabsTrigger value="address">Endereço</TabsTrigger>
+            <TabsTrigger value="security">Segurança</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
           </TabsList>
 
@@ -409,6 +464,53 @@ const UserProfile = () => {
                   <div className="flex justify-end">
                     <Button type="submit" disabled={loading}>
                       {loading ? 'Salvando...' : 'Salvar Endereço'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Lock className="w-5 h-5" />
+                  <span>Segurança</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordChange} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Nova Senha *</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Digite sua nova senha"
+                      required
+                    />
+                    <p className="text-sm text-raiz-secondary">
+                      A senha deve ter no mínimo 6 caracteres
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirmar Nova Senha *</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirme sua nova senha"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={passwordLoading}>
+                      {passwordLoading ? 'Alterando...' : 'Alterar Senha'}
                     </Button>
                   </div>
                 </form>
