@@ -844,6 +844,71 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawals: {
+        Row: {
+          admin_fee: number
+          bank_account: Json
+          created_at: string
+          id: string
+          net_amount: number
+          pagarme_recipient_id: string | null
+          pagarme_transfer_id: string | null
+          project_id: string
+          rejection_reason: string | null
+          requested_amount: number
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_fee: number
+          bank_account: Json
+          created_at?: string
+          id?: string
+          net_amount: number
+          pagarme_recipient_id?: string | null
+          pagarme_transfer_id?: string | null
+          project_id: string
+          rejection_reason?: string | null
+          requested_amount: number
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_fee?: number
+          bank_account?: Json
+          created_at?: string
+          id?: string
+          net_amount?: number
+          pagarme_recipient_id?: string | null
+          pagarme_transfer_id?: string | null
+          project_id?: string
+          rejection_reason?: string | null
+          requested_amount?: number
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
