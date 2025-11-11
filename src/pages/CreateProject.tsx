@@ -151,22 +151,32 @@ const CreateProject = () => {
         return;
       }
 
+      // Garantir que campos obrigatórios não sejam vazios
+      if (!data.youtube_url || data.youtube_url.trim() === '') {
+        toast({
+          title: 'Erro',
+          description: 'URL do vídeo do YouTube é obrigatória.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { data: project, error } = await supabase
         .from('projects')
         .insert({
           user_id: user?.id,
-          title: data.title,
+          title: data.title.trim(),
           category: data.category,
-          description: data.description,
+          description: data.description.trim(),
           goal: data.goal,
-          deadline: data.deadline,
-          youtube_url: data.youtube_url,
-          endereco: data.endereco,
-          numero: data.numero,
-          complemento: data.complemento,
-          bairro: data.bairro,
-          cidade: data.cidade,
-          estado: data.estado,
+          deadline: data.deadline || null,
+          youtube_url: data.youtube_url.trim(),
+          endereco: data.endereco?.trim() || null,
+          numero: data.numero?.trim() || null,
+          complemento: data.complemento?.trim() || null,
+          bairro: data.bairro?.trim() || null,
+          cidade: data.cidade?.trim() || null,
+          estado: data.estado?.trim() || null,
           status: 'pending',
         })
         .select()
@@ -203,9 +213,24 @@ const CreateProject = () => {
       navigate('/meus-projetos');
     } catch (error: any) {
       console.error('Error creating project:', error);
+      
+      let errorMessage = 'Erro ao criar projeto.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      if (error.code === '23502') {
+        errorMessage = 'Todos os campos obrigatórios devem ser preenchidos.';
+      }
+      
+      if (error.details) {
+        console.error('Error details:', error.details);
+      }
+      
       toast({
         title: 'Erro',
-        description: 'Erro ao criar projeto.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
