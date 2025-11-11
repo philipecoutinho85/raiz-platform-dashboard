@@ -308,10 +308,7 @@ const CreateProject = () => {
 
               {/* Financial Information */}
               <div className="space-y-6">
-                <TokenSimulator onGoalChange={(goal) => {
-                  const goalInput = document.getElementById('goal') as HTMLInputElement;
-                  if (goalInput) goalInput.value = goal.toString();
-                }} />
+                <TokenSimulator />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
