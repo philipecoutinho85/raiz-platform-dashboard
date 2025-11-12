@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, X, Plus } from 'lucide-react';
+import { Upload, X, Plus, Coins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/Footer';
 import TokenSimulator from '@/components/TokenSimulator';
+import { useTokens } from '@/hooks/useTokens';
 
 interface ProjectFormData {
   title: string;
@@ -32,12 +33,14 @@ const CreateProject = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { tokens } = useTokens();
   const [loading, setLoading] = useState(false);
   const [uploadingFeatured, setUploadingFeatured] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [featuredImageUrl, setFeaturedImageUrl] = useState<string>('');
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [initialInvestment, setInitialInvestment] = useState<string>('');
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -206,10 +209,77 @@ const CreateProject = () => {
 
       await Promise.all(galleryImageUploads);
 
-      toast({
-        title: 'Projeto criado!',
-        description: 'Seu projeto foi enviado para análise e será publicado em breve.',
-      });
+      // Se o admin especificou um investimento inicial, processar
+      if (isAdmin && initialInvestment && parseInt(initialInvestment) > 0) {
+        const investAmount = parseInt(initialInvestment);
+        
+        if (investAmount > tokens) {
+          toast({
+            title: 'Aviso',
+            description: 'Projeto criado com sucesso, mas você não tem tokens suficientes para o investimento inicial.',
+            variant: 'default',
+          });
+        } else {
+          try {
+            const newBalance = tokens - investAmount;
+
+            // Criar contribuição
+            const { error: contributionError } = await supabase
+              .from('project_contributions')
+              .insert({
+                project_id: project.id,
+                user_id: user?.id,
+                amount: investAmount,
+                status: 'completed'
+              });
+
+            if (contributionError) throw contributionError;
+
+            // Atualizar saldo
+            const { error: updateError } = await supabase
+              .from('user_tokens')
+              .update({
+                balance: newBalance,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user?.id);
+
+            if (updateError) throw updateError;
+
+            // Criar transação
+            const { error: transactionError } = await supabase
+              .from('token_transactions')
+              .insert({
+                user_id: user?.id,
+                amount: -investAmount,
+                transaction_type: 'support',
+                reference_id: project.id,
+                description: `Investimento inicial no projeto: ${data.title}`,
+                balance_after: newBalance
+              });
+
+            if (transactionError) throw transactionError;
+
+            toast({
+              title: 'Sucesso!',
+              description: `Projeto criado e ${investAmount} tokens investidos automaticamente!`,
+            });
+          } catch (investError) {
+            console.error('Erro ao processar investimento inicial:', investError);
+            toast({
+              title: 'Aviso',
+              description: 'Projeto criado com sucesso, mas houve erro ao processar o investimento inicial.',
+              variant: 'default',
+            });
+          }
+        }
+      } else {
+        toast({
+          title: 'Projeto criado!',
+          description: 'Seu projeto foi enviado para análise e será publicado em breve.',
+        });
+      }
+
       navigate('/meus-projetos');
     } catch (error: any) {
       console.error('Error creating project:', error);
@@ -348,6 +418,42 @@ const CreateProject = () => {
                     />
                   </div>
                 </div>
+
+                {/* Admin Initial Investment */}
+                {isAdmin && (
+                  <div className="bg-raiz-accent/10 border border-raiz-accent/30 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Coins className="w-4 h-4 text-raiz-primary" />
+                        <Label htmlFor="initialInvestment" className="text-raiz-dark font-semibold">
+                          Investimento Inicial (Opcional)
+                        </Label>
+                      </div>
+                      <span className="text-sm text-raiz-secondary">
+                        Saldo: {tokens} tokens
+                      </span>
+                    </div>
+                    <Input
+                      id="initialInvestment"
+                      type="number"
+                      value={initialInvestment}
+                      onChange={(e) => setInitialInvestment(e.target.value)}
+                      placeholder="Digite a quantidade de tokens"
+                      min="0"
+                      max={tokens}
+                      step="1"
+                      className="text-base"
+                    />
+                    <p className="text-xs text-raiz-secondary">
+                      💡 Como administrador, você pode investir tokens no projeto durante sua criação para dar impulso inicial.
+                      {parseInt(initialInvestment) > tokens && (
+                        <span className="text-red-500 block mt-1 font-semibold">
+                          ⚠️ Você não tem tokens suficientes para este investimento.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Images */}
