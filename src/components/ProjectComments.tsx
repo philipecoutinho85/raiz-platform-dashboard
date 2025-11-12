@@ -10,6 +10,7 @@ import { MessageCircle, Star, HelpCircle, Reply, Edit, Trash, Flag, EyeOff } fro
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Comment {
   id: string;
@@ -451,7 +452,7 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
             )}
           </div>
           <p className="text-sm text-raiz-secondary mb-2">
-            {new Date(comment.created_at).toLocaleDateString('pt-BR')}
+            {formatToBrasilia(comment.created_at, 'dd/MM/yyyy')}
           </p>
           
           {editingComment === comment.id ? (

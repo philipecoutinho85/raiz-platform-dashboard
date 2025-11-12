@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Contributor {
   id: string;
@@ -99,7 +100,7 @@ const ProjectContributors = ({ projectId }: ProjectContributorsProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatToBrasilia(dateString, 'dd/MM/yyyy');
   };
 
   if (loading) {

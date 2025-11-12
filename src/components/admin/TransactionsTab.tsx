@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, RefreshCw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Transaction {
   id: string;
@@ -198,7 +199,7 @@ const TransactionsTab = () => {
                         <p className="text-sm text-raiz-secondary">{transaction.description}</p>
                         <p className="text-xs text-raiz-secondary flex items-center mt-1">
                           <Clock className="w-3 h-3 mr-1" />
-                          {new Date(transaction.created_at).toLocaleString('pt-BR')}
+                          {formatToBrasilia(transaction.created_at)}
                         </p>
                       </div>
                     </div>
@@ -234,7 +235,7 @@ const TransactionsTab = () => {
                         {purchase.amount} tokens • {getPaymentMethodLabel(purchase.payment_method)} • R$ {purchase.price.toFixed(2)}
                       </p>
                       <p className="text-xs text-raiz-secondary">
-                        {new Date(purchase.created_at).toLocaleString('pt-BR')}
+                        {formatToBrasilia(purchase.created_at)}
                       </p>
                     </div>
                     {getStatusBadge(purchase.status)}
@@ -264,7 +265,7 @@ const TransactionsTab = () => {
                         {refund.amount} tokens • {refund.reason}
                       </p>
                       <p className="text-xs text-raiz-secondary">
-                        {new Date(refund.created_at).toLocaleString('pt-BR')}
+                        {formatToBrasilia(refund.created_at)}
                       </p>
                     </div>
                     {getStatusBadge(refund.status)}

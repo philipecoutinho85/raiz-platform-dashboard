@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ProjectContributors from '@/components/ProjectContributors';
 import Footer from '@/components/Footer';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Project {
   id: string;
@@ -162,7 +163,7 @@ const ProjectDetail = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatToBrasilia(dateString, 'dd/MM/yyyy');
   };
 
   const getYouTubeEmbedUrl = (url: string) => {

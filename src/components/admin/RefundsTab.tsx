@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminSecurity } from '@/hooks/useAdminSecurity';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Refund {
   id: string;
@@ -192,13 +193,7 @@ const RefundsTab = () => {
                   <TableCell className="font-medium">{refund.amount} tokens</TableCell>
                   <TableCell className="max-w-xs truncate">{refund.reason}</TableCell>
                   <TableCell>
-                    {new Date(refund.created_at).toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {formatToBrasilia(refund.created_at)}
                   </TableCell>
                   <TableCell>{getStatusBadge(refund.status)}</TableCell>
                   <TableCell>

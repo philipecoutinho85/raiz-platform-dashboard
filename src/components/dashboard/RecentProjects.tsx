@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Eye, Folder, Users } from 'lucide-react';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Project {
   id: string;
@@ -40,7 +41,7 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatToBrasilia(dateString, 'dd/MM/yyyy');
   };
 
   const getProgressPercentage = (raised: number, goal: number) => {

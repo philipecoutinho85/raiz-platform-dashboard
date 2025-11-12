@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Loader2, Check, X, DollarSign, Eye } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Withdrawal {
   id: string;
@@ -200,7 +200,7 @@ export const WithdrawalsTab = () => {
                       R$ {Number(withdrawal.net_amount).toFixed(2)}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(withdrawal.requested_at), 'dd/MM/yyyy HH:mm')}
+                      {formatToBrasilia(withdrawal.requested_at, 'dd/MM/yyyy HH:mm')}
                     </TableCell>
                     <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
                     <TableCell>

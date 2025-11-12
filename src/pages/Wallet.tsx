@@ -38,6 +38,7 @@ interface Refund {
   status: string;
   created_at: string;
 }
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -299,7 +300,7 @@ const Wallet = () => {
                             <p className="font-medium text-raiz-dark">{transaction.description}</p>
                             <p className="text-sm text-raiz-secondary flex items-center">
                               <Clock className="w-3 h-3 mr-1" />
-                              {new Date(transaction.created_at).toLocaleString('pt-BR')}
+                              {formatToBrasilia(transaction.created_at)}
                             </p>
                           </div>
                         </div>
@@ -386,7 +387,7 @@ const Wallet = () => {
                             {getPaymentMethodLabel(purchase.payment_method)} • R$ {purchase.price.toFixed(2)}
                           </p>
                           <p className="text-xs text-raiz-secondary">
-                            {new Date(purchase.created_at).toLocaleString('pt-BR')}
+                            {formatToBrasilia(purchase.created_at)}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -458,7 +459,7 @@ const Wallet = () => {
                           <p className="font-medium text-raiz-dark">{refund.amount} tokens</p>
                           <p className="text-sm text-raiz-secondary">{refund.reason}</p>
                           <p className="text-xs text-raiz-secondary">
-                            {new Date(refund.created_at).toLocaleString('pt-BR')}
+                            {formatToBrasilia(refund.created_at)}
                           </p>
                         </div>
                         {getStatusBadge(refund.status)}

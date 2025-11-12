@@ -5,8 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, User, Shield, Settings, Package } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface AdminLog {
   id: string;
@@ -132,7 +131,7 @@ const AdminLogsViewer = () => {
                 logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      {formatToBrasilia(log.created_at, "dd/MM/yyyy HH:mm")}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

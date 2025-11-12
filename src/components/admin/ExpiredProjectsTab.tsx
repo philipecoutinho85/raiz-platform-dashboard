@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, RefreshCw, DollarSign, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface ExpiredProject {
   id: string;
@@ -200,7 +201,7 @@ const ExpiredProjectsTab = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return formatToBrasilia(dateString, 'dd/MM/yyyy');
   };
 
   if (loading) {

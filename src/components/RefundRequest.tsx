@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 interface Purchase {
   id: string;
@@ -138,7 +139,7 @@ const RefundRequest = () => {
                 ) : (
                   purchases.map((purchase) => (
                     <SelectItem key={purchase.id} value={purchase.id}>
-                      {purchase.amount} tokens • {getPaymentMethodLabel(purchase.payment_method)} • R$ {purchase.price.toFixed(2)} • {new Date(purchase.created_at).toLocaleDateString('pt-BR')}
+                      {purchase.amount} tokens • {getPaymentMethodLabel(purchase.payment_method)} • R$ {purchase.price.toFixed(2)} • {formatToBrasilia(purchase.created_at, 'dd/MM/yyyy')}
                     </SelectItem>
                   ))
                 )}

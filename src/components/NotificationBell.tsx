@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/useNotifications';
+import { formatToBrasilia } from '@/lib/dateUtils';
 
 const NotificationBell = () => {
   const { user } = useAuth();
@@ -90,12 +91,7 @@ const NotificationBell = () => {
                           {notification.message}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(notification.created_at).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatToBrasilia(notification.created_at, 'dd MMM, HH:mm')}
                         </p>
                       </div>
                       {!notification.is_read && (
