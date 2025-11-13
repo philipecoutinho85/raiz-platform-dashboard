@@ -17,6 +17,12 @@ serve(async (req) => {
     const pagarmeKey = Deno.env.get('PAGARME_SECRET_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Pegar token de autenticação do header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header missing');
+    }
 
     const { withdrawalId, action, rejectionReason } = await req.json();
 
@@ -33,8 +39,9 @@ serve(async (req) => {
       throw new Error('Withdrawal not found');
     }
 
-    // Pegar dados do usuário
-    const { data: { user } } = await supabase.auth.getUser();
+    // Pegar dados do usuário admin do token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
     const adminId = user?.id;
 
     if (action === 'reject') {
@@ -60,6 +67,9 @@ serve(async (req) => {
     // Processar aprovação e transferência via Pagar.me
     if (action === 'approve') {
       console.log('[Process Withdrawal] Creating recipient on Pagar.me');
+
+      // Criar Basic Auth header (secret_key + ":" em base64)
+      const basicAuth = btoa(`${pagarmeKey}:`);
 
       // 1. Criar recipient no Pagar.me (se ainda não existe)
       let recipientId = withdrawal.pagarme_recipient_id;
@@ -87,15 +97,15 @@ serve(async (req) => {
             transfer_day: 0
           }
         };
-
-        const recipientResponse = await fetch('https://api.pagar.me/core/v5/recipients', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${pagarmeKey}`
-          },
-          body: JSON.stringify(recipientPayload)
-        });
+      
+      const recipientResponse = await fetch('https://api.pagar.me/core/v5/recipients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${basicAuth}`
+        },
+        body: JSON.stringify(recipientPayload)
+      });
 
         if (!recipientResponse.ok) {
           const errorData = await recipientResponse.text();
@@ -127,7 +137,7 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${pagarmeKey}`
+          'Authorization': `Basic ${basicAuth}`
         },
         body: JSON.stringify(transferPayload)
       });
