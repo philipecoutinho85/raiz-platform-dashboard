@@ -16,6 +16,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const pagarmeKey = Deno.env.get('PAGARME_SECRET_KEY')!;
 
+    // Log para debug (apenas primeiros caracteres da chave)
+    console.log('[Process Withdrawal] Using API key starting with:', pagarmeKey.substring(0, 8) + '...');
+    console.log('[Process Withdrawal] API key type:', pagarmeKey.startsWith('sk_test') ? 'SANDBOX' : pagarmeKey.startsWith('sk_') ? 'PRODUCTION' : 'UNKNOWN');
+
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Pegar token de autenticação do header
@@ -115,6 +119,32 @@ serve(async (req) => {
         if (!recipientResponse.ok) {
           const errorData = await recipientResponse.text();
           console.error('[Process Withdrawal] Pagar.me recipient error:', errorData);
+          console.error('[Process Withdrawal] Response status:', recipientResponse.status);
+          
+          // Se o erro é relacionado a permissões Split/PSP, atualizar withdrawal com status especial
+          if (errorData.includes('split') || errorData.includes('recipient') || errorData.includes('action_forbidden')) {
+            console.log('[Process Withdrawal] Split/PSP not available - marking for manual processing');
+            
+            await supabase
+              .from('withdrawals')
+              .update({
+                status: 'pending_manual',
+                reviewed_by: adminId,
+                reviewed_at: new Date().toISOString(),
+                rejection_reason: 'Transferência automática indisponível. Será processada manualmente pela equipe.'
+              })
+              .eq('id', withdrawalId);
+            
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                requiresManual: true,
+                message: 'Split/PSP não disponível. Withdrawal marcado para processamento manual. Verifique se sua chave API do Pagar.me tem permissões de Split ativas ou contate o suporte do Pagar.me.' 
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+            );
+          }
+          
           throw new Error(`Failed to create recipient: ${errorData}`);
         }
 

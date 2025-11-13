@@ -80,13 +80,19 @@ export const WithdrawalsTab = () => {
     setProcessing(true);
 
     try {
-      const { error } = await supabase.functions.invoke('process-withdrawal', {
+      const { data, error } = await supabase.functions.invoke('process-withdrawal', {
         body: { withdrawalId, action: 'approve' }
       });
 
       if (error) throw error;
 
-      toast.success('Resgate aprovado e transferência iniciada!');
+      // Verificar se requer processamento manual
+      if (data?.requiresManual) {
+        toast.warning(data.message || 'Resgate marcado para processamento manual');
+      } else {
+        toast.success('Resgate aprovado e transferência iniciada!');
+      }
+      
       fetchWithdrawals();
     } catch (error) {
       console.error('Erro ao aprovar resgate:', error);
@@ -131,12 +137,14 @@ export const WithdrawalsTab = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
       pending: 'secondary',
+      pending_manual: 'secondary',
       approved: 'default',
       rejected: 'destructive'
     };
 
     const labels: Record<string, string> = {
       pending: 'Pendente',
+      pending_manual: 'Processamento Manual',
       approved: 'Aprovado',
       rejected: 'Rejeitado'
     };
@@ -205,13 +213,14 @@ export const WithdrawalsTab = () => {
                     <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {withdrawal.status === 'pending' && (
+                        {(withdrawal.status === 'pending' || withdrawal.status === 'pending_manual') && (
                           <>
                             <Button
                               size="sm"
                               variant="default"
                               onClick={() => handleApprove(withdrawal.id)}
                               disabled={processing}
+                              title={withdrawal.status === 'pending_manual' ? 'Tentar novamente' : 'Aprovar'}
                             >
                               <Check className="h-4 w-4" />
                             </Button>
