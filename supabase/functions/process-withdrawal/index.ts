@@ -139,7 +139,7 @@ serve(async (req) => {
               JSON.stringify({ 
                 success: false, 
                 requiresManual: true,
-                message: 'Split/PSP não disponível. Withdrawal marcado para processamento manual. Verifique se sua chave API do Pagar.me tem permissões de Split ativas ou contate o suporte do Pagar.me.' 
+                message: 'Erro de permissão do Pagar.me. SOLUÇÃO: 1) Acesse o dashboard do Pagar.me, 2) Vá em Configurações > API, 3) REGENERE sua chave API (a chave atual pode ter sido criada antes do Split ser ativado), 4) Atualize a chave no sistema, 5) Tente novamente. Se o erro persistir, contate o suporte do Pagar.me.' 
               }),
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
             );
