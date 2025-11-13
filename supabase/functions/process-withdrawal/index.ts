@@ -77,7 +77,7 @@ serve(async (req) => {
       if (!recipientId) {
         const recipientPayload = {
           type: 'individual',
-          name: withdrawal.bank_account.name,
+          name: withdrawal.bank_account.holder_name,
           email: withdrawal.bank_account.email || 'user@example.com',
           document: withdrawal.bank_account.document,
           default_bank_account: {
