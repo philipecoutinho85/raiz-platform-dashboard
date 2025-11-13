@@ -93,10 +93,15 @@ serve(async (req) => {
           },
           transfer_settings: {
             transfer_enabled: true,
-            transfer_interval: 'daily',
+            transfer_interval: 'Daily',
             transfer_day: 0
+          },
+          automatic_anticipation_settings: {
+            enabled: false
           }
         };
+
+        console.log('[Process Withdrawal] Recipient payload:', JSON.stringify(recipientPayload, null, 2));
       
       const recipientResponse = await fetch('https://api.pagar.me/core/v5/recipients', {
         method: 'POST',
