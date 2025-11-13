@@ -90,9 +90,9 @@ export const ProjectWithdrawal = ({
       toast.success('Solicitação de resgate enviada com sucesso!');
       setHasWithdrawal(true);
       setWithdrawalStatus('pending');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao solicitar resgate:', error);
-      toast.error('Erro ao solicitar resgate. Tente novamente.');
+      toast.error(error?.message || 'Erro ao solicitar resgate. Tente novamente.');
     } finally {
       setLoading(false);
     }
