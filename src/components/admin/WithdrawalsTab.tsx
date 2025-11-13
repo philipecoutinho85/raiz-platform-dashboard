@@ -18,6 +18,9 @@ interface Withdrawal {
   admin_fee: number;
   net_amount: number;
   status: string;
+  payment_method: string;
+  pix_key?: string;
+  pix_key_type?: string;
   bank_account: any;
   requested_at: string;
   rejection_reason?: string;
@@ -180,6 +183,7 @@ export const WithdrawalsTab = () => {
                 <TableRow>
                   <TableHead>Projeto</TableHead>
                   <TableHead>Autor</TableHead>
+                  <TableHead>Método</TableHead>
                   <TableHead>Valor Bruto</TableHead>
                   <TableHead>Taxa</TableHead>
                   <TableHead>Valor Líquido</TableHead>
@@ -201,6 +205,11 @@ export const WithdrawalsTab = () => {
                           {withdrawal.profiles?.email}
                         </p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {withdrawal.payment_method === 'pix' ? '⚡ PIX' : '🏦 TED'}
+                      </Badge>
                     </TableCell>
                     <TableCell>R$ {Number(withdrawal.requested_amount).toFixed(2)}</TableCell>
                     <TableCell>R$ {Number(withdrawal.admin_fee).toFixed(2)}</TableCell>
@@ -292,15 +301,37 @@ export const WithdrawalsTab = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold mb-2">Dados Bancários:</h4>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Banco:</strong> {selectedWithdrawal.bank_account.bank_code}</p>
-                  <p><strong>Agência:</strong> {selectedWithdrawal.bank_account.branch}-{selectedWithdrawal.bank_account.branch_check_digit}</p>
-                  <p><strong>Conta:</strong> {selectedWithdrawal.bank_account.account}-{selectedWithdrawal.bank_account.account_check_digit}</p>
-                  <p><strong>Tipo:</strong> {selectedWithdrawal.bank_account.account_type === 'checking' ? 'Corrente' : 'Poupança'}</p>
-                  <p><strong>Titular:</strong> {selectedWithdrawal.bank_account.holder_name}</p>
-                  <p><strong>CPF:</strong> {selectedWithdrawal.bank_account.document}</p>
-                </div>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Badge>{selectedWithdrawal.payment_method === 'pix' ? 'PIX' : 'Transferência Bancária'}</Badge>
+                </h4>
+                {selectedWithdrawal.payment_method === 'pix' ? (
+                  <div className="space-y-1 text-sm bg-muted p-4 rounded-lg">
+                    <p><strong>Tipo de Chave:</strong> {selectedWithdrawal.pix_key_type?.toUpperCase()}</p>
+                    <p><strong>Chave PIX:</strong> <code className="bg-background px-2 py-1 rounded">{selectedWithdrawal.pix_key}</code></p>
+                    <p><strong>Titular:</strong> {selectedWithdrawal.bank_account?.holder_name}</p>
+                    <p><strong>CPF:</strong> {selectedWithdrawal.bank_account?.document}</p>
+                    <p><strong>Valor a Transferir:</strong> <span className="text-lg font-bold text-green-600">R$ {Number(selectedWithdrawal.net_amount).toFixed(2)}</span></p>
+                    <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded">
+                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200">⚠️ PROCESSO MANUAL:</p>
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                        1. Acesse seu banco/Pagar.me<br/>
+                        2. Faça PIX para a chave acima<br/>
+                        3. Use o valor líquido (taxa já descontada)<br/>
+                        4. Após confirmar pagamento, marque como aprovado
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1 text-sm bg-muted p-4 rounded-lg">
+                    <p><strong>Banco:</strong> {selectedWithdrawal.bank_account.bank_code}</p>
+                    <p><strong>Agência:</strong> {selectedWithdrawal.bank_account.branch}-{selectedWithdrawal.bank_account.branch_check_digit || '0'}</p>
+                    <p><strong>Conta:</strong> {selectedWithdrawal.bank_account.account}-{selectedWithdrawal.bank_account.account_check_digit}</p>
+                    <p><strong>Tipo:</strong> {selectedWithdrawal.bank_account.account_type === 'checking' ? 'Corrente' : 'Poupança'}</p>
+                    <p><strong>Titular:</strong> {selectedWithdrawal.bank_account.holder_name}</p>
+                    <p><strong>CPF:</strong> {selectedWithdrawal.bank_account.document}</p>
+                    <p><strong>Valor a Transferir:</strong> <span className="text-lg font-bold text-green-600">R$ {Number(selectedWithdrawal.net_amount).toFixed(2)}</span></p>
+                  </div>
+                )}
               </div>
               {selectedWithdrawal.rejection_reason && (
                 <div>

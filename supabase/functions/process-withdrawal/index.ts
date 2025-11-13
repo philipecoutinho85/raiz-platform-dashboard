@@ -70,6 +70,34 @@ serve(async (req) => {
 
     // Processar aprovação e transferência via Pagar.me
     if (action === 'approve') {
+      console.log('[Process Withdrawal] Approving withdrawal');
+
+      // Verificar se é PIX - aprovação manual sem Pagar.me
+      if (withdrawal.payment_method === 'pix') {
+        console.log('[Process Withdrawal] PIX payment - manual approval');
+        
+        const { error: updateError } = await supabase
+          .from('withdrawals')
+          .update({
+            status: 'approved',
+            reviewed_by: adminId,
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('id', withdrawalId);
+
+        if (updateError) throw updateError;
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Resgate aprovado! Agora você deve processar o PIX manualmente usando os dados fornecidos.',
+            requiresManual: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Para transferência bancária, tentar usar Pagar.me
       console.log('[Process Withdrawal] Creating recipient on Pagar.me');
 
       // Criar Basic Auth header (secret_key + ":" em base64)

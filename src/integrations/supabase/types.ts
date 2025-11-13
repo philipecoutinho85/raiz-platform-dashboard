@@ -853,6 +853,9 @@ export type Database = {
           net_amount: number
           pagarme_recipient_id: string | null
           pagarme_transfer_id: string | null
+          payment_method: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           project_id: string
           rejection_reason: string | null
           requested_amount: number
@@ -871,6 +874,9 @@ export type Database = {
           net_amount: number
           pagarme_recipient_id?: string | null
           pagarme_transfer_id?: string | null
+          payment_method?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           project_id: string
           rejection_reason?: string | null
           requested_amount: number
@@ -889,6 +895,9 @@ export type Database = {
           net_amount?: number
           pagarme_recipient_id?: string | null
           pagarme_transfer_id?: string | null
+          payment_method?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           project_id?: string
           rejection_reason?: string | null
           requested_amount?: number
