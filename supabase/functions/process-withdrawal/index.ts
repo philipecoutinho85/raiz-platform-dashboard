@@ -72,16 +72,99 @@ serve(async (req) => {
     if (action === 'approve') {
       console.log('[Process Withdrawal] Approving withdrawal');
 
-      // Verificar se é PIX - aprovação manual sem Pagar.me
+      // Para PIX, criar pagamento PIX automático no Pagar.me
       if (withdrawal.payment_method === 'pix') {
-        console.log('[Process Withdrawal] PIX payment - manual approval');
+        console.log('[Process Withdrawal] Creating automatic PIX payment via Pagar.me');
         
+        const basicAuth = btoa(`${pagarmeKey}:`);
+        const amountInCents = Math.round(Number(withdrawal.net_amount) * 100);
+
+        // Criar pagamento PIX no Pagar.me
+        const pixPayload = {
+          amount: amountInCents,
+          payment_method: 'pix',
+          pix: {
+            expires_in: 86400, // 24 horas
+            additional_information: [
+              {
+                name: 'Resgate de Projeto',
+                value: `Projeto ID: ${withdrawal.project_id}`
+              }
+            ]
+          },
+          customer: {
+            name: withdrawal.bank_account.holder_name,
+            email: withdrawal.bank_account.email,
+            document: withdrawal.bank_account.document,
+            document_type: withdrawal.bank_account.document.length === 11 ? 'CPF' : 'CNPJ',
+            type: 'individual'
+          },
+          metadata: {
+            withdrawal_id: withdrawalId,
+            project_id: withdrawal.project_id,
+            pix_key: withdrawal.pix_key,
+            pix_key_type: withdrawal.pix_key_type
+          }
+        };
+
+        console.log('[Process Withdrawal] PIX payload:', JSON.stringify(pixPayload, null, 2));
+
+        const pixResponse = await fetch('https://api.pagar.me/core/v5/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${basicAuth}`
+          },
+          body: JSON.stringify({
+            items: [{
+              amount: amountInCents,
+              description: `Resgate do projeto ${withdrawal.projects?.title}`,
+              quantity: 1,
+              code: withdrawalId
+            }],
+            customer: pixPayload.customer,
+            payments: [pixPayload],
+            metadata: pixPayload.metadata
+          })
+        });
+
+        if (!pixResponse.ok) {
+          const errorData = await pixResponse.text();
+          console.error('[Process Withdrawal] Pagar.me PIX error:', errorData);
+          console.error('[Process Withdrawal] Response status:', pixResponse.status);
+          
+          // Marcar como pendente manual se houver erro
+          await supabase
+            .from('withdrawals')
+            .update({
+              status: 'pending_manual',
+              reviewed_by: adminId,
+              reviewed_at: new Date().toISOString(),
+              rejection_reason: 'Erro ao processar PIX automático. Será processado manualmente.'
+            })
+            .eq('id', withdrawalId);
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              requiresManual: true,
+              message: 'Erro ao processar PIX. O resgate foi marcado para processamento manual.'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+
+        const pixData = await pixResponse.json();
+        console.log('[Process Withdrawal] PIX payment created:', pixData.id);
+
+        // Atualizar withdrawal com status aprovado e ID do Pagar.me
         const { error: updateError } = await supabase
           .from('withdrawals')
           .update({
             status: 'approved',
             reviewed_by: adminId,
-            reviewed_at: new Date().toISOString()
+            reviewed_at: new Date().toISOString(),
+            pagarme_transfer_id: pixData.id
           })
           .eq('id', withdrawalId);
 
@@ -90,8 +173,8 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: 'Resgate aprovado! Agora você deve processar o PIX manualmente usando os dados fornecidos.',
-            requiresManual: true
+            message: 'Pagamento PIX criado automaticamente no Pagar.me! O pagamento será processado em breve.',
+            pix_id: pixData.id
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );

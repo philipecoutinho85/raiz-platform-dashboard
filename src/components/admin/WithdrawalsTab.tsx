@@ -311,13 +311,13 @@ export const WithdrawalsTab = () => {
                     <p><strong>Titular:</strong> {selectedWithdrawal.bank_account?.holder_name}</p>
                     <p><strong>CPF:</strong> {selectedWithdrawal.bank_account?.document}</p>
                     <p><strong>Valor a Transferir:</strong> <span className="text-lg font-bold text-green-600">R$ {Number(selectedWithdrawal.net_amount).toFixed(2)}</span></p>
-                    <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded">
-                      <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200">⚠️ PROCESSO MANUAL:</p>
-                      <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                        1. Acesse seu banco/Pagar.me<br/>
-                        2. Faça PIX para a chave acima<br/>
-                        3. Use o valor líquido (taxa já descontada)<br/>
-                        4. Após confirmar pagamento, marque como aprovado
+                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded">
+                      <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">✅ PROCESSO AUTOMÁTICO:</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                        1. Clique em "Aprovar" para enviar o pagamento ao Pagar.me<br/>
+                        2. O PIX será criado automaticamente no Pagar.me<br/>
+                        3. O Pagar.me processará o pagamento<br/>
+                        4. Acompanhe o status no dashboard do Pagar.me
                       </p>
                     </div>
                   </div>
