@@ -33,7 +33,8 @@ export const ProjectWithdrawal = ({
   
   const [pixData, setPixData] = useState({
     pix_key: '',
-    pix_key_type: 'cpf' as 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'
+    pix_key_type: 'cpf' as 'cpf' | 'cnpj' | 'email' | 'phone' | 'random',
+    cpf: ''
   });
 
   const netAmount = raisedAmount * (1 - adminFee / 100);
@@ -80,8 +81,15 @@ export const ProjectWithdrawal = ({
       return;
     }
 
-    if (!pixData.pix_key || !pixData.pix_key_type) {
+    if (!pixData.pix_key || !pixData.pix_key_type || !pixData.cpf) {
       toast.error('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+
+    // Validar CPF (apenas números, 11 dígitos)
+    const cpfNumbers = pixData.cpf.replace(/\D/g, '');
+    if (cpfNumbers.length !== 11) {
+      toast.error('CPF inválido. Digite 11 dígitos.');
       return;
     }
 
@@ -99,7 +107,7 @@ export const ProjectWithdrawal = ({
         pix_key_type: pixData.pix_key_type,
         bank_account: {
           holder_name: `${profile?.nome} ${profile?.sobrenome}`,
-          document: profile?.cpf?.replace(/\D/g, ''),
+          document: cpfNumbers,
           email: user?.email
         }
       };
@@ -182,6 +190,25 @@ export const ProjectWithdrawal = ({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="cpf">CPF do Titular *</Label>
+            <Input
+              id="cpf"
+              placeholder="000.000.000-00"
+              value={pixData.cpf}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                const formatted = value
+                  .replace(/(\d{3})(\d)/, '$1.$2')
+                  .replace(/(\d{3})(\d)/, '$1.$2')
+                  .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                setPixData({ ...pixData, cpf: formatted });
+              }}
+              maxLength={14}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="pix_key_type">Tipo de Chave PIX *</Label>
             <Select
               value={pixData.pix_key_type}
@@ -219,11 +246,10 @@ export const ProjectWithdrawal = ({
 
           <div className="pt-4 border-t">
             <p className="text-sm text-muted-foreground mb-2">
-              Os dados do titular serão preenchidos automaticamente:
+              Dados do titular:
             </p>
             <div className="space-y-1 text-sm bg-muted p-3 rounded">
               <p><strong>Nome:</strong> {profile?.nome} {profile?.sobrenome}</p>
-              <p><strong>CPF:</strong> {profile?.cpf}</p>
               <p><strong>E-mail:</strong> {user?.email}</p>
             </div>
           </div>
