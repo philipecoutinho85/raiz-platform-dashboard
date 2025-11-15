@@ -223,7 +223,26 @@ const ProjectsTab = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza de que deseja excluir este projeto? Esta ação é irreversível e todos os dados relacionados ao projeto serão perdidos.
+              Tem certeza de que deseja excluir este projeto? Esta ação é irreversível.
+              {(() => {
+                const project = pendingProjects.find(p => p.id === deleteProjectId);
+                if (project && project.raised_amount && project.raised_amount > 0) {
+                  return (
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                      <p className="font-medium text-blue-900 dark:text-blue-100">
+                        ℹ️ Devolução Automática de Tokens
+                      </p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        Este projeto arrecadou <strong>{formatTokens(project.raised_amount)} tokens</strong> de <strong>{project.backers_count || 0} apoiador(es)</strong>.
+                      </p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        Todos os tokens serão <strong>devolvidos automaticamente</strong> aos apoiadores e eles receberão uma notificação.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
