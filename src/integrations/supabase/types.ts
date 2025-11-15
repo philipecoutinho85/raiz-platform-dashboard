@@ -850,9 +850,11 @@ export type Database = {
           bank_account: Json
           created_at: string
           id: string
+          minimum_bypass: boolean | null
           net_amount: number
           pagarme_recipient_id: string | null
           pagarme_transfer_id: string | null
+          paid_at: string | null
           payment_method: string | null
           pix_key: string | null
           pix_key_type: string | null
@@ -863,6 +865,8 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
+          transfer_error: string | null
+          transfer_status: string | null
           updated_at: string
           user_id: string
         }
@@ -871,9 +875,11 @@ export type Database = {
           bank_account: Json
           created_at?: string
           id?: string
+          minimum_bypass?: boolean | null
           net_amount: number
           pagarme_recipient_id?: string | null
           pagarme_transfer_id?: string | null
+          paid_at?: string | null
           payment_method?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
@@ -884,6 +890,8 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          transfer_error?: string | null
+          transfer_status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -892,9 +900,11 @@ export type Database = {
           bank_account?: Json
           created_at?: string
           id?: string
+          minimum_bypass?: boolean | null
           net_amount?: number
           pagarme_recipient_id?: string | null
           pagarme_transfer_id?: string | null
+          paid_at?: string | null
           payment_method?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
@@ -905,6 +915,8 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
+          transfer_error?: string | null
+          transfer_status?: string | null
           updated_at?: string
           user_id?: string
         }
