@@ -66,6 +66,10 @@ export const useAdminData = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  const formatTokens = (value: number) => {
+    return new Intl.NumberFormat('pt-BR').format(value);
+  };
+
   const fetchAdminData = async () => {
     try {
       setLoading(true);
@@ -268,6 +272,9 @@ export const useAdminData = () => {
         });
         
       } else if (action === 'delete') {
+        const project = allProjects.find(p => p.id === projectId);
+        const hadContributions = project && project.raised_amount && project.raised_amount > 0;
+        
         const { error } = await supabase
           .from('projects')
           .delete()
@@ -278,12 +285,23 @@ export const useAdminData = () => {
         }
 
         // Log da ação
-        await logAdminAction('delete_project', 'project', projectId);
-        
-        toast({
-          title: "Projeto excluído",
-          description: `O projeto foi permanentemente excluído do sistema.`,
+        await logAdminAction('delete_project', 'project', projectId, {
+          had_contributions: hadContributions,
+          raised_amount: project?.raised_amount || 0,
+          backers_count: project?.backers_count || 0
         });
+        
+        if (hadContributions) {
+          toast({
+            title: "Projeto excluído com sucesso",
+            description: `${project?.backers_count || 0} apoiador(es) receberão ${formatTokens(project?.raised_amount || 0)} tokens de volta automaticamente.`,
+          });
+        } else {
+          toast({
+            title: "Projeto excluído",
+            description: `O projeto foi permanentemente excluído do sistema.`,
+          });
+        }
       }
 
       // Atualizar dados
