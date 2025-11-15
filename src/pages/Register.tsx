@@ -11,6 +11,9 @@ import raizTokenLogo from '@/assets/raiz-token-logo.png';
 import Footer from '@/components/Footer';
 import MaintenanceModal from '@/components/MaintenanceModal';
 import { supabase } from '@/integrations/supabase/client';
+import { validateCPF, formatCPF } from '@/lib/cpfValidator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const Register = () => {
   const { toast } = useToast();

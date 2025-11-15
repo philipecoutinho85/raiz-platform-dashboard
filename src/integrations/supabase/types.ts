@@ -509,6 +509,53 @@ export type Database = {
           },
         ]
       }
+      project_reports: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          id: string
+          project_id: string
+          reason: string
+          reported_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          project_id: string
+          reason: string
+          reported_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          reason?: string
+          reported_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           accountability_approved: boolean | null
@@ -844,10 +891,51 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean
+          message: string
+          read_at: string | null
+          user_id: string
+          withdrawal_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message: string
+          read_at?: string | null
+          user_id: string
+          withdrawal_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message?: string
+          read_at?: string | null
+          user_id?: string
+          withdrawal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_messages_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       withdrawals: {
         Row: {
           admin_fee: number
           bank_account: Json
+          chat_active: boolean | null
+          chat_closed_at: string | null
+          chat_closed_by: string | null
           created_at: string
           id: string
           minimum_bypass: boolean | null
@@ -873,6 +961,9 @@ export type Database = {
         Insert: {
           admin_fee: number
           bank_account: Json
+          chat_active?: boolean | null
+          chat_closed_at?: string | null
+          chat_closed_by?: string | null
           created_at?: string
           id?: string
           minimum_bypass?: boolean | null
@@ -898,6 +989,9 @@ export type Database = {
         Update: {
           admin_fee?: number
           bank_account?: Json
+          chat_active?: boolean | null
+          chat_closed_at?: string | null
+          chat_closed_by?: string | null
           created_at?: string
           id?: string
           minimum_bypass?: boolean | null
@@ -954,6 +1048,7 @@ export type Database = {
         }
         Returns: string
       }
+      validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "moderator"

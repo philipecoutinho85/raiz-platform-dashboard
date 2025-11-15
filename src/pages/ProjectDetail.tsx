@@ -66,6 +66,7 @@ import ProjectAccountability from '@/components/ProjectAccountability';
 import ProjectBadges from '@/components/ProjectBadges';
 import TokenSupportDialog from '@/components/TokenSupportDialog';
 import { ProjectWithdrawal } from '@/components/ProjectWithdrawal';
+import { ProjectReport } from '@/components/ProjectReport';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -296,6 +297,7 @@ const ProjectDetail = () => {
             <span>Voltar</span>
           </Button>
           <div className="flex items-center gap-3">
+            <ProjectReport projectId={project.id} />
             <SocialShare 
               title={project.title}
               description={project.description}

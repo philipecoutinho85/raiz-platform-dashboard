@@ -7,8 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Check, X, DollarSign, Eye } from 'lucide-react';
+import { Loader2, Check, X, DollarSign, Eye, MessageSquare, XCircle } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
+import RejectWithdrawalModal from './RejectWithdrawalModal';
+import { WithdrawalChat } from '@/components/WithdrawalChat';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Withdrawal {
   id: string;
@@ -24,6 +27,8 @@ interface Withdrawal {
   bank_account: any;
   requested_at: string;
   rejection_reason?: string;
+  chat_active?: boolean;
+  chat_closed_at?: string;
   projects: {
     title: string;
   };
@@ -39,7 +44,9 @@ export const WithdrawalsTab = () => {
   const [processing, setProcessing] = useState(false);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showChatDialog, setShowChatDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionCategory, setRejectionCategory] = useState('');
 
   useEffect(() => {
     fetchWithdrawals();
@@ -106,8 +113,8 @@ export const WithdrawalsTab = () => {
   };
 
   const handleReject = async () => {
-    if (!selectedWithdrawal || !rejectionReason.trim()) {
-      toast.error('Informe o motivo da rejeição');
+    if (!selectedWithdrawal || !rejectionReason.trim() || !rejectionCategory) {
+      toast.error('Informe a categoria e o motivo da rejeição');
       return;
     }
 
@@ -118,15 +125,21 @@ export const WithdrawalsTab = () => {
         body: { 
           withdrawalId: selectedWithdrawal.id, 
           action: 'reject',
-          rejectionReason 
+          rejectionReason: `[${rejectionCategory}] ${rejectionReason}`,
+          allowRetry: rejectionCategory === 'dados_incorretos'
         }
       });
 
       if (error) throw error;
 
-      toast.success('Resgate rejeitado');
+      toast.success(
+        rejectionCategory === 'dados_incorretos' 
+          ? 'Resgate rejeitado. Usuário poderá corrigir e solicitar novamente.'
+          : 'Resgate rejeitado'
+      );
       setShowRejectDialog(false);
       setRejectionReason('');
+      setRejectionCategory('');
       setSelectedWithdrawal(null);
       fetchWithdrawals();
     } catch (error) {
@@ -134,6 +147,30 @@ export const WithdrawalsTab = () => {
       toast.error('Erro ao processar rejeição');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleCloseChat = async (withdrawalId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('withdrawals')
+        .update({ 
+          chat_active: false,
+          chat_closed_at: new Date().toISOString(),
+          chat_closed_by: user?.id
+        })
+        .eq('id', withdrawalId);
+
+      if (error) throw error;
+
+      toast.success('Chat encerrado com sucesso');
+      setShowChatDialog(false);
+      fetchWithdrawals();
+    } catch (error) {
+      console.error('Erro ao encerrar chat:', error);
+      toast.error('Erro ao encerrar chat');
     }
   };
 
@@ -246,6 +283,29 @@ export const WithdrawalsTab = () => {
                             </Button>
                           </>
                         )}
+                        {withdrawal.status === 'rejected' && withdrawal.chat_active && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedWithdrawal(withdrawal);
+                                setShowChatDialog(true);
+                              }}
+                              title="Ver Chat"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleCloseChat(withdrawal.id)}
+                              title="Encerrar Chat"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -263,37 +323,53 @@ export const WithdrawalsTab = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rejeitar Resgate</DialogTitle>
-            <DialogDescription>
-              Informe o motivo da rejeição. O autor será notificado.
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            placeholder="Motivo da rejeição..."
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-            rows={4}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleReject}
-              disabled={processing || !rejectionReason.trim()}
-            >
-              {processing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Rejeitar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RejectWithdrawalModal
+        isOpen={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        withdrawalId={selectedWithdrawal?.id || null}
+        rejectionReason={rejectionReason}
+        setRejectionReason={setRejectionReason}
+        rejectionCategory={rejectionCategory}
+        setRejectionCategory={setRejectionCategory}
+        onReject={handleReject}
+        onCancel={() => {
+          setShowRejectDialog(false);
+          setRejectionReason('');
+          setRejectionCategory('');
+          setSelectedWithdrawal(null);
+        }}
+        loading={processing}
+      />
 
-      {selectedWithdrawal && !showRejectDialog && (
+      {selectedWithdrawal && showChatDialog && (
+        <Dialog open={showChatDialog} onOpenChange={setShowChatDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Chat do Resgate</DialogTitle>
+              <DialogDescription>
+                Converse com o usuário sobre o resgate rejeitado
+              </DialogDescription>
+            </DialogHeader>
+            <WithdrawalChat 
+              withdrawalId={selectedWithdrawal.id}
+              chatActive={selectedWithdrawal.chat_active || false}
+              chatClosedAt={selectedWithdrawal.chat_closed_at}
+            />
+            {selectedWithdrawal.chat_active && (
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => handleCloseChat(selectedWithdrawal.id)}
+                >
+                  Encerrar Chat
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {selectedWithdrawal && !showRejectDialog && !showChatDialog && (
         <Dialog open={!!selectedWithdrawal} onOpenChange={() => setSelectedWithdrawal(null)}>
           <DialogContent>
             <DialogHeader>
