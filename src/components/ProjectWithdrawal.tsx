@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { Loader2, DollarSign, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import { WithdrawalChat } from './WithdrawalChat';
+import { validateCPF, formatCPF } from '@/lib/cpfValidator';
 
 interface ProjectWithdrawalProps {
   projectId: string;
@@ -29,6 +31,8 @@ export const ProjectWithdrawal = ({
   const [loading, setLoading] = useState(false);
   const [hasWithdrawal, setHasWithdrawal] = useState(false);
   const [withdrawalStatus, setWithdrawalStatus] = useState<string>('');
+  const [withdrawalId, setWithdrawalId] = useState<string>('');
+  const [withdrawalData, setWithdrawalData] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   
   const [pixData, setPixData] = useState({
@@ -62,7 +66,7 @@ export const ProjectWithdrawal = ({
   const checkExistingWithdrawal = async () => {
     const { data, error } = await supabase
       .from('withdrawals')
-      .select('status')
+      .select('*')
       .eq('project_id', projectId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -70,6 +74,8 @@ export const ProjectWithdrawal = ({
     if (data) {
       setHasWithdrawal(true);
       setWithdrawalStatus(data.status);
+      setWithdrawalId(data.id);
+      setWithdrawalData(data);
     }
   };
 
@@ -86,10 +92,10 @@ export const ProjectWithdrawal = ({
       return;
     }
 
-    // Validar CPF (apenas números, 11 dígitos)
+    // Validar CPF
     const cpfNumbers = pixData.cpf.replace(/\D/g, '');
-    if (cpfNumbers.length !== 11) {
-      toast.error('CPF inválido. Digite 11 dígitos.');
+    if (!validateCPF(cpfNumbers)) {
+      toast.error('CPF inválido. Verifique os dados.');
       return;
     }
 
@@ -135,25 +141,42 @@ export const ProjectWithdrawal = ({
 
   if (hasWithdrawal) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Status do Resgate
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {withdrawalStatus === 'pending' && 'Sua solicitação de resgate está em análise.'}
-              {withdrawalStatus === 'pending_manual' && 'Seu resgate está aguardando processamento manual.'}
-              {withdrawalStatus === 'approved' && 'Seu resgate foi aprovado e será processado em breve!'}
-              {withdrawalStatus === 'rejected' && 'Seu resgate foi rejeitado. Entre em contato com o suporte.'}
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Status do Resgate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {withdrawalStatus === 'pending' && 'Sua solicitação de resgate está em análise.'}
+                {withdrawalStatus === 'pending_manual' && 'Seu resgate está aguardando processamento manual.'}
+                {withdrawalStatus === 'approved' && 'Seu resgate foi aprovado e será processado em breve!'}
+                {withdrawalStatus === 'rejected' && (
+                  <>
+                    Seu resgate foi rejeitado. Motivo: {withdrawalData?.rejection_reason}
+                    {withdrawalData?.rejection_reason?.includes('[dados_incorretos]') && (
+                      <p className="mt-2 font-medium">Você pode corrigir os dados e solicitar novamente.</p>
+                    )}
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+        
+        {withdrawalStatus === 'rejected' && withdrawalData?.chat_active && (
+          <WithdrawalChat 
+            withdrawalId={withdrawalId}
+            chatActive={withdrawalData.chat_active}
+            chatClosedAt={withdrawalData.chat_closed_at}
+          />
+        )}
+      </>
     );
   }
 
@@ -196,12 +219,7 @@ export const ProjectWithdrawal = ({
               placeholder="000.000.000-00"
               value={pixData.cpf}
               onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '');
-                const formatted = value
-                  .replace(/(\d{3})(\d)/, '$1.$2')
-                  .replace(/(\d{3})(\d)/, '$1.$2')
-                  .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-                setPixData({ ...pixData, cpf: formatted });
+                setPixData({ ...pixData, cpf: formatCPF(e.target.value) });
               }}
               maxLength={14}
               required

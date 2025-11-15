@@ -10,9 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Camera, MapPin, Coins, Lock } from 'lucide-react';
+import { User, Camera, MapPin, Coins, Lock, AlertCircle } from 'lucide-react';
 import TokenPurchase from '@/components/TokenPurchase';
 import Footer from '@/components/Footer';
+import { validateCPF, formatCPF } from '@/lib/cpfValidator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ProfileFormData {
   nome: string;
@@ -41,6 +43,7 @@ const UserProfile = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isCpfLocked, setIsCpfLocked] = useState(false);
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileFormData>();
 
@@ -62,6 +65,7 @@ const UserProfile = () => {
 
       if (data) {
         setProfile(data);
+        setIsCpfLocked(!!data.cpf); // CPF travado se já existe
         setValue('nome', data.nome || '');
         setValue('sobrenome', data.sobrenome || '');
         setValue('email', data.email || '');
@@ -349,13 +353,42 @@ const UserProfile = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="cpf">CPF *</Label>
+                      {!isCpfLocked && (
+                        <Alert className="mb-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            <strong>Atenção:</strong> Após cadastrar seu CPF, não será possível alterar. Preencha com cuidado.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                       <Input
                         id="cpf"
-                        {...register('cpf', { required: 'CPF é obrigatório' })}
+                        {...register('cpf', { 
+                          required: 'CPF é obrigatório',
+                          validate: (value) => {
+                            if (!isCpfLocked && value) {
+                              return validateCPF(value) || 'CPF inválido';
+                            }
+                            return true;
+                          }
+                        })}
                         placeholder="000.000.000-00"
+                        disabled={isCpfLocked}
+                        className={isCpfLocked ? 'bg-gray-100' : ''}
+                        onChange={(e) => {
+                          if (!isCpfLocked) {
+                            e.target.value = formatCPF(e.target.value);
+                          }
+                        }}
+                        maxLength={14}
                       />
                       {errors.cpf && (
                         <p className="text-red-500 text-sm">{errors.cpf.message}</p>
+                      )}
+                      {isCpfLocked && (
+                        <p className="text-sm text-raiz-secondary">
+                          O CPF não pode ser alterado após o cadastro
+                        </p>
                       )}
                     </div>
                   </div>
