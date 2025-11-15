@@ -13,7 +13,7 @@ const ProjectAdminMessages = ({
   rejectionReason,
   pendingRequirements,
 }: ProjectAdminMessagesProps) => {
-  const hasMessages = rejectionReason || pendingRequirements;
+  const hasMessages = rejectionReason || pendingRequirements || status === 'cancelled';
 
   if (!hasMessages) return null;
 
@@ -25,6 +25,17 @@ const ProjectAdminMessages = ({
           <AlertTitle>Projeto Rejeitado</AlertTitle>
           <AlertDescription className="mt-2 whitespace-pre-wrap">
             {rejectionReason}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {status === 'cancelled' && (
+        <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertTitle className="text-orange-600">Projeto Cancelado</AlertTitle>
+          <AlertDescription className="mt-2 text-orange-700 dark:text-orange-300">
+            Este projeto foi cancelado pelo administrador. Se você tinha contribuições, elas serão reembolsadas automaticamente.
+            Entre em contato com o suporte para mais informações.
           </AlertDescription>
         </Alert>
       )}
