@@ -107,6 +107,7 @@ const MyProjects = () => {
       pending: { variant: 'secondary' as const, label: 'Aguardando Aprovação', color: 'text-yellow-600' },
       approved: { variant: 'default' as const, label: 'Aprovado', color: 'text-green-600' },
       rejected: { variant: 'destructive' as const, label: 'Rejeitado', color: 'text-red-600' },
+      cancelled: { variant: 'secondary' as const, label: 'Cancelado', color: 'text-orange-600' },
       draft: { variant: 'outline' as const, label: 'Rascunho', color: 'text-gray-600' }
     };
 

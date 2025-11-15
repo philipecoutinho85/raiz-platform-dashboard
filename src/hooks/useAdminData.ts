@@ -271,9 +271,32 @@ export const useAdminData = () => {
           description: `O projeto foi rejeitado e o criador foi notificado.`,
         });
         
+      } else if (action === 'cancel') {
+        const { error } = await supabase
+          .from('projects')
+          .update({
+            status: 'cancelled',
+            reviewed_at: new Date().toISOString(),
+            reviewed_by: user?.id
+          })
+          .eq('id', projectId);
+
+        if (error) {
+          throw error;
+        }
+
+        // Log da ação
+        await logAdminAction('cancel_project', 'project', projectId);
+        
+        toast({
+          title: "Projeto cancelado",
+          description: `O projeto foi cancelado. Se houver contribuições, os reembolsos foram iniciados automaticamente.`,
+        });
+        
       } else if (action === 'delete') {
         const project = allProjects.find(p => p.id === projectId);
         const hadContributions = project && project.raised_amount && project.raised_amount > 0;
+        const projectCompleted = project && project.raised_amount >= project.goal;
         
         const { error } = await supabase
           .from('projects')
@@ -288,14 +311,22 @@ export const useAdminData = () => {
         await logAdminAction('delete_project', 'project', projectId, {
           had_contributions: hadContributions,
           raised_amount: project?.raised_amount || 0,
-          backers_count: project?.backers_count || 0
+          backers_count: project?.backers_count || 0,
+          completed: projectCompleted
         });
         
         if (hadContributions) {
-          toast({
-            title: "Projeto excluído com sucesso",
-            description: `${project?.backers_count || 0} apoiador(es) receberão ${formatTokens(project?.raised_amount || 0)} tokens de volta automaticamente.`,
-          });
+          if (projectCompleted) {
+            toast({
+              title: "Projeto excluído",
+              description: `Projeto concluído (100% da meta) excluído. Os apoiadores foram notificados. Tokens não foram devolvidos.`,
+            });
+          } else {
+            toast({
+              title: "Projeto excluído com devolução de tokens",
+              description: `${project?.backers_count || 0} apoiador(es) receberão ${formatTokens(project?.raised_amount || 0)} tokens de volta automaticamente.`,
+            });
+          }
         } else {
           toast({
             title: "Projeto excluído",

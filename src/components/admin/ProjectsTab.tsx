@@ -76,6 +76,8 @@ const ProjectsTab = ({
         return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
       case 'rejected':
         return <Badge variant="destructive">Rejeitado</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-orange-100 text-orange-800">Cancelado</Badge>;
       default:
         return <Badge variant="secondary">Pendente</Badge>;
     }
@@ -112,6 +114,7 @@ const ProjectsTab = ({
               <SelectItem value="pending">Pendente</SelectItem>
               <SelectItem value="approved">Aprovado</SelectItem>
               <SelectItem value="rejected">Rejeitado</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -189,6 +192,17 @@ const ProjectsTab = ({
                   </>
                 )}
                 
+                {project.status === 'approved' && (
+                  <Button
+                    size="sm"
+                    onClick={() => onProjectAction(project.id, 'cancel')}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Cancelar Projeto
+                  </Button>
+                )}
+                
                 {/* Opção de excluir para todos os status */}
                 <Button
                   variant="destructive"
@@ -227,19 +241,37 @@ const ProjectsTab = ({
               {(() => {
                 const project = pendingProjects.find(p => p.id === deleteProjectId);
                 if (project && project.raised_amount && project.raised_amount > 0) {
-                  return (
-                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
-                      <p className="font-medium text-blue-900 dark:text-blue-100">
-                        ℹ️ Devolução Automática de Tokens
-                      </p>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                        Este projeto arrecadou <strong>{formatTokens(project.raised_amount)} tokens</strong> de <strong>{project.backers_count || 0} apoiador(es)</strong>.
-                      </p>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                        Todos os tokens serão <strong>devolvidos automaticamente</strong> aos apoiadores e eles receberão uma notificação.
-                      </p>
-                    </div>
-                  );
+                  const projectCompleted = project.raised_amount >= project.goal;
+                  
+                  if (projectCompleted) {
+                    return (
+                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                        <p className="font-medium text-blue-900 dark:text-blue-100">
+                          ℹ️ Projeto Concluído (100% da meta)
+                        </p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                          Este projeto arrecadou <strong>{formatTokens(project.raised_amount)} tokens</strong> de <strong>{project.backers_count || 0} apoiador(es)</strong>.
+                        </p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                          Como o projeto atingiu 100% da meta, <strong>os tokens NÃO serão devolvidos</strong>. Os apoiadores serão notificados sobre a exclusão.
+                        </p>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+                        <p className="font-medium text-amber-900 dark:text-amber-100">
+                          ⚠️ Projeto Não Concluído ({Math.round((project.raised_amount / project.goal) * 100)}% da meta)
+                        </p>
+                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                          Este projeto arrecadou <strong>{formatTokens(project.raised_amount)} tokens</strong> de <strong>{project.backers_count || 0} apoiador(es)</strong>.
+                        </p>
+                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                          Como o projeto NÃO atingiu a meta, <strong>todos os tokens serão devolvidos automaticamente</strong> aos apoiadores.
+                        </p>
+                      </div>
+                    );
+                  }
                 }
                 return null;
               })()}
