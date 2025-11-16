@@ -65,6 +65,11 @@ serve(async (req) => {
     // Enviar email via Mailgun usando template
     const mailgunUrl = 'https://api.mailgun.net/v3/raiztoken.com.br/messages';
     
+    console.log('Preparando envio de email...');
+    console.log('URL:', mailgunUrl);
+    console.log('Destinatário:', email);
+    console.log('Template:', 'codigo-verificacao-resgate');
+    
     const formData = new URLSearchParams();
     formData.append('from', 'Raiz Token <noreply@raiztoken.com.br>');
     formData.append('to', email);
@@ -75,14 +80,21 @@ serve(async (req) => {
     formData.append('v:nome_projeto', projectName);
     formData.append('v:codigo_verificacao', code);
 
+    const authHeader = 'Basic ' + btoa('api:' + mailgunApiKey);
+    console.log('Auth header length:', authHeader.length);
+    console.log('Auth header starts with:', authHeader.substring(0, 20) + '...');
+
     const mailgunResponse = await fetch(mailgunUrl, {
       method: 'POST',
       headers: {
-        'Authorization': 'Basic ' + btoa('api:' + mailgunApiKey),
+        'Authorization': authHeader,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: formData.toString()
     });
+
+    console.log('Mailgun response status:', mailgunResponse.status);
+    console.log('Mailgun response headers:', JSON.stringify([...mailgunResponse.headers.entries()]));
 
     if (!mailgunResponse.ok) {
       const errorText = await mailgunResponse.text();
