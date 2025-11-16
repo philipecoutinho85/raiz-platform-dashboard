@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.process-withdrawal]
 verify_jwt = true
+
+[functions.send-withdrawal-verification]
+verify_jwt = true
