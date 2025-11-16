@@ -61,27 +61,25 @@ serve(async (req) => {
     }
 
     // Enviar email via Mailgun usando template
-    const mailgunDomain = 'raiztoken.com.br';
-    const mailgunUrl = `https://api.mailgun.net/v3/${mailgunDomain}/messages`;
+    const mailgunUrl = 'https://api.mailgun.net/v3/raiztoken.com.br/messages';
     
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append('from', 'Raiz Token <noreply@raiztoken.com.br>');
     formData.append('to', email);
     formData.append('subject', 'Código de Verificação - Resgate de Valores');
     formData.append('template', 'codigo-verificacao-resgate');
-    formData.append('h:X-Mailgun-Variables', JSON.stringify({
-      nome_usuario: userName,
-      valor_resgate: amount.toFixed(2),
-      nome_projeto: projectName,
-      codigo_verificacao: code
-    }));
+    formData.append('v:nome_usuario', userName);
+    formData.append('v:valor_resgate', amount.toFixed(2));
+    formData.append('v:nome_projeto', projectName);
+    formData.append('v:codigo_verificacao', code);
 
     const mailgunResponse = await fetch(mailgunUrl, {
       method: 'POST',
       headers: {
-        'Authorization': 'Basic ' + btoa('api:' + mailgunApiKey)
+        'Authorization': 'Basic ' + btoa('api:' + mailgunApiKey),
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: formData
+      body: formData.toString()
     });
 
     if (!mailgunResponse.ok) {
