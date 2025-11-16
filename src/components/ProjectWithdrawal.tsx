@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { WithdrawalChat } from './WithdrawalChat';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
+import { WithdrawalVerificationModal } from './WithdrawalVerificationModal';
 
 interface ProjectWithdrawalProps {
   projectId: string;
@@ -34,6 +35,9 @@ export const ProjectWithdrawal = ({
   const [withdrawalId, setWithdrawalId] = useState<string>('');
   const [withdrawalData, setWithdrawalData] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationExpiresAt, setVerificationExpiresAt] = useState('');
+  const [pendingWithdrawalId, setPendingWithdrawalId] = useState('');
   
   const [pixData, setPixData] = useState({
     pix_key: '',
@@ -102,6 +106,7 @@ export const ProjectWithdrawal = ({
     setLoading(true);
 
     try {
+      // Criar withdrawal temporária
       const withdrawalData = {
         project_id: projectId,
         user_id: userId,
@@ -111,6 +116,7 @@ export const ProjectWithdrawal = ({
         payment_method: 'pix',
         pix_key: pixData.pix_key,
         pix_key_type: pixData.pix_key_type,
+        status: 'verification_pending',
         bank_account: {
           holder_name: `${profile?.nome} ${profile?.sobrenome}`,
           document: cpfNumbers,
@@ -118,20 +124,67 @@ export const ProjectWithdrawal = ({
         }
       };
 
+      const { data: newWithdrawal, error: insertError } = await supabase
+        .from('withdrawals')
+        .insert(withdrawalData)
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Buscar dados do projeto
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('title')
+        .eq('id', projectId)
+        .single();
+
+      // Enviar código de verificação
+      const { data, error: emailError } = await supabase.functions.invoke('send-withdrawal-verification', {
+        body: {
+          withdrawalId: newWithdrawal.id,
+          email: user?.email,
+          userName: `${profile?.nome} ${profile?.sobrenome}`,
+          projectName: projectData?.title || 'Seu Projeto',
+          amount: netAmount
+        }
+      });
+
+      if (emailError) {
+        // Se falhar ao enviar email, deletar withdrawal
+        await supabase.from('withdrawals').delete().eq('id', newWithdrawal.id);
+        throw new Error('Erro ao enviar código de verificação');
+      }
+
+      setPendingWithdrawalId(newWithdrawal.id);
+      setVerificationExpiresAt(data.expiresAt);
+      setShowVerificationModal(true);
+      toast.success('Código de verificação enviado para seu email!');
+    } catch (error: any) {
+      console.error('Error submitting withdrawal:', error);
+      toast.error(error.message || 'Erro ao solicitar resgate. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerificationSuccess = async () => {
+    try {
+      // Atualizar status da withdrawal para pending
       const { error } = await supabase
         .from('withdrawals')
-        .insert(withdrawalData);
+        .update({ status: 'pending' })
+        .eq('id', pendingWithdrawalId);
 
       if (error) throw error;
 
       toast.success('Solicitação de resgate enviada com sucesso!');
       setHasWithdrawal(true);
       setWithdrawalStatus('pending');
-    } catch (error: any) {
-      console.error('Erro ao solicitar resgate:', error);
-      toast.error(error?.message || 'Erro ao solicitar resgate. Tente novamente.');
-    } finally {
-      setLoading(false);
+      await checkExistingWithdrawal();
+    } catch (error) {
+      console.error('Erro ao finalizar resgate:', error);
+      toast.error('Erro ao processar resgate. Contate o suporte.');
     }
   };
 
@@ -181,28 +234,29 @@ export const ProjectWithdrawal = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Solicitar Resgate via PIX
-        </CardTitle>
-        <CardDescription>
-          Seu projeto atingiu a meta! Solicite o resgate via PIX.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Alert className="mb-6">
-          <AlertDescription>
-            <div className="space-y-2">
-              <p><strong>Valor arrecadado:</strong> R$ {raisedAmount.toFixed(2)}</p>
-              <p><strong>Taxa administrativa ({adminFee}%):</strong> R$ {feeAmount.toFixed(2)}</p>
-              <p className="text-lg font-bold"><strong>Valor líquido:</strong> R$ {netAmount.toFixed(2)}</p>
-            </div>
-          </AlertDescription>
-        </Alert>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Solicitar Resgate via PIX
+          </CardTitle>
+          <CardDescription>
+            Seu projeto atingiu a meta! Solicite o resgate via PIX.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert className="mb-6">
+            <AlertDescription>
+              <div className="space-y-2">
+                <p><strong>Valor arrecadado:</strong> R$ {raisedAmount.toFixed(2)}</p>
+                <p><strong>Taxa administrativa ({adminFee}%):</strong> R$ {feeAmount.toFixed(2)}</p>
+                <p className="text-lg font-bold"><strong>Valor líquido:</strong> R$ {netAmount.toFixed(2)}</p>
+              </div>
+            </AlertDescription>
+          </Alert>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg mb-6">
             <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
               ⚡ Resgate exclusivo via PIX
@@ -292,5 +346,14 @@ export const ProjectWithdrawal = ({
         </form>
       </CardContent>
     </Card>
+
+    <WithdrawalVerificationModal
+      open={showVerificationModal}
+      onClose={() => setShowVerificationModal(false)}
+      withdrawalId={pendingWithdrawalId}
+      expiresAt={verificationExpiresAt}
+      onSuccess={handleVerificationSuccess}
+    />
+    </>
   );
 };
