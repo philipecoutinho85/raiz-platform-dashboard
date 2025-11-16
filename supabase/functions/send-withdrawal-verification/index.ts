@@ -30,6 +30,8 @@ serve(async (req) => {
       throw new Error('MAILGUN_API_KEY não configurada');
     }
 
+    console.log('API Key presente:', mailgunApiKey ? `Sim (${mailgunApiKey.length} caracteres, inicia com: ${mailgunApiKey.substring(0, 8)}...)` : 'Não');
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Gerar código de 5 dígitos
