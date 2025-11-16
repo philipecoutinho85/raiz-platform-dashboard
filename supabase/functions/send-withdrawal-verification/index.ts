@@ -85,8 +85,8 @@ serve(async (req) => {
     if (!mailgunResponse.ok) {
       const errorText = await mailgunResponse.text();
       console.error('Erro Mailgun (Status:', mailgunResponse.status, '):', errorText);
-      console.error('Domínio usado:', mailgunDomain);
-      console.error('Template usado:', 'codigo-verificacao-resgate');
+      console.error('Domínio usado: raiztoken.com.br');
+      console.error('Template usado: codigo-verificacao-resgate');
       throw new Error(`Erro ao enviar email via Mailgun (${mailgunResponse.status}). Verifique: 1) Domínio verificado, 2) Template existe, 3) API key tem permissões`);
     }
 
