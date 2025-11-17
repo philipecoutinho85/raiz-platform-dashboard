@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BadgeModal } from './BadgeModal';
 
 interface BadgeData {
   id: string;
@@ -32,6 +33,8 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
   const [projectBadges, setProjectBadges] = useState<ProjectBadge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
 
   useEffect(() => {
     fetchBadges();
@@ -72,6 +75,11 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
     return projectBadges.some(pb => pb.badge_id === badgeId);
   };
 
+  const handleBadgeClick = (badge: BadgeData) => {
+    setSelectedBadge(badge);
+    setShowBadgeModal(true);
+  };
+
   if (loading) {
     return (
       <div className="animate-pulse h-24 bg-muted rounded"></div>
@@ -91,11 +99,14 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
             return (
               <Tooltip key={badge.id}>
                 <TooltipTrigger>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 ${
-                    isUnlocked 
-                      ? 'bg-white border-primary shadow-md hover:shadow-lg' 
-                      : 'bg-muted border-muted-foreground/20 opacity-50 grayscale'
-                  }`}>
+                  <div 
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 cursor-pointer ${
+                      isUnlocked 
+                        ? 'bg-white border-primary shadow-md hover:shadow-lg hover:scale-110' 
+                        : 'bg-muted border-muted-foreground/20 opacity-50 grayscale'
+                    }`}
+                    onClick={() => isUnlocked && handleBadgeClick(badge)}
+                  >
                     {isUnlocked ? (
                       badge.image_url ? (
                         <img 
@@ -117,6 +128,9 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
                     <p className="text-xs text-muted-foreground mt-1">{badge.description}</p>
                     {!isUnlocked && (
                       <p className="text-xs text-muted-foreground mt-1 italic">Bloqueado</p>
+                    )}
+                    {isUnlocked && (
+                      <p className="text-xs text-primary mt-1 italic">Clique para ampliar</p>
                     )}
                   </div>
                 </TooltipContent>
@@ -151,7 +165,10 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
               return (
                 <Tooltip key={badge.id}>
                   <TooltipTrigger>
-                    <div className="flex flex-col items-center gap-2 group">
+                    <div 
+                      className="flex flex-col items-center gap-2 group cursor-pointer"
+                      onClick={() => isUnlocked && handleBadgeClick(badge)}
+                    >
                       <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all border-2 ${
                         isUnlocked 
                           ? 'bg-white border-primary shadow-lg hover:shadow-xl hover:scale-105' 
@@ -184,6 +201,9 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
                     {!isUnlocked && (
                       <p className="text-xs text-muted-foreground mt-2 italic font-semibold">🔒 Bloqueado</p>
                     )}
+                    {isUnlocked && (
+                      <p className="text-xs text-primary mt-2 italic">Clique para ampliar</p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               );
@@ -191,6 +211,12 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
           </div>
         </TooltipProvider>
       </CardContent>
+
+      <BadgeModal
+        isOpen={showBadgeModal}
+        onClose={() => setShowBadgeModal(false)}
+        badge={selectedBadge || { name: '', description: '' }}
+      />
     </Card>
   );
 };

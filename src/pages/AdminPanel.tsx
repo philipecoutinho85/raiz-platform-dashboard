@@ -15,6 +15,7 @@ import RefundsTab from '@/components/admin/RefundsTab';
 import ExpiredProjectsTab from '@/components/admin/ExpiredProjectsTab';
 import AdminTestPanel from '@/components/admin/AdminTestPanel';
 import { WithdrawalsTab } from '@/components/admin/WithdrawalsTab';
+import { ReportsManagement } from '@/components/admin/ReportsManagement';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -130,6 +131,7 @@ const AdminPanel = () => {
                   <SelectItem value="projects">Projetos</SelectItem>
                   <SelectItem value="users">Usuários</SelectItem>
                   <SelectItem value="badges">Badges</SelectItem>
+                  <SelectItem value="reports">Denúncias</SelectItem>
                   <SelectItem value="tokens">Tokens</SelectItem>
                   <SelectItem value="transactions">Transações</SelectItem>
                   <SelectItem value="refunds">Reembolsos</SelectItem>
@@ -142,10 +144,11 @@ const AdminPanel = () => {
               </Select>
             </div>
           ) : (
-            <TabsList className="grid w-full grid-cols-11">
+            <TabsList className="grid w-full grid-cols-12">
               <TabsTrigger value="projects">Projetos</TabsTrigger>
               <TabsTrigger value="users">Usuários</TabsTrigger>
               <TabsTrigger value="badges">Badges</TabsTrigger>
+              <TabsTrigger value="reports">Denúncias</TabsTrigger>
               <TabsTrigger value="tokens">Tokens</TabsTrigger>
               <TabsTrigger value="transactions">Transações</TabsTrigger>
               <TabsTrigger value="refunds">Reembolsos</TabsTrigger>
@@ -177,6 +180,10 @@ const AdminPanel = () => {
 
           <TabsContent value="badges">
             <BadgesTab />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <ReportsManagement />
           </TabsContent>
 
           <TabsContent value="tokens">

@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { WithdrawalChat } from './WithdrawalChat';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
 import { WithdrawalVerificationModal } from './WithdrawalVerificationModal';
+import { WithdrawalResponsibilityModal } from './WithdrawalResponsibilityModal';
 
 interface ProjectWithdrawalProps {
   projectId: string;
@@ -38,6 +39,9 @@ export const ProjectWithdrawal = ({
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationExpiresAt, setVerificationExpiresAt] = useState('');
   const [pendingWithdrawalId, setPendingWithdrawalId] = useState('');
+  const [showResponsibilityModal, setShowResponsibilityModal] = useState(false);
+  const [cpfValidated, setCpfValidated] = useState(false);
+  const [validatedCpf, setValidatedCpf] = useState('');
   
   const [pixData, setPixData] = useState({
     pix_key: '',
@@ -96,13 +100,33 @@ export const ProjectWithdrawal = ({
       return;
     }
 
-    // Validar CPF
+    // Validar CPF digitado
     const cpfNumbers = pixData.cpf.replace(/\D/g, '');
     if (!validateCPF(cpfNumbers)) {
       toast.error('CPF inválido. Verifique os dados.');
       return;
     }
 
+    // Comparar CPF com o do perfil
+    if (!profile) {
+      toast.error('Erro ao carregar dados do perfil');
+      return;
+    }
+
+    const profileCpfNumbers = profile.cpf.replace(/\D/g, '');
+    if (cpfNumbers !== profileCpfNumbers) {
+      toast.error('O CPF informado não corresponde ao CPF cadastrado no seu perfil. Por segurança, apenas o titular da conta pode solicitar o depósito dos valores.');
+      return;
+    }
+
+    // CPF validado, abrir modal de responsabilidade
+    setCpfValidated(true);
+    setValidatedCpf(cpfNumbers);
+    setShowResponsibilityModal(true);
+  };
+
+  const handleResponsibilityConfirmed = async () => {
+    setShowResponsibilityModal(false);
     setLoading(true);
 
     try {
@@ -119,7 +143,7 @@ export const ProjectWithdrawal = ({
         status: 'verification_pending',
         bank_account: {
           holder_name: `${profile?.nome} ${profile?.sobrenome}`,
-          document: cpfNumbers,
+          document: validatedCpf,
           email: user?.email
         }
       };
@@ -353,6 +377,15 @@ export const ProjectWithdrawal = ({
       withdrawalId={pendingWithdrawalId}
       expiresAt={verificationExpiresAt}
       onSuccess={handleVerificationSuccess}
+    />
+
+    <WithdrawalResponsibilityModal
+      isOpen={showResponsibilityModal}
+      onClose={() => {
+        setShowResponsibilityModal(false);
+        setLoading(false);
+      }}
+      onConfirm={handleResponsibilityConfirmed}
     />
     </>
   );

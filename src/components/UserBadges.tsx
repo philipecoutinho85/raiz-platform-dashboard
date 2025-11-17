@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Award, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { BadgeModal } from './BadgeModal';
 
 interface BadgeData {
   id: string;
@@ -31,6 +32,8 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBadge, setSelectedBadge] = useState<BadgeData | null>(null);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
 
   useEffect(() => {
     fetchBadges();
@@ -70,6 +73,11 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
     return userBadges.some(ub => ub.badge_id === badgeId);
   };
 
+  const handleBadgeClick = (badge: BadgeData) => {
+    setSelectedBadge(badge);
+    setShowBadgeModal(true);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -88,7 +96,10 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
           <TooltipProvider key={badge.id}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="relative group cursor-help">
+                <div 
+                  className="relative group cursor-pointer"
+                  onClick={() => handleBadgeClick(badge)}
+                >
                   {badge.image_url ? (
                     <img
                       src={badge.image_url}
@@ -106,6 +117,7 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
                 <div className="space-y-2">
                   <p className="font-bold text-raiz-gold">{badge.name}</p>
                   <p className="text-sm text-gray-200">{badge.description}</p>
+                  <p className="text-xs text-gray-400 italic">Clique para ampliar</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -137,11 +149,12 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
-                      className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all cursor-help ${
+                      className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all cursor-pointer ${
                         hasIt
-                          ? 'border-raiz-gold bg-gradient-to-br from-raiz-gold/30 to-raiz-gold/10 shadow-xl shadow-raiz-gold/30'
+                          ? 'border-raiz-gold bg-gradient-to-br from-raiz-gold/30 to-raiz-gold/10 shadow-xl shadow-raiz-gold/30 hover:scale-105'
                           : 'border-gray-300 bg-gray-50 opacity-40'
                       }`}
+                      onClick={() => hasIt && handleBadgeClick(badge)}
                     >
                       <div className="relative mb-2">
                         {badge.image_url ? (
@@ -182,6 +195,7 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
                         <p className="text-xs font-semibold mb-1">Como conquistar:</p>
                         <p className="text-xs text-gray-300">{badge.criteria}</p>
                       </div>
+                      {hasIt && <p className="text-xs text-raiz-gold italic">Clique para ampliar</p>}
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -190,6 +204,12 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
           })}
         </div>
       </CardContent>
+
+      <BadgeModal
+        isOpen={showBadgeModal}
+        onClose={() => setShowBadgeModal(false)}
+        badge={selectedBadge || { name: '', description: '' }}
+      />
     </Card>
   );
 };
