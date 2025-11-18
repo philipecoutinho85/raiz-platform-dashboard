@@ -6,11 +6,53 @@ import { useToast } from '@/hooks/use-toast';
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutos
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos para admins
 
+export type AdminType = 'master' | 'financial' | 'operational' | 'support';
+
 export const useAdminSecurity = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [sessionStart, setSessionStart] = useState(Date.now());
+  const [adminType, setAdminType] = useState<AdminType | null>(null);
+
+  // Verificar tipo de admin
+  const checkAdminType = useCallback(async () => {
+    if (!user || !isAdmin) return null;
+
+    try {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('admin_type')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      const type = data?.admin_type as AdminType || 'operational';
+      setAdminType(type);
+      return type;
+    } catch (error) {
+      console.error('Erro ao verificar tipo de admin:', error);
+      return null;
+    }
+  }, [user, isAdmin]);
+
+  // Verificar permissões
+  const hasPermission = useCallback((requiredType: AdminType | AdminType[]) => {
+    if (!adminType) return false;
+    
+    const hierarchy: Record<AdminType, number> = {
+      master: 4,
+      financial: 3,
+      operational: 2,
+      support: 1,
+    };
+
+    if (Array.isArray(requiredType)) {
+      return requiredType.includes(adminType);
+    }
+
+    return hierarchy[adminType] >= hierarchy[requiredType];
+  }, [adminType]);
 
   // Log de ação administrativa
   const logAdminAction = useCallback(async (
@@ -113,6 +155,9 @@ export const useAdminSecurity = () => {
   useEffect(() => {
     if (!isAdmin) return;
 
+    // Verificar tipo de admin ao montar
+    checkAdminType();
+
     const checkInactivity = setInterval(() => {
       const inactiveTime = Date.now() - lastActivity;
       const sessionTime = Date.now() - sessionStart;
@@ -145,6 +190,9 @@ export const useAdminSecurity = () => {
     logAdminAction,
     checkDeviceFingerprint,
     check2FAStatus,
-    resetActivityTimer
+    resetActivityTimer,
+    adminType,
+    hasPermission,
+    checkAdminType,
   };
 };

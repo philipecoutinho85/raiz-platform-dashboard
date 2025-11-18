@@ -47,6 +47,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_access_logs: {
+        Row: {
+          accessed_route: string
+          admin_id: string
+          admin_type: Database["public"]["Enums"]["admin_type"] | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_route: string
+          admin_id: string
+          admin_type?: Database["public"]["Enums"]["admin_type"] | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_route?: string
+          admin_id?: string
+          admin_type?: Database["public"]["Enums"]["admin_type"] | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_devices: {
         Row: {
           created_at: string | null
@@ -152,6 +185,75 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      financial_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          read_at: string | null
+          read_by: string | null
+          related_id: string | null
+          related_type: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          read_at?: string | null
+          read_by?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          read_at?: string | null
+          read_by?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      financial_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -848,18 +950,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          admin_type: Database["public"]["Enums"]["admin_type"] | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          admin_type?: Database["public"]["Enums"]["admin_type"] | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          admin_type?: Database["public"]["Enums"]["admin_type"] | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
@@ -1067,12 +1172,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_financial_alert: {
+        Args: {
+          p_alert_type: string
+          p_message: string
+          p_metadata?: Json
+          p_related_id?: string
+          p_related_type?: string
+          p_severity?: string
+          p_title: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      log_admin_access: {
+        Args: {
+          p_accessed_route: string
+          p_admin_id: string
+          p_ip_address?: string
+          p_session_id?: string
+          p_user_agent?: string
+        }
+        Returns: string
       }
       log_admin_action: {
         Args: {
@@ -1089,6 +1216,7 @@ export type Database = {
       validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
     Enums: {
+      admin_type: "master" | "financial" | "operational" | "support"
       app_role: "admin" | "user" | "moderator"
     }
     CompositeTypes: {
@@ -1217,6 +1345,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_type: ["master", "financial", "operational", "support"],
       app_role: ["admin", "user", "moderator"],
     },
   },

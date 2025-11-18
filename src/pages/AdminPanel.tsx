@@ -10,6 +10,7 @@ import ProjectsTab from '@/components/admin/ProjectsTab';
 import TokensTab from '@/components/admin/TokensTab';
 import TransactionsTab from '@/components/admin/TransactionsTab';
 import SettingsTab from '@/components/admin/SettingsTab';
+import { FinanceTab } from '@/components/admin/FinanceTab';
 import BadgesTab from '@/components/admin/BadgesTab';
 import RefundsTab from '@/components/admin/RefundsTab';
 import ExpiredProjectsTab from '@/components/admin/ExpiredProjectsTab';
@@ -132,6 +133,7 @@ const AdminPanel = () => {
                   <SelectItem value="users">Usuários</SelectItem>
                   <SelectItem value="badges">Badges</SelectItem>
                   <SelectItem value="reports">Denúncias</SelectItem>
+                  <SelectItem value="finance">Financeiro</SelectItem>
                   <SelectItem value="tokens">Tokens</SelectItem>
                   <SelectItem value="transactions">Transações</SelectItem>
                   <SelectItem value="refunds">Reembolsos</SelectItem>
@@ -149,6 +151,7 @@ const AdminPanel = () => {
               <TabsTrigger value="users">Usuários</TabsTrigger>
               <TabsTrigger value="badges">Badges</TabsTrigger>
               <TabsTrigger value="reports">Denúncias</TabsTrigger>
+              <TabsTrigger value="finance">Financeiro</TabsTrigger>
               <TabsTrigger value="tokens">Tokens</TabsTrigger>
               <TabsTrigger value="transactions">Transações</TabsTrigger>
               <TabsTrigger value="refunds">Reembolsos</TabsTrigger>
@@ -184,6 +187,10 @@ const AdminPanel = () => {
 
           <TabsContent value="reports">
             <ReportsManagement />
+          </TabsContent>
+
+          <TabsContent value="finance">
+            <FinanceTab />
           </TabsContent>
 
           <TabsContent value="tokens">
