@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Calendar, MapPin, ExternalLink, Star } from 'lucide-react';
 import UserBadges from '@/components/UserBadges';
 import ManageBadges from '@/components/admin/ManageBadges';
+import RaizScore from '@/components/RaizScore';
+import CreatorStats from '@/components/CreatorStats';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface UserProfile {
@@ -225,64 +227,38 @@ const PublicProfile = () => {
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-raiz-dark mb-2">
-                  {profile.nome} {profile.sobrenome}
-                </h1>
-                
-                <div className="flex flex-wrap items-center gap-4 text-sm text-raiz-secondary mb-4">
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>Membro desde {new Date(profile.created_at).toLocaleDateString('pt-BR')}</span>
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-raiz-dark mb-3">
+                    {profile.nome} {profile.sobrenome}
+                  </h1>
+                  
+                  {/* RaizScore - Sistema de Reputação */}
+                  <div className="mb-4">
+                    <RaizScore userId={userId!} showDetails />
                   </div>
                   
-                  {(profile.cidade && profile.estado) && (
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-raiz-secondary">
                     <div className="flex items-center space-x-1">
-                      <MapPin className="w-4 h-4" />
-                      <span>{profile.cidade}, {profile.estado}</span>
+                      <Calendar className="w-4 h-4" />
+                      <span>Membro desde {new Date(profile.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-4">
-                  <div className="text-center px-4 py-2 bg-raiz-primary/10 rounded-lg">
-                    <div className="text-2xl font-bold text-raiz-primary">{projects.length}</div>
-                    <div className="text-sm text-raiz-secondary">Total de Projetos</div>
-                  </div>
-                  
-                  <div className="text-center px-4 py-2 bg-green-100 rounded-lg">
-                    <div className="text-2xl font-bold text-green-700">{getCompletedProjects()}</div>
-                    <div className="text-sm text-raiz-secondary">Concluídos</div>
-                  </div>
-                  
-                  <div className="text-center px-4 py-2 bg-blue-100 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-700">{getApprovedProjects()}</div>
-                    <div className="text-sm text-raiz-secondary">Aprovados</div>
-                  </div>
-                  
-                  <div className="text-center px-4 py-2 bg-yellow-100 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-700">{getPendingProjects()}</div>
-                    <div className="text-sm text-raiz-secondary">Pendentes</div>
-                  </div>
-                  
-                  <div className="text-center px-4 py-2 bg-raiz-gold/20 rounded-lg">
-                    <div className="text-2xl font-bold text-raiz-gold">
-                      {formatTokens(projects.reduce((sum, p) => sum + p.raised_amount, 0))}
-                    </div>
-                    <div className="text-sm text-raiz-secondary">Tokens Arrecadados</div>
-                  </div>
-                  
-                  <div className="text-center px-4 py-2 bg-raiz-accent/20 rounded-lg">
-                    <div className="text-2xl font-bold text-raiz-accent">
-                      {projects.reduce((sum, p) => sum + p.backers_count, 0)}
-                    </div>
-                    <div className="text-sm text-raiz-secondary">Apoiadores</div>
+                    
+                    {(profile.cidade && profile.estado) && (
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="w-4 h-4" />
+                        <span>{profile.cidade}, {profile.estado}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Estatísticas Detalhadas do Criador */}
+        <CreatorStats userId={userId!} />
 
         {/* User Badges */}
         <UserBadges userId={userId!} />

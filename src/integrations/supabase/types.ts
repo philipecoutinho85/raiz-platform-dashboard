@@ -188,6 +188,57 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_scores: {
+        Row: {
+          accountability_points: number | null
+          behavior_points: number | null
+          created_at: string | null
+          delivery_quality_points: number | null
+          engagement_points: number | null
+          id: string
+          last_calculated_at: string | null
+          level: number
+          platform_time_points: number | null
+          points: number
+          reports_points: number | null
+          success_history_points: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accountability_points?: number | null
+          behavior_points?: number | null
+          created_at?: string | null
+          delivery_quality_points?: number | null
+          engagement_points?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          level?: number
+          platform_time_points?: number | null
+          points?: number
+          reports_points?: number | null
+          success_history_points?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accountability_points?: number | null
+          behavior_points?: number | null
+          created_at?: string | null
+          delivery_quality_points?: number | null
+          engagement_points?: number | null
+          id?: string
+          last_calculated_at?: string | null
+          level?: number
+          platform_time_points?: number | null
+          points?: number
+          reports_points?: number | null
+          success_history_points?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_alerts: {
         Row: {
           alert_type: string
@@ -1172,6 +1223,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_raizscore_level: { Args: { p_points: number }; Returns: number }
       create_financial_alert: {
         Args: {
           p_alert_type: string
@@ -1212,6 +1264,10 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      recalculate_user_raizscore: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
