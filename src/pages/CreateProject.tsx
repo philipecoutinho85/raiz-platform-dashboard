@@ -27,6 +27,8 @@ interface ProjectFormData {
   bairro?: string;
   cidade?: string;
   estado?: string;
+  meta_pixel_id?: string;
+  google_tag_id?: string;
 }
 
 const CreateProject = () => {
@@ -180,6 +182,8 @@ const CreateProject = () => {
           bairro: data.bairro?.trim() || null,
           cidade: data.cidade?.trim() || null,
           estado: data.estado?.trim() || null,
+          meta_pixel_id: data.meta_pixel_id?.trim() || null,
+          google_tag_id: data.google_tag_id?.trim() || null,
           status: 'pending',
         })
         .select()
@@ -567,6 +571,74 @@ const CreateProject = () => {
                 <p className="text-sm text-gray-500">
                   Adicione um vídeo explicativo do seu projeto
                 </p>
+              </div>
+
+              {/* Tracking Configuration */}
+              <div className="space-y-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-900">Configurações de Rastreamento (Opcional)</h3>
+                <p className="text-sm text-blue-700">
+                  Configure pixels de conversão para tráfego pago. <strong>Insira apenas o ID</strong>, não coloque códigos completos ou scripts.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="meta_pixel_id">ID do Meta Pixel (Facebook/Instagram)</Label>
+                    <Input
+                      id="meta_pixel_id"
+                      {...register('meta_pixel_id', {
+                        validate: (value) => {
+                          if (!value) return true;
+                          const trimmed = value.trim();
+                          if (!/^[0-9]{10,20}$/.test(trimmed)) {
+                            return 'ID inválido. Deve conter apenas números (10-20 dígitos)';
+                          }
+                          return true;
+                        }
+                      })}
+                      placeholder="123456789012345"
+                      maxLength={20}
+                    />
+                    {errors.meta_pixel_id && (
+                      <p className="text-red-500 text-sm">{errors.meta_pixel_id.message}</p>
+                    )}
+                    <p className="text-xs text-gray-600">
+                      Exemplo: 123456789012345 (apenas números)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="google_tag_id">ID da Google Tag (GTM/GA4)</Label>
+                    <Input
+                      id="google_tag_id"
+                      {...register('google_tag_id', {
+                        validate: (value) => {
+                          if (!value) return true;
+                          const trimmed = value.trim();
+                          if (!/^(GTM|G|UA|AW|DC)-[A-Z0-9-]+$/.test(trimmed)) {
+                            return 'ID inválido. Formato: GTM-XXXXXX, G-XXXXXXXXXX, UA-XXXXXXX-X, etc.';
+                          }
+                          if (trimmed.length > 30) {
+                            return 'ID muito longo';
+                          }
+                          return true;
+                        }
+                      })}
+                      placeholder="GTM-XXXXXXX ou G-XXXXXXXXXX"
+                      maxLength={30}
+                    />
+                    {errors.google_tag_id && (
+                      <p className="text-red-500 text-sm">{errors.google_tag_id.message}</p>
+                    )}
+                    <p className="text-xs text-gray-600">
+                      Exemplos: GTM-ABC123, G-ABCD123456, UA-123456-1
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-100 border border-blue-300 rounded p-3 text-sm text-blue-800">
+                  <strong>⚠️ Importante:</strong> A plataforma implementará os scripts automaticamente de forma segura. 
+                  Não insira códigos HTML, JavaScript ou snippets completos.
+                </div>
               </div>
 
               {/* Location */}

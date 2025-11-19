@@ -67,6 +67,8 @@ import ProjectBadges from '@/components/ProjectBadges';
 import TokenSupportDialog from '@/components/TokenSupportDialog';
 import { ProjectWithdrawal } from '@/components/ProjectWithdrawal';
 import { ProjectReport } from '@/components/ProjectReport';
+import { LoginRequiredModal } from '@/components/LoginRequiredModal';
+import RaizScore from '@/components/RaizScore';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -81,6 +83,7 @@ const ProjectDetail = () => {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
   const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -463,6 +466,7 @@ const ProjectDetail = () => {
               projectId={project.id}
               projectOwnerId={project.user_id}
               isProjectCompleted={project.status === 'approved' && project.raised_amount >= project.goal}
+              onLoginRequired={() => setShowLoginModal(true)}
             />
 
             {/* Contributors */}
@@ -556,8 +560,14 @@ const ProjectDetail = () => {
 
                 {!isOwner && (
                   <Button 
-                    onClick={() => setIsSupportDialogOpen(true)}
-                    disabled={!canSupportProject()}
+                    onClick={() => {
+                      if (!user) {
+                        setShowLoginModal(true);
+                        return;
+                      }
+                      setIsSupportDialogOpen(true);
+                    }}
+                    disabled={!canSupportProject() && !!user}
                     className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isProjectExpired() ? 'Projeto Expirado' : 
@@ -650,7 +660,12 @@ const ProjectDetail = () => {
                     Reconhecimentos conquistados por {profile.nome}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                  {/* RaizScore */}
+                  <div className="mb-4">
+                    <RaizScore userId={profile.id} showDetails={false} />
+                  </div>
+                  {/* Badges */}
                   <UserBadges userId={profile.id} showTitle={false} compact={true} />
                 </CardContent>
               </Card>
@@ -666,6 +681,11 @@ const ProjectDetail = () => {
         projectId={project.id}
         projectTitle={project.title}
         onSuccess={fetchProject}
+      />
+
+      <LoginRequiredModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
       />
 
       <Footer />

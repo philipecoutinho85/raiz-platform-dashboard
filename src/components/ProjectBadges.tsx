@@ -10,11 +10,14 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BadgeModal } from './BadgeModal';
 
+import { filterProjectBadges } from '@/lib/badgeFilters';
+
 interface BadgeData {
   id: string;
   name: string;
   description: string;
-  image_url: string | null;
+  image_url?: string | null;
+  slug?: string;
 }
 
 interface ProjectBadge {
@@ -62,7 +65,10 @@ const ProjectBadges = ({ projectId, showTitle = true, compact = false }: Project
 
       if (projectBadgesError) throw projectBadgesError;
 
-      setAllBadges(allBadgesData || []);
+      // Filter to show only essential project badges
+      const filteredBadges = filterProjectBadges(allBadgesData || []);
+      
+      setAllBadges(filteredBadges);
       setProjectBadges(projectBadgesData || []);
     } catch (error) {
       console.error('Error fetching project badges:', error);
