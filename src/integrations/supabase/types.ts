@@ -732,7 +732,9 @@ export type Database = {
           endereco: string | null
           estado: string | null
           goal: number
+          google_tag_id: string | null
           id: string
+          meta_pixel_id: string | null
           numero: string | null
           pending_requirements: string | null
           raised_amount: number
@@ -767,7 +769,9 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           goal: number
+          google_tag_id?: string | null
           id?: string
+          meta_pixel_id?: string | null
           numero?: string | null
           pending_requirements?: string | null
           raised_amount?: number
@@ -802,7 +806,9 @@ export type Database = {
           endereco?: string | null
           estado?: string | null
           goal?: number
+          google_tag_id?: string | null
           id?: string
+          meta_pixel_id?: string | null
           numero?: string | null
           pending_requirements?: string | null
           raised_amount?: number

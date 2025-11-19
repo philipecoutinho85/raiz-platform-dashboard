@@ -6,14 +6,16 @@ import { Award, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BadgeModal } from './BadgeModal';
 
+import { filterCreatorBadges } from '@/lib/badgeFilters';
+
 interface BadgeData {
   id: string;
   name: string;
   slug: string;
   description: string;
-  criteria: string;
+  criteria?: string;
   image_url?: string;
-  is_active: boolean;
+  is_active?: boolean;
 }
 
 interface UserBadge {
@@ -49,7 +51,10 @@ const UserBadges = ({ userId, showTitle = true, compact = false }: UserBadgesPro
         .order('slug');
 
       if (badgesError) throw badgesError;
-      setAllBadges(badges || []);
+      
+      // Filter to show only reputation badges for creator profile
+      const filteredBadges = filterCreatorBadges(badges || []);
+      setAllBadges(filteredBadges);
 
       // Buscar badges do usuário
       const { data: userBadgesData, error: userBadgesError } = await supabase

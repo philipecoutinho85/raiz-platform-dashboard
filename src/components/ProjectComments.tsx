@@ -33,9 +33,10 @@ interface ProjectCommentsProps {
   projectId: string;
   projectOwnerId: string;
   isProjectCompleted: boolean;
+  onLoginRequired?: () => void;
 }
 
-const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: ProjectCommentsProps) => {
+const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted, onLoginRequired }: ProjectCommentsProps) => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -157,11 +158,15 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
 
   const handleSubmit = async () => {
     if (!user) {
-      toast({
-        title: 'Erro',
-        description: 'Você precisa estar logado para comentar.',
-        variant: 'destructive',
-      });
+      if (onLoginRequired) {
+        onLoginRequired();
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Você precisa estar logado para comentar.',
+          variant: 'destructive',
+        });
+      }
       return;
     }
 
@@ -225,6 +230,13 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
   };
 
   const handleReply = async (parentId: string) => {
+    if (!user) {
+      if (onLoginRequired) {
+        onLoginRequired();
+      }
+      return;
+    }
+    
     if (!replyContent.trim()) return;
 
     setLoading(true);
@@ -233,7 +245,7 @@ const ProjectComments = ({ projectId, projectOwnerId, isProjectCompleted }: Proj
         .from('project_comments')
         .insert({
           project_id: projectId,
-          user_id: user!.id,
+          user_id: user.id,
           content: replyContent.trim(),
           comment_type: 'question',
           parent_comment_id: parentId,

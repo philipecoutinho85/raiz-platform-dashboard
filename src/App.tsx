@@ -88,11 +88,7 @@ const App = () => (
               />
               <Route 
                 path="/projeto/:id" 
-                element={
-                  <ProtectedRoute>
-                    <ProjectDetail />
-                  </ProtectedRoute>
-                } 
+                element={<ProjectDetail />} 
               />
               <Route 
                 path="/perfil" 
@@ -104,11 +100,7 @@ const App = () => (
               />
               <Route 
                 path="/usuario/:userId" 
-                element={
-                  <ProtectedRoute>
-                    <PublicProfile />
-                  </ProtectedRoute>
-                } 
+                element={<PublicProfile />} 
               />
               <Route 
                 path="/admin" 
