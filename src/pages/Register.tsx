@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -184,6 +185,9 @@ const Register = () => {
 
   return (
     <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
       <MaintenanceModal />
       <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
@@ -191,8 +195,10 @@ const Register = () => {
             <div className="inline-flex items-center justify-center mb-4">
               <img src={raizTokenLogo} alt="Raiz Token Logo" className="h-36 w-auto" />
             </div>
-            <h1 className="text-2xl font-bold text-raiz-dark">Criar Conta na Plataforma Raiz Token</h1>
-            <p className="text-raiz-secondary">Preencha seus dados básicos para se cadastrar</p>
+            <h1 className="text-3xl font-bold text-raiz-dark mb-4">Crie sua conta na plataforma de crowdfunding Raiz Token</h1>
+            <p className="text-raiz-secondary text-base leading-relaxed max-w-3xl mx-auto mb-6">
+              A Raiz Token é uma plataforma de crowdfunding que se destaca pela transparência, credibilidade e processos bem estruturados para apoiar projetos de impacto. Com práticas modernas de avaliação, validação e acompanhamento, a plataforma oferece um ambiente profissional e confiável para criadores e apoiadores. Ao registrar sua conta, você passa a integrar um ecossistema comprometido com seriedade, governança e a evolução sustentável das iniciativas.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
