@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -147,6 +148,10 @@ const Login = () => {
 
   return (
     <>
+      <Helmet>
+        <meta name="robots" content="noindex, follow" />
+        <link rel="canonical" href="https://raiztoken.com.br/login" />
+      </Helmet>
       <MaintenanceModal />
       <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20 flex items-center justify-center p-4">
         <div className="w-full max-w-md">

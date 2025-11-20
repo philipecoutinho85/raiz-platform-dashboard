@@ -12,5 +12,7 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /login
+Disallow: /registro
 
 Sitemap: https://raiztoken.com.br/sitemap.xml
