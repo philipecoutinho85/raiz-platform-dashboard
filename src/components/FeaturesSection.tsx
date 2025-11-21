@@ -4,34 +4,34 @@ import { Sprout, Shield, TrendingUp, Users, Zap, Heart } from 'lucide-react';
 
 const features = [
   {
-    icon: Sprout,
-    title: "Crescimento Orgânico",
-    description: "Sua ideia cresce de forma natural com o apoio da comunidade, como uma árvore que se desenvolve com cuidado e paciência."
-  },
-  {
     icon: Shield,
-    title: "Segurança Total",
-    description: "Transações seguras e transparentes. Sua confiança é nossa prioridade máxima em cada etapa do processo."
+    title: "Criação Estruturada",
+    description: "Criação de projetos estruturada e orientada com verificação rigorosa de identidade e curadoria antes da publicação."
   },
   {
     icon: TrendingUp,
-    title: "Crescimento Sustentável",
-    description: "Acompanhe o progresso do seu projeto em tempo real com métricas detalhadas e insights valiosos."
-  },
-  {
-    icon: Users,
-    title: "Comunidade Engajada",
-    description: "Conecte-se com apoiadores genuinamente interessados em ver seu projeto florescer e ter sucesso."
+    title: "RaizScore Transparente",
+    description: "Reputação pública via RaizScore, baseada em entregas e transparência, sempre evolutiva e clara."
   },
   {
     icon: Zap,
-    title: "Processo Ágil",
-    description: "Criar e gerenciar projetos nunca foi tão simples. Interface intuitiva para máxima eficiência."
+    title: "Validação Humana",
+    description: "Validação humana antes de qualquer liberação de valores, garantindo segurança operacional."
+  },
+  {
+    icon: Users,
+    title: "Linha do Tempo Organizada",
+    description: "Linha do tempo organizada e prestação de contas comprovada em cada etapa do projeto."
+  },
+  {
+    icon: Sprout,
+    title: "Devolução Automática",
+    description: "Devolução automática dos tokens se a meta não for atingida, protegendo apoiadores."
   },
   {
     icon: Heart,
-    title: "Apoio Personalizado",
-    description: "Nossa equipe está sempre pronta para ajudar você a alcançar seus objetivos e superar desafios."
+    title: "Projetos Sempre Acessíveis",
+    description: "Projetos sempre acessíveis para visitantes, mesmo sem login, promovendo transparência total."
   }
 ];
 
@@ -41,12 +41,8 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold text-raiz-dark mb-6">
-            Por que escolher a <span className="text-gradient">Plataforma Raiz Token</span>?
+            Clareza para quem cria. <span className="text-gradient">Segurança operacional</span> para quem apoia.
           </h2>
-          <p className="text-xl text-raiz-secondary max-w-3xl mx-auto">
-            Nossa plataforma foi desenvolvida pensando em cada detalhe para oferecer a melhor experiência 
-            tanto para criadores quanto para apoiadores de projetos.
-          </p>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

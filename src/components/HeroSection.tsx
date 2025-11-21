@@ -20,14 +20,17 @@ const HeroSection = () => {
             </div>
             
             <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-              Faça seus projetos 
-              <span className="block text-raiz-gold">crescerem</span>
-              <span className="block text-raiz-accent">como uma árvore</span>
+              Uma nova forma de
+              <span className="block text-raiz-gold">financiar projetos</span>
+              <span className="block text-raiz-accent">com transparência e responsabilidade</span>
             </h1>
             
-            <p className="text-xl text-raiz-light/80 mb-8 max-w-2xl">
-              Na <strong>Plataforma Raiz Token</strong>, conectamos empreendedores visionários com apoiadores que acreditam no potencial de grandes ideias. 
-              Sua ideia é a semente, nossos apoiadores são o adubo que fará ela florescer.
+            <p className="text-xl text-raiz-light/80 mb-6 max-w-2xl">
+              Tecnologia, curadoria e reputação pública para conectar criadores e apoiadores de maneira clara, estável e profissional.
+            </p>
+            
+            <p className="text-base text-raiz-light/70 mb-8 max-w-2xl">
+              A Raiz Token nasce para oferecer ao Brasil uma plataforma estruturada, com validação humana, processos sólidos e foco absoluto na transparência. Seu projeto sério e sustentável começa aqui.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
