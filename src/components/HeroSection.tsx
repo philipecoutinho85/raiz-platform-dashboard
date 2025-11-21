@@ -20,9 +20,7 @@ const HeroSection = () => {
             </div>
             
             <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-              Uma nova forma de
-              <span className="block text-raiz-gold">financiar projetos</span>
-              <span className="block text-raiz-accent">com transparência</span>
+              Uma nova forma de financiar projetos com transparência
             </h1>
             
             <p className="text-xl text-raiz-light/80 mb-6 max-w-2xl">
