@@ -30,8 +30,8 @@ const features = [
   },
   {
     icon: Heart,
-    title: "Projetos Sempre Acessíveis",
-    description: "Projetos sempre acessíveis para visitantes, mesmo sem login, promovendo transparência total."
+    title: "Prestação de contas rastreável",
+    description: "Prestação de contas rastreável em cada etapa do projeto, garantindo transparência total."
   }
 ];
 
