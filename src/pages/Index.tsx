@@ -1,15 +1,12 @@
 import HeroSection from '@/components/HeroSection';
 import FeaturesSection from '@/components/FeaturesSection';
-import WhatWeOfferSection from '@/components/WhatWeOfferSection';
 import ReputationSection from '@/components/ReputationSection';
 import BadgesShowcaseSection from '@/components/BadgesShowcaseSection';
 import CreatorToolsSection from '@/components/CreatorToolsSection';
 import FeaturedProjects from '@/components/FeaturedProjects';
 import SupporterProtectionSection from '@/components/SupporterProtectionSection';
 import SeriousCreatorsSection from '@/components/SeriousCreatorsSection';
-import EmotionalConnectionSection from '@/components/EmotionalConnectionSection';
 import TechExclusivitySection from '@/components/TechExclusivitySection';
-import CommunitySection from '@/components/CommunitySection';
 import Footer from '@/components/Footer';
 import { Helmet } from 'react-helmet';
 
@@ -35,16 +32,13 @@ const Index = () => {
       <div className="min-h-screen">
         <HeroSection />
         <FeaturesSection />
-        <WhatWeOfferSection />
         <ReputationSection />
         <BadgesShowcaseSection />
         <CreatorToolsSection />
         <FeaturedProjects />
         <SupporterProtectionSection />
         <SeriousCreatorsSection />
-        <EmotionalConnectionSection />
         <TechExclusivitySection />
-        <CommunitySection />
         <Footer />
       </div>
     </>
