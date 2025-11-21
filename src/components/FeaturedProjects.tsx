@@ -130,11 +130,10 @@ const FeaturedProjects = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold text-raiz-dark mb-6">
-            Projetos em <span className="text-gradient">Destaque</span>
+            Projetos que fortalecem comunidades e geram <span className="text-gradient">impacto verdadeiro</span>
           </h2>
           <p className="text-xl text-raiz-secondary max-w-3xl mx-auto">
-            Conheça alguns dos projetos incríveis que estão transformando ideias em realidade 
-            através da nossa plataforma.
+            Explore iniciativas sociais, ambientais e culturais que utilizam a Raiz Token para ampliar alcance e viabilizar resultados reais.
           </p>
         </div>
         
