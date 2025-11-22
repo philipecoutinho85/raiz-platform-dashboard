@@ -43,9 +43,13 @@ export const ProjectWithdrawal = ({
   const [cpfValidated, setCpfValidated] = useState(false);
   const [validatedCpf, setValidatedCpf] = useState('');
   
-  const [pixData, setPixData] = useState({
-    pix_key: '',
-    pix_key_type: 'cpf' as 'cpf' | 'cnpj' | 'email' | 'phone' | 'random',
+  const [bankData, setBankData] = useState({
+    bank_code: '',
+    branch: '',
+    branch_check_digit: '',
+    account: '',
+    account_check_digit: '',
+    account_type: 'checking' as 'checking' | 'savings',
     cpf: ''
   });
 
@@ -95,13 +99,14 @@ export const ProjectWithdrawal = ({
       return;
     }
 
-    if (!pixData.pix_key || !pixData.pix_key_type || !pixData.cpf) {
+    if (!bankData.bank_code || !bankData.branch || !bankData.account || 
+        !bankData.account_check_digit || !bankData.cpf) {
       toast.error('Por favor, preencha todos os campos obrigatórios');
       return;
     }
 
     // Validar CPF digitado
-    const cpfNumbers = pixData.cpf.replace(/\D/g, '');
+    const cpfNumbers = bankData.cpf.replace(/\D/g, '');
     if (!validateCPF(cpfNumbers)) {
       toast.error('CPF inválido. Verifique os dados.');
       return;
@@ -137,14 +142,19 @@ export const ProjectWithdrawal = ({
         requested_amount: raisedAmount,
         admin_fee: feeAmount,
         net_amount: netAmount,
-        payment_method: 'pix',
-        pix_key: pixData.pix_key,
-        pix_key_type: pixData.pix_key_type,
+        payment_method: 'bank_transfer',
         status: 'verification_pending',
         bank_account: {
           holder_name: `${profile?.nome} ${profile?.sobrenome}`,
           document: validatedCpf,
-          email: user?.email
+          email: user?.email,
+          bank_code: bankData.bank_code,
+          branch: bankData.branch,
+          branch_check_digit: bankData.branch_check_digit || '0',
+          account: bankData.account,
+          account_check_digit: bankData.account_check_digit,
+          account_type: bankData.account_type,
+          holder_type: 'individual'
         }
       };
 
@@ -263,10 +273,10 @@ export const ProjectWithdrawal = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Solicitar Resgate via PIX
+            Solicitar Resgate via TED
           </CardTitle>
           <CardDescription>
-            Seu projeto atingiu a meta! Solicite o resgate via PIX.
+            Seu projeto atingiu a meta! Solicite o resgate via transferência bancária (TED).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -281,63 +291,105 @@ export const ProjectWithdrawal = ({
           </Alert>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg mb-6">
-            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-              ⚡ Resgate exclusivo via PIX
-            </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-              Após a aprovação, o pagamento será processado automaticamente pelo Pagar.me
-            </p>
-          </div>
+          <Alert className="mb-6 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-amber-900 dark:text-amber-100">
+              <strong>⏱️ Prazo de processamento:</strong> A análise e liberação do resgate será realizada em até 7 dias úteis após a aprovação.
+            </AlertDescription>
+          </Alert>
 
           <div className="space-y-2">
             <Label htmlFor="cpf">CPF do Titular *</Label>
             <Input
               id="cpf"
               placeholder="000.000.000-00"
-              value={pixData.cpf}
+              value={bankData.cpf}
               onChange={(e) => {
-                setPixData({ ...pixData, cpf: formatCPF(e.target.value) });
+                setBankData({ ...bankData, cpf: formatCPF(e.target.value) });
               }}
               maxLength={14}
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="pix_key_type">Tipo de Chave PIX *</Label>
-            <Select
-              value={pixData.pix_key_type}
-              onValueChange={(value: any) => setPixData({ ...pixData, pix_key_type: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cpf">CPF</SelectItem>
-                <SelectItem value="cnpj">CNPJ</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="phone">Telefone</SelectItem>
-                <SelectItem value="random">Chave Aleatória</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="bank_code">Código do Banco *</Label>
+              <Input
+                id="bank_code"
+                placeholder="001"
+                value={bankData.bank_code}
+                onChange={(e) => setBankData({ ...bankData, bank_code: e.target.value.replace(/\D/g, '') })}
+                maxLength={3}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="account_type">Tipo de Conta *</Label>
+              <Select
+                value={bankData.account_type}
+                onValueChange={(value: 'checking' | 'savings') => setBankData({ ...bankData, account_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="checking">Conta Corrente</SelectItem>
+                  <SelectItem value="savings">Conta Poupança</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="pix_key">Chave PIX *</Label>
-            <Input
-              id="pix_key"
-              placeholder={
-                pixData.pix_key_type === 'cpf' ? '000.000.000-00' :
-                pixData.pix_key_type === 'cnpj' ? '00.000.000/0000-00' :
-                pixData.pix_key_type === 'email' ? 'seu@email.com' :
-                pixData.pix_key_type === 'phone' ? '(00) 00000-0000' :
-                'Chave aleatória'
-              }
-              value={pixData.pix_key}
-              onChange={(e) => setPixData({ ...pixData, pix_key: e.target.value })}
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="branch">Agência *</Label>
+              <Input
+                id="branch"
+                placeholder="0001"
+                value={bankData.branch}
+                onChange={(e) => setBankData({ ...bankData, branch: e.target.value.replace(/\D/g, '') })}
+                maxLength={4}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="branch_check_digit">Dígito da Agência</Label>
+              <Input
+                id="branch_check_digit"
+                placeholder="0"
+                value={bankData.branch_check_digit}
+                onChange={(e) => setBankData({ ...bankData, branch_check_digit: e.target.value.replace(/\D/g, '') })}
+                maxLength={1}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="account">Número da Conta *</Label>
+              <Input
+                id="account"
+                placeholder="12345"
+                value={bankData.account}
+                onChange={(e) => setBankData({ ...bankData, account: e.target.value.replace(/\D/g, '') })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="account_check_digit">Dígito da Conta *</Label>
+              <Input
+                id="account_check_digit"
+                placeholder="6"
+                value={bankData.account_check_digit}
+                onChange={(e) => setBankData({ ...bankData, account_check_digit: e.target.value })}
+                maxLength={2}
+                required
+              />
+            </div>
           </div>
 
           <div className="pt-4 border-t">
@@ -353,7 +405,7 @@ export const ProjectWithdrawal = ({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Após aprovação, o PIX será processado automaticamente pelo Pagar.me em até 1 dia útil.
+              Após a aprovação, a transferência via TED será processada em até 7 dias úteis.
             </AlertDescription>
           </Alert>
 

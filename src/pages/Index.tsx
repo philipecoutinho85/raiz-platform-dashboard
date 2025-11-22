@@ -5,8 +5,6 @@ import BadgesShowcaseSection from '@/components/BadgesShowcaseSection';
 import CreatorToolsSection from '@/components/CreatorToolsSection';
 import FeaturedProjects from '@/components/FeaturedProjects';
 import SupporterProtectionSection from '@/components/SupporterProtectionSection';
-import SeriousCreatorsSection from '@/components/SeriousCreatorsSection';
-import TechExclusivitySection from '@/components/TechExclusivitySection';
 import Footer from '@/components/Footer';
 import { Helmet } from 'react-helmet';
 
@@ -30,16 +28,28 @@ const Index = () => {
         <meta property="og:type" content="website" />
       </Helmet>
       <div className="min-h-screen">
+      <div className="animate-fade-in">
         <HeroSection />
+      </div>
+      <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <FeaturesSection />
+      </div>
+      <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <ReputationSection />
+      </div>
+      <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
         <BadgesShowcaseSection />
+      </div>
+      <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
         <CreatorToolsSection />
+      </div>
+      <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
         <FeaturedProjects />
+      </div>
+      <div className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
         <SupporterProtectionSection />
-        <SeriousCreatorsSection />
-        <TechExclusivitySection />
-        <Footer />
+      </div>
+      <Footer />
       </div>
     </>
   );

@@ -72,7 +72,31 @@ serve(async (req) => {
     if (action === 'approve') {
       console.log('[Process Withdrawal] Approving withdrawal');
 
-      // Para PIX, criar pagamento PIX automático no Pagar.me
+      // Para transferência bancária (TED), apenas aprovar para processamento manual
+      if (withdrawal.payment_method === 'bank_transfer') {
+        console.log('[Process Withdrawal] TED - Marking for manual processing');
+        
+        const { error: updateError } = await supabase
+          .from('withdrawals')
+          .update({
+            status: 'approved',
+            reviewed_by: adminId,
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('id', withdrawalId);
+
+        if (updateError) throw updateError;
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Resgate aprovado. Processamento manual via TED em até 7 dias úteis.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Para PIX, criar pagamento PIX automático no Pagar.me (código existente mantido)
       if (withdrawal.payment_method === 'pix') {
         console.log('[Process Withdrawal] Creating automatic PIX payment via Pagar.me');
         

@@ -218,10 +218,13 @@ export const WithdrawalsTab = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Projeto</TableHead>
-                  <TableHead>Autor</TableHead>
-                  <TableHead>Método</TableHead>
-                  <TableHead>Valor Bruto</TableHead>
+                    <TableHead>Método</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>Banco</TableHead>
+                    <TableHead>Agência</TableHead>
+                    <TableHead>Conta</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Valor Bruto</TableHead>
                   <TableHead>Taxa</TableHead>
                   <TableHead>Valor Líquido</TableHead>
                   <TableHead>Data</TableHead>
@@ -245,8 +248,23 @@ export const WithdrawalsTab = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {withdrawal.payment_method === 'pix' ? '⚡ PIX' : '🏦 TED'}
+                        {withdrawal.payment_method === 'bank_transfer' ? '🏦 TED' : '⚡ PIX'}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs font-mono">
+                      {withdrawal.bank_account?.document}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {withdrawal.bank_account?.bank_code || '-'}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {withdrawal.bank_account?.branch ? `${withdrawal.bank_account.branch}-${withdrawal.bank_account.branch_check_digit || '0'}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {withdrawal.bank_account?.account ? `${withdrawal.bank_account.account}-${withdrawal.bank_account.account_check_digit}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {withdrawal.bank_account?.account_type === 'checking' ? 'Corrente' : withdrawal.bank_account?.account_type === 'savings' ? 'Poupança' : '-'}
                     </TableCell>
                     <TableCell>R$ {Number(withdrawal.requested_amount).toFixed(2)}</TableCell>
                     <TableCell>R$ {Number(withdrawal.admin_fee).toFixed(2)}</TableCell>
@@ -378,36 +396,48 @@ export const WithdrawalsTab = () => {
             <div className="space-y-4">
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Badge>{selectedWithdrawal.payment_method === 'pix' ? 'PIX' : 'Transferência Bancária'}</Badge>
+                  <Badge>{selectedWithdrawal.payment_method === 'bank_transfer' ? 'Transferência Bancária (TED)' : 'PIX'}</Badge>
                 </h4>
-                {selectedWithdrawal.payment_method === 'pix' ? (
-                  <div className="space-y-1 text-sm bg-muted p-4 rounded-lg">
-                    <p><strong>Tipo de Chave:</strong> {selectedWithdrawal.pix_key_type?.toUpperCase()}</p>
-                    <p><strong>Chave PIX:</strong> <code className="bg-background px-2 py-1 rounded">{selectedWithdrawal.pix_key}</code></p>
-                    <p><strong>Titular:</strong> {selectedWithdrawal.bank_account?.holder_name}</p>
-                    <p><strong>CPF:</strong> {selectedWithdrawal.bank_account?.document}</p>
+                <div className="space-y-1 text-sm bg-muted p-4 rounded-lg">
+                  <p><strong>Titular:</strong> {selectedWithdrawal.bank_account?.holder_name}</p>
+                  <p><strong>CPF:</strong> <code className="bg-background px-2 py-1 rounded">{selectedWithdrawal.bank_account?.document}</code></p>
+                  
+                  {selectedWithdrawal.payment_method === 'bank_transfer' ? (
+                    <>
+                      <div className="border-t pt-3 mt-3">
+                        <p className="font-semibold text-base mb-2">📋 Dados Bancários para TED:</p>
+                        <p><strong>Banco:</strong> {selectedWithdrawal.bank_account?.bank_code}</p>
+                        <p><strong>Agência:</strong> {selectedWithdrawal.bank_account?.branch}-{selectedWithdrawal.bank_account?.branch_check_digit || '0'}</p>
+                        <p><strong>Conta:</strong> {selectedWithdrawal.bank_account?.account}-{selectedWithdrawal.bank_account?.account_check_digit}</p>
+                        <p><strong>Tipo de Conta:</strong> {selectedWithdrawal.bank_account?.account_type === 'checking' ? 'Conta Corrente' : 'Conta Poupança'}</p>
+                      </div>
+                      <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded">
+                        <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">⏱️ PRAZO DE PROCESSAMENTO:</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                          A transferência deve ser processada manualmente em até 7 dias úteis após a aprovação.
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p><strong>Tipo de Chave:</strong> {selectedWithdrawal.pix_key_type?.toUpperCase()}</p>
+                      <p><strong>Chave PIX:</strong> <code className="bg-background px-2 py-1 rounded">{selectedWithdrawal.pix_key}</code></p>
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded">
+                        <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">✅ PROCESSO AUTOMÁTICO:</p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                          1. Clique em "Aprovar" para enviar o pagamento ao Pagar.me<br/>
+                          2. O PIX será criado automaticamente no Pagar.me<br/>
+                          3. O Pagar.me processará o pagamento<br/>
+                          4. Acompanhe o status no dashboard do Pagar.me
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="border-t pt-3 mt-3">
                     <p><strong>Valor a Transferir:</strong> <span className="text-lg font-bold text-green-600">R$ {Number(selectedWithdrawal.net_amount).toFixed(2)}</span></p>
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded">
-                      <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">✅ PROCESSO AUTOMÁTICO:</p>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                        1. Clique em "Aprovar" para enviar o pagamento ao Pagar.me<br/>
-                        2. O PIX será criado automaticamente no Pagar.me<br/>
-                        3. O Pagar.me processará o pagamento<br/>
-                        4. Acompanhe o status no dashboard do Pagar.me
-                      </p>
-                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-1 text-sm bg-muted p-4 rounded-lg">
-                    <p><strong>Banco:</strong> {selectedWithdrawal.bank_account.bank_code}</p>
-                    <p><strong>Agência:</strong> {selectedWithdrawal.bank_account.branch}-{selectedWithdrawal.bank_account.branch_check_digit || '0'}</p>
-                    <p><strong>Conta:</strong> {selectedWithdrawal.bank_account.account}-{selectedWithdrawal.bank_account.account_check_digit}</p>
-                    <p><strong>Tipo:</strong> {selectedWithdrawal.bank_account.account_type === 'checking' ? 'Corrente' : 'Poupança'}</p>
-                    <p><strong>Titular:</strong> {selectedWithdrawal.bank_account.holder_name}</p>
-                    <p><strong>CPF:</strong> {selectedWithdrawal.bank_account.document}</p>
-                    <p><strong>Valor a Transferir:</strong> <span className="text-lg font-bold text-green-600">R$ {Number(selectedWithdrawal.net_amount).toFixed(2)}</span></p>
-                  </div>
-                )}
+                </div>
               </div>
               {selectedWithdrawal.rejection_reason && (
                 <div>
