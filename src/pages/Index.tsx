@@ -4,7 +4,6 @@ import ReputationSection from '@/components/ReputationSection';
 import BadgesShowcaseSection from '@/components/BadgesShowcaseSection';
 import CreatorToolsSection from '@/components/CreatorToolsSection';
 import FeaturedProjects from '@/components/FeaturedProjects';
-import SupporterProtectionSection from '@/components/SupporterProtectionSection';
 import Footer from '@/components/Footer';
 import { Helmet } from 'react-helmet';
 
@@ -45,9 +44,6 @@ const Index = () => {
       </div>
       <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
         <FeaturedProjects />
-      </div>
-      <div className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
-        <SupporterProtectionSection />
       </div>
       <Footer />
       </div>
