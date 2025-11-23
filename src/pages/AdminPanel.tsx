@@ -152,76 +152,76 @@ const AdminPanel = () => {
             <div className="flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-gradient-to-r from-raiz-gold to-amber-500 hover:from-raiz-gold/90 hover:to-amber-500/90 text-raiz-dark border-raiz-gold/50 shadow-lg">
+                  <Button variant="outline" className="bg-primary hover:bg-primary/90 text-primary-foreground border-primary/50 shadow-lg">
                     <Menu className="mr-2 h-5 w-5" />
                     Menu de Navegação
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64 bg-background shadow-2xl border-raiz-gold/30" align="start">
-                  <DropdownMenuLabel className="text-raiz-gold">📊 Análises</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setActiveTab("projects")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <FolderOpen className="mr-2 h-4 w-4 text-raiz-gold" />
+                <DropdownMenuContent className="w-64 bg-background shadow-2xl border-primary/30" align="start">
+                  <DropdownMenuLabel className="text-primary">📊 Análises</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setActiveTab("projects")} className="cursor-pointer hover:bg-primary/10">
+                    <FolderOpen className="mr-2 h-4 w-4 text-primary" />
                     Projetos
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("users")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <Users className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("users")} className="cursor-pointer hover:bg-primary/10">
+                    <Users className="mr-2 h-4 w-4 text-primary" />
                     Usuários
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("badges")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <Award className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("badges")} className="cursor-pointer hover:bg-primary/10">
+                    <Award className="mr-2 h-4 w-4 text-primary" />
                     Badges
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("reports")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <AlertTriangle className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("reports")} className="cursor-pointer hover:bg-primary/10">
+                    <AlertTriangle className="mr-2 h-4 w-4 text-primary" />
                     Denúncias
                   </DropdownMenuItem>
                   
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-raiz-gold">💰 Financeiro</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setActiveTab("finance")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <DollarSign className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuLabel className="text-primary">💰 Financeiro</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setActiveTab("finance")} className="cursor-pointer hover:bg-primary/10">
+                    <DollarSign className="mr-2 h-4 w-4 text-primary" />
                     Visão Geral
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("tokens")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <Coins className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("tokens")} className="cursor-pointer hover:bg-primary/10">
+                    <Coins className="mr-2 h-4 w-4 text-primary" />
                     Tokens
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("transactions")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <ArrowLeftRight className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("transactions")} className="cursor-pointer hover:bg-primary/10">
+                    <ArrowLeftRight className="mr-2 h-4 w-4 text-primary" />
                     Transações
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("refunds")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <RotateCcw className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("refunds")} className="cursor-pointer hover:bg-primary/10">
+                    <RotateCcw className="mr-2 h-4 w-4 text-primary" />
                     Reembolsos
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("withdrawals")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <LogOut className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("withdrawals")} className="cursor-pointer hover:bg-primary/10">
+                    <LogOut className="mr-2 h-4 w-4 text-primary" />
                     Resgates
                   </DropdownMenuItem>
                   
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-raiz-gold">⚙️ Sistema</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setActiveTab("expired")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <Clock className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuLabel className="text-primary">⚙️ Sistema</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setActiveTab("expired")} className="cursor-pointer hover:bg-primary/10">
+                    <Clock className="mr-2 h-4 w-4 text-primary" />
                     Projetos Expirados
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("logs")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <FileText className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("logs")} className="cursor-pointer hover:bg-primary/10">
+                    <FileText className="mr-2 h-4 w-4 text-primary" />
                     Logs do Sistema
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("tests")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <TestTube className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("tests")} className="cursor-pointer hover:bg-primary/10">
+                    <TestTube className="mr-2 h-4 w-4 text-primary" />
                     Testes
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("settings")} className="cursor-pointer hover:bg-raiz-gold/10">
-                    <Settings className="mr-2 h-4 w-4 text-raiz-gold" />
+                  <DropdownMenuItem onClick={() => setActiveTab("settings")} className="cursor-pointer hover:bg-primary/10">
+                    <Settings className="mr-2 h-4 w-4 text-primary" />
                     Configurações
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               
               <div className="text-sm text-muted-foreground">
-                Aba atual: <span className="font-semibold text-raiz-gold">{
+                Aba atual: <span className="font-semibold text-primary">{
                   activeTab === "projects" ? "Projetos" :
                   activeTab === "users" ? "Usuários" :
                   activeTab === "badges" ? "Badges" :
