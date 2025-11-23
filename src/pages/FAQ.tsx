@@ -13,7 +13,7 @@ const FAQ = () => {
     },
     {
       question: "Qual o valor mínimo para apoiar?",
-      answer: "O valor mínimo é de R$ 50,00, que gera 50 tokens. Essa quantidade permite que você já faça uma contribuição significativa para projetos menores ou combine com outros apoiadores em projetos maiores."
+      answer: "O valor mínimo é de R$ 5,00, que gera 5 tokens. Essa quantidade permite que você já faça uma contribuição significativa mesmo com valores menores, democratizando o acesso ao apoio de projetos."
     },
     {
       question: "O que acontece se o projeto não atingir a meta?",
@@ -21,7 +21,7 @@ const FAQ = () => {
     },
     {
       question: "Posso sacar meus tokens em dinheiro?",
-      answer: "Não. Os tokens são simbólicos e servem apenas para apoiar projetos dentro da plataforma. Eles permanecem como registro histórico do seu apoio. Apenas o criador do projeto pode sacar os recursos arrecadados, e somente se a meta for alcançada no prazo."
+      answer: "Sim, você pode solicitar o saque dos seus tokens de volta para dinheiro. No entanto, isso só é possível antes do projeto que você apoiou atingir sua meta. Uma vez que a meta é alcançada, os tokens são convertidos em apoio definitivo ao projeto e os recursos são liberados para o criador. Portanto, certifique-se de analisar bem o projeto antes de apoiar."
     },
     {
       question: "É seguro apoiar projetos pelo Raiz Token?",
@@ -41,7 +41,7 @@ const FAQ = () => {
     },
     {
       question: "Há limite para quantos projetos posso apoiar?",
-      answer: "Não há limite! Você pode apoiar quantos projetos quiser, com a quantidade de tokens que desejar (respeitando o mínimo de 50 tokens por apoio). Diversificar seus apoios ajuda mais projetos a alcançarem suas metas."
+      answer: "Não há limite! Você pode apoiar quantos projetos quiser, com a quantidade de tokens que desejar (respeitando o mínimo de 5 tokens por apoio). Diversificar seus apoios ajuda mais projetos a alcançarem suas metas."
     },
     {
       question: "E se eu mudar de ideia sobre um apoio?",

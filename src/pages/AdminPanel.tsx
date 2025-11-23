@@ -2,6 +2,9 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Menu, BarChart3, Users, FolderOpen, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings } from 'lucide-react';
 import AdminHeader from '@/components/admin/AdminHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AdminStats from '@/components/admin/AdminStats';
@@ -129,38 +132,112 @@ const AdminPanel = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50">
-                  <SelectItem value="projects">Projetos</SelectItem>
-                  <SelectItem value="users">Usuários</SelectItem>
-                  <SelectItem value="badges">Badges</SelectItem>
-                  <SelectItem value="reports">Denúncias</SelectItem>
-                  <SelectItem value="finance">Financeiro</SelectItem>
-                  <SelectItem value="tokens">Tokens</SelectItem>
-                  <SelectItem value="transactions">Transações</SelectItem>
-                  <SelectItem value="refunds">Reembolsos</SelectItem>
-                  <SelectItem value="withdrawals">Resgates</SelectItem>
-                  <SelectItem value="expired">Proj. Expirados</SelectItem>
-                  <SelectItem value="logs">Logs</SelectItem>
-                  <SelectItem value="tests">Testes</SelectItem>
-                  <SelectItem value="settings">Configurações</SelectItem>
+                  <SelectItem value="projects">📁 Projetos</SelectItem>
+                  <SelectItem value="users">👥 Usuários</SelectItem>
+                  <SelectItem value="badges">🏆 Badges</SelectItem>
+                  <SelectItem value="reports">⚠️ Denúncias</SelectItem>
+                  <SelectItem value="finance">💰 Financeiro</SelectItem>
+                  <SelectItem value="tokens">🪙 Tokens</SelectItem>
+                  <SelectItem value="transactions">💸 Transações</SelectItem>
+                  <SelectItem value="refunds">🔄 Reembolsos</SelectItem>
+                  <SelectItem value="withdrawals">💵 Resgates</SelectItem>
+                  <SelectItem value="expired">⏱️ Proj. Expirados</SelectItem>
+                  <SelectItem value="logs">📋 Logs</SelectItem>
+                  <SelectItem value="tests">🧪 Testes</SelectItem>
+                  <SelectItem value="settings">⚙️ Configurações</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           ) : (
-            <TabsList className="grid w-full grid-cols-12">
-              <TabsTrigger value="projects">Projetos</TabsTrigger>
-              <TabsTrigger value="users">Usuários</TabsTrigger>
-              <TabsTrigger value="badges">Badges</TabsTrigger>
-              <TabsTrigger value="reports">Denúncias</TabsTrigger>
-              <TabsTrigger value="finance">Financeiro</TabsTrigger>
-              <TabsTrigger value="tokens">Tokens</TabsTrigger>
-              <TabsTrigger value="transactions">Transações</TabsTrigger>
-              <TabsTrigger value="refunds">Reembolsos</TabsTrigger>
-              <TabsTrigger value="withdrawals">Resgates</TabsTrigger>
-              <TabsTrigger value="expired">Expirados</TabsTrigger>
-              <TabsTrigger value="logs">Logs</TabsTrigger>
-              <TabsTrigger value="tests">Testes</TabsTrigger>
-              <TabsTrigger value="settings">Config.</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center gap-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="bg-gradient-to-r from-raiz-gold to-amber-500 hover:from-raiz-gold/90 hover:to-amber-500/90 text-raiz-dark border-raiz-gold/50 shadow-lg">
+                    <Menu className="mr-2 h-5 w-5" />
+                    Menu de Navegação
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 bg-background shadow-2xl border-raiz-gold/30" align="start">
+                  <DropdownMenuLabel className="text-raiz-gold">📊 Análises</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setActiveTab("projects")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <FolderOpen className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Projetos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("users")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <Users className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Usuários
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("badges")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <Award className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Badges
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("reports")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <AlertTriangle className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Denúncias
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-raiz-gold">💰 Financeiro</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setActiveTab("finance")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <DollarSign className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Visão Geral
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("tokens")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <Coins className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Tokens
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("transactions")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <ArrowLeftRight className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Transações
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("refunds")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <RotateCcw className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Reembolsos
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("withdrawals")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <LogOut className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Resgates
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-raiz-gold">⚙️ Sistema</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setActiveTab("expired")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <Clock className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Projetos Expirados
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("logs")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <FileText className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Logs do Sistema
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("tests")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <TestTube className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Testes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActiveTab("settings")} className="cursor-pointer hover:bg-raiz-gold/10">
+                    <Settings className="mr-2 h-4 w-4 text-raiz-gold" />
+                    Configurações
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <div className="text-sm text-muted-foreground">
+                Aba atual: <span className="font-semibold text-raiz-gold">{
+                  activeTab === "projects" ? "Projetos" :
+                  activeTab === "users" ? "Usuários" :
+                  activeTab === "badges" ? "Badges" :
+                  activeTab === "reports" ? "Denúncias" :
+                  activeTab === "finance" ? "Financeiro" :
+                  activeTab === "tokens" ? "Tokens" :
+                  activeTab === "transactions" ? "Transações" :
+                  activeTab === "refunds" ? "Reembolsos" :
+                  activeTab === "withdrawals" ? "Resgates" :
+                  activeTab === "expired" ? "Projetos Expirados" :
+                  activeTab === "logs" ? "Logs" :
+                  activeTab === "tests" ? "Testes" :
+                  "Configurações"
+                }</span>
+              </div>
+            </div>
           )}
 
           <TabsContent value="projects">

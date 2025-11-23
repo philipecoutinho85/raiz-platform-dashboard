@@ -13,6 +13,7 @@ import { WithdrawalChat } from './WithdrawalChat';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
 import { WithdrawalVerificationModal } from './WithdrawalVerificationModal';
 import { WithdrawalResponsibilityModal } from './WithdrawalResponsibilityModal';
+import { brazilianBanks, accountTypes } from '@/lib/brazilianBanks';
 
 interface ProjectWithdrawalProps {
   projectId: string;
@@ -314,15 +315,22 @@ export const ProjectWithdrawal = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="bank_code">Código do Banco *</Label>
-              <Input
-                id="bank_code"
-                placeholder="001"
+              <Label htmlFor="bank_code">Banco *</Label>
+              <Select
                 value={bankData.bank_code}
-                onChange={(e) => setBankData({ ...bankData, bank_code: e.target.value.replace(/\D/g, '') })}
-                maxLength={3}
-                required
-              />
+                onValueChange={(value) => setBankData({ ...bankData, bank_code: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o banco" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50 max-h-[300px]">
+                  {brazilianBanks.map((bank) => (
+                    <SelectItem key={bank.code} value={bank.code}>
+                      {bank.code} - {bank.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -334,9 +342,12 @@ export const ProjectWithdrawal = ({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="checking">Conta Corrente</SelectItem>
-                  <SelectItem value="savings">Conta Poupança</SelectItem>
+                <SelectContent className="bg-background z-50">
+                  {accountTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
