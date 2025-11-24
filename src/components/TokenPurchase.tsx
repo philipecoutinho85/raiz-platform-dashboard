@@ -32,11 +32,11 @@ const TokenPurchase = () => {
   };
 
   const tokenPackages = [
-    { tokens: 50, price: 50, bonus: 0 }, // Valor mínimo
+    { tokens: 5, price: 5, bonus: 0 }, // Valor mínimo
+    { tokens: 50, price: 50, bonus: 0 },
     { tokens: 100, price: 100, bonus: 0 },
     { tokens: 500, price: 500, bonus: 0 },
     { tokens: 1000, price: 1000, bonus: 0 },
-    { tokens: 2000, price: 2000, bonus: 0 },
   ];
 
   const handlePurchase = async (tokens: number) => {
@@ -127,7 +127,7 @@ const TokenPurchase = () => {
           <Alert className="bg-raiz-primary/5 border-raiz-primary/20">
             <Coins className="h-4 w-4" />
             <AlertDescription>
-              Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 1,00. Valor mínimo de compra: R$ 50,00 (50 tokens).
+              Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 1,00. Valor mínimo de compra: R$ 5,00 (5 tokens).
             </AlertDescription>
           </Alert>
 
@@ -200,12 +200,12 @@ const TokenPurchase = () => {
             <Input
               id="custom-amount"
               type="number"
-              min="50"
-              placeholder="Quantidade de tokens (mín. 50)"
+              min="5"
+              placeholder="Quantidade de tokens (mín. 5)"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
-            {amount && parseInt(amount) >= 50 && (
+            {amount && parseInt(amount) >= 5 && (
               <div className="p-3 bg-raiz-primary/10 rounded-lg">
                 <p className="text-sm font-medium text-raiz-primary">
                   Valor total: R$ {calculatePrice(parseInt(amount))}
@@ -218,11 +218,11 @@ const TokenPurchase = () => {
             <Button
               onClick={() => {
                 const tokens = parseInt(amount);
-                if (tokens >= 50 && tokens > 0) {
+                if (tokens >= 5 && tokens > 0) {
                   handlePurchase(tokens);
                 }
               }}
-              disabled={loading || !amount || parseInt(amount) < 50}
+              disabled={loading || !amount || parseInt(amount) < 5}
               className="w-full"
             >
               <CreditCard className="w-4 h-4 mr-2" />
@@ -230,7 +230,7 @@ const TokenPurchase = () => {
             </Button>
           </div>
           <p className="text-xs text-raiz-secondary mt-2">
-            R$ 1,00 por token (mínimo: R$ 50,00 = 50 tokens)
+            R$ 1,00 por token (mínimo: R$ 5,00 = 5 tokens)
           </p>
         </div>
 

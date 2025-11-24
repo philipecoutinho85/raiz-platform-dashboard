@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Beaker, Send, Database, Mail, DollarSign } from 'lucide-react';
+import { Beaker, Send, Database, Mail, DollarSign, Plus, Trash2 } from 'lucide-react';
 import { useAdminSecurity } from '@/hooks/useAdminSecurity';
 
 const AdminTestPanel = () => {
@@ -13,6 +15,7 @@ const AdminTestPanel = () => {
   const { logAdminAction } = useAdminSecurity();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
+  const [testTokenAmount, setTestTokenAmount] = useState('');
 
   const runTest = async (type: string) => {
     if (!user) return;
@@ -185,6 +188,160 @@ const AdminTestPanel = () => {
               </CardContent>
             </Card>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5" />
+            Gerenciar Tokens de Teste
+          </CardTitle>
+          <CardDescription>
+            Adicione ou remova tokens de teste para sua conta
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="token-amount">Quantidade de Tokens</Label>
+            <Input
+              id="token-amount"
+              type="number"
+              min="0"
+              placeholder="Ex: 100"
+              value={testTokenAmount}
+              onChange={(e) => setTestTokenAmount(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              onClick={async () => {
+                if (!testTokenAmount || parseInt(testTokenAmount) <= 0) {
+                  toast({
+                    title: "Erro",
+                    description: "Informe uma quantidade válida",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+
+                try {
+                  const amount = parseInt(testTokenAmount);
+                  
+                  // Verifica se já existe registro de tokens
+                  const { data: existingTokens } = await supabase
+                    .from('user_tokens')
+                    .select('*')
+                    .eq('user_id', user?.id)
+                    .single();
+
+                  if (existingTokens) {
+                    // Atualiza o saldo existente
+                    const { error } = await supabase
+                      .from('user_tokens')
+                      .update({ balance: existingTokens.balance + amount })
+                      .eq('user_id', user?.id);
+
+                    if (error) throw error;
+                  } else {
+                    // Cria novo registro
+                    const { error } = await supabase
+                      .from('user_tokens')
+                      .insert({ user_id: user?.id, balance: amount });
+
+                    if (error) throw error;
+                  }
+
+                  // Registra transação
+                  await supabase.from('token_transactions').insert({
+                    user_id: user?.id,
+                    amount: amount,
+                    balance_after: (existingTokens?.balance || 0) + amount,
+                    transaction_type: 'test_credit',
+                    description: 'Tokens de teste adicionados pelo admin'
+                  });
+
+                  await logAdminAction(
+                    'add_test_tokens',
+                    'tokens',
+                    undefined,
+                    { amount }
+                  );
+
+                  toast({
+                    title: "Sucesso",
+                    description: `${amount} tokens de teste adicionados`
+                  });
+
+                  setTestTokenAmount('');
+                } catch (error: any) {
+                  console.error('Error adding test tokens:', error);
+                  toast({
+                    title: "Erro",
+                    description: error.message,
+                    variant: "destructive"
+                  });
+                }
+              }}
+              disabled={loading}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Tokens
+            </Button>
+
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                try {
+                  const { error } = await supabase
+                    .from('user_tokens')
+                    .update({ balance: 0 })
+                    .eq('user_id', user?.id);
+
+                  if (error) throw error;
+
+                  await supabase.from('token_transactions').insert({
+                    user_id: user?.id,
+                    amount: 0,
+                    balance_after: 0,
+                    transaction_type: 'test_reset',
+                    description: 'Tokens de teste zerados pelo admin'
+                  });
+
+                  await logAdminAction(
+                    'reset_test_tokens',
+                    'tokens',
+                    undefined,
+                    {}
+                  );
+
+                  toast({
+                    title: "Sucesso",
+                    description: "Tokens zerados com sucesso"
+                  });
+                } catch (error: any) {
+                  console.error('Error resetting tokens:', error);
+                  toast({
+                    title: "Erro",
+                    description: error.message,
+                    variant: "destructive"
+                  });
+                }
+              }}
+              disabled={loading}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Zerar Tokens
+            </Button>
+          </div>
+
+          <div className="bg-muted p-3 rounded-lg">
+            <p className="text-xs text-muted-foreground">
+              ⚠️ <strong>Atenção:</strong> Estes são tokens de teste para desenvolvimento. 
+              Não representam valor real.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
