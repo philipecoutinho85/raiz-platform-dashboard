@@ -18,10 +18,10 @@ serve(async (req) => {
 
     console.log('[Check Expired Projects] Starting check...');
 
-    // Buscar projetos aprovados que venceram
+    // Buscar projetos aprovados que venceram (excluindo os já cancelados)
     const { data: allProjects, error: projectsError } = await supabase
       .from('projects')
-      .select('id, title, user_id, goal, raised_amount, deadline')
+      .select('id, title, user_id, goal, raised_amount, deadline, status')
       .eq('status', 'approved')
       .lt('deadline', new Date().toISOString().split('T')[0]);
 
@@ -34,7 +34,8 @@ serve(async (req) => {
     const expiredProjects = (allProjects || []).filter(p => {
       const raised = Number(p.raised_amount) || 0;
       const goal = Number(p.goal) || 0;
-      return raised < goal;
+      // Apenas projetos aprovados e que não atingiram a meta
+      return p.status === 'approved' && raised < goal;
     });
 
     console.log(`[Check Expired Projects] Found ${expiredProjects.length} expired projects without reaching goal`);
@@ -69,6 +70,23 @@ serve(async (req) => {
       // Processar devolução para cada apoiador
       for (const contribution of contributions || []) {
         try {
+          // VERIFICAR SE JÁ EXISTE UM REEMBOLSO PARA ESTA CONTRIBUIÇÃO
+          const { data: existingRefund, error: refundCheckError } = await supabase
+            .from('refunds')
+            .select('id')
+            .eq('contribution_id', contribution.id)
+            .maybeSingle();
+
+          if (refundCheckError) {
+            console.error(`[Check Expired Projects] Error checking existing refund:`, refundCheckError);
+            continue;
+          }
+
+          // Se já existe um reembolso, pular esta contribuição
+          if (existingRefund) {
+            console.log(`[Check Expired Projects] Refund already exists for contribution ${contribution.id}, skipping`);
+            continue;
+          }
           // Buscar saldo atual do usuário
           const { data: userTokens, error: tokensError } = await supabase
             .from('user_tokens')
@@ -95,6 +113,24 @@ serve(async (req) => {
 
           if (updateError) {
             console.error(`[Check Expired Projects] Error updating balance:`, updateError);
+            continue;
+          }
+
+          // Criar registro de reembolso
+          const { error: refundError } = await supabase
+            .from('refunds')
+            .insert({
+              user_id: contribution.user_id,
+              project_id: project.id,
+              contribution_id: contribution.id,
+              amount: contribution.amount,
+              reason: 'Projeto expirou sem atingir a meta',
+              status: 'completed',
+              processed_at: new Date().toISOString()
+            });
+
+          if (refundError) {
+            console.error(`[Check Expired Projects] Error creating refund record:`, refundError);
             continue;
           }
 
@@ -131,11 +167,11 @@ serve(async (req) => {
               user_id: contribution.user_id,
               type: 'refund_processed',
               title: 'Tokens Devolvidos',
-              message: `Seus ${contributionAmount} tokens investidos no projeto "${project.title}" foram devolvidos à sua carteira. O projeto não atingiu a meta dentro do prazo estabelecido. Agradecemos seu apoio e esperamos contar com você em novos projetos! 💚`,
+              message: `Seus ${contribution.amount} tokens investidos no projeto "${project.title}" foram devolvidos à sua carteira. O projeto não atingiu a meta dentro do prazo estabelecido. Agradecemos seu apoio e esperamos contar com você em novos projetos! 💚`,
               related_id: project.id
             });
 
-          console.log(`[Check Expired Projects] Refunded ${contributionAmount} tokens to user ${contribution.user_id}`);
+          console.log(`[Check Expired Projects] Refunded ${contribution.amount} tokens to user ${contribution.user_id}`);
         } catch (error) {
           console.error(`[Check Expired Projects] Error processing contribution:`, error);
         }
