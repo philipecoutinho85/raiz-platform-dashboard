@@ -221,6 +221,7 @@ export const useAdminData = () => {
           .eq('id', projectId);
 
         if (error) {
+          console.error('Error approving project:', error);
           throw error;
         }
 
@@ -338,11 +339,11 @@ export const useAdminData = () => {
       // Atualizar dados
       await fetchAdminData();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating project:', error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar projeto.",
+        description: error.message || "Erro ao atualizar projeto. Tente novamente.",
         variant: "destructive"
       });
     }

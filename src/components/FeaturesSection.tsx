@@ -47,7 +47,8 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold text-raiz-dark mb-6">
-            Clareza para quem cria. <span className="text-gradient">Segurança operacional</span> para quem apoia.
+            Clareza para quem cria.<br />
+            <span className="text-gradient">Segurança operacional</span> para quem apoia.
           </h2>
         </div>
         
