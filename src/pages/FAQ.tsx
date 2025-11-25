@@ -46,6 +46,10 @@ const FAQ = () => {
     {
       question: "E se eu mudar de ideia sobre um apoio?",
       answer: "Enquanto o projeto estiver ativo e não tiver atingido a meta, você pode solicitar reembolso a qualquer momento. Após a meta ser atingida, o apoio é confirmado e os recursos são liberados para o criador."
+    },
+    {
+      question: "Quais são as taxas para resgate de valores?",
+      answer: "Para criadores que atingiram a meta e desejam resgatar os valores arrecadados, é cobrada uma taxa de saque via TED no valor de R$ 3,67 por transação. Esta taxa é referente ao processamento da transferência bancária pela plataforma de pagamento Pagar.me."
     }
   ];
 

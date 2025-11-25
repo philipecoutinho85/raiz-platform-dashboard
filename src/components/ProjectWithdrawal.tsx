@@ -286,7 +286,8 @@ export const ProjectWithdrawal = ({
               <div className="space-y-2">
                 <p><strong>Valor arrecadado:</strong> R$ {raisedAmount.toFixed(2)}</p>
                 <p><strong>Taxa administrativa ({adminFee}%):</strong> R$ {feeAmount.toFixed(2)}</p>
-                <p className="text-lg font-bold"><strong>Valor líquido:</strong> R$ {netAmount.toFixed(2)}</p>
+                <p><strong>Taxa de saque (TED):</strong> R$ 3,67</p>
+                <p className="text-lg font-bold"><strong>Valor líquido a receber:</strong> R$ {(netAmount - 3.67).toFixed(2)}</p>
               </div>
             </AlertDescription>
           </Alert>

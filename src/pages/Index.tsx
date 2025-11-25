@@ -1,6 +1,5 @@
 import HeroSection from '@/components/HeroSection';
 import FeaturesSection from '@/components/FeaturesSection';
-import ReputationSection from '@/components/ReputationSection';
 import BadgesShowcaseSection from '@/components/BadgesShowcaseSection';
 import CreatorToolsSection from '@/components/CreatorToolsSection';
 import FeaturedProjects from '@/components/FeaturedProjects';
@@ -34,15 +33,12 @@ const Index = () => {
         <FeaturesSection />
       </div>
       <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <ReputationSection />
-      </div>
-      <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
         <BadgesShowcaseSection />
       </div>
-      <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+      <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
         <CreatorToolsSection />
       </div>
-      <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
+      <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
         <FeaturedProjects />
       </div>
       <Footer />
