@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, X, Plus, Coins } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Upload, X, Plus, Coins, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +32,54 @@ interface ProjectFormData {
   meta_pixel_id?: string;
   google_tag_id?: string;
 }
+
+const PROJECT_CATEGORIES = [
+  {
+    value: 'tecnologia',
+    label: 'Tecnologia',
+    description: 'Projetos de inovação, software, aplicativos, IA, robótica, soluções digitais, ferramentas para negócios e tecnologia educacional.'
+  },
+  {
+    value: 'cultura',
+    label: 'Cultura',
+    description: 'Projetos de arte, música, fotografia, literatura, dança, teatro, produções culturais e eventos comunitários.'
+  },
+  {
+    value: 'educacao',
+    label: 'Educação',
+    description: 'Projetos de aprendizagem, cursos, materiais didáticos, bolsas, capacitação profissional, inclusão educacional e iniciativas para estudantes.'
+  },
+  {
+    value: 'saude',
+    label: 'Saúde',
+    description: 'Tratamentos médicos, exames, cirurgias, medicamentos, reabilitação e ações de apoio à saúde física ou mental.'
+  },
+  {
+    value: 'ambiental',
+    label: 'Ambiental',
+    description: 'Projetos ligados à preservação, reciclagem, reflorestamento, sustentabilidade, economia circular e causas ambientais.'
+  },
+  {
+    value: 'social',
+    label: 'Social',
+    description: 'Ações humanitárias, auxílio a famílias, assistência social, apoio emergencial, vulnerabilidade, inclusão social e projetos com impacto direto na comunidade.'
+  },
+  {
+    value: 'empreendedorismo',
+    label: 'Empreendedorismo',
+    description: 'Projetos de MEIs, pequenos negócios, iniciativas locais, microempreendedores, expansão de negócios e ações de economia criativa.'
+  },
+  {
+    value: 'bem-estar-animal',
+    label: 'Bem-Estar Animal',
+    description: 'Projetos de proteção animal, resgate, alimentação, cuidados veterinários, abrigo, adoção e preservação de animais domésticos ou silvestres.'
+  },
+  {
+    value: 'outros',
+    label: 'Outros',
+    description: 'Categoria aberta para projetos que não se encaixam nas categorias existentes, garantindo liberdade e flexibilidade.'
+  }
+];
 
 const CreateProject = () => {
   const { user } = useAuth();
@@ -58,7 +108,7 @@ const CreateProject = () => {
     checkAdminStatus();
   }, [user]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProjectFormData>();
+  const { register, handleSubmit, control, formState: { errors } } = useForm<ProjectFormData>();
 
   const handleFeaturedImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -343,21 +393,47 @@ const CreateProject = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria *</Label>
-                  <select
-                    id="category"
-                    {...register('category', { required: 'Categoria é obrigatória' })}
-                    className="w-full p-2 border rounded-md"
-                  >
-                    <option value="">Selecione uma categoria</option>
-                    <option value="tecnologia">Tecnologia</option>
-                    <option value="arte">Arte</option>
-                    <option value="educacao">Educação</option>
-                    <option value="saude">Saúde</option>
-                    <option value="meio-ambiente">Meio Ambiente</option>
-                    <option value="social">Social</option>
-                    <option value="outros">Outros</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="category">Categoria *</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-raiz-secondary cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-sm">
+                          <p className="text-sm">Escolha a categoria que melhor descreve seu projeto. Passe o mouse sobre cada categoria para ver sua descrição completa.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Controller
+                    name="category"
+                    control={control}
+                    rules={{ required: 'Categoria é obrigatória' }}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <TooltipProvider>
+                            {PROJECT_CATEGORIES.map((category) => (
+                              <Tooltip key={category.value} delayDuration={200}>
+                                <TooltipTrigger asChild>
+                                  <SelectItem value={category.value}>
+                                    {category.label}
+                                  </SelectItem>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-xs">
+                                  <p className="text-sm">{category.description}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                          </TooltipProvider>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                   {errors.category && (
                     <p className="text-red-500 text-sm">{errors.category.message}</p>
                   )}
