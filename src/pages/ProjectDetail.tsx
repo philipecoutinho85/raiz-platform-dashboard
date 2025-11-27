@@ -176,9 +176,15 @@ const ProjectDetail = () => {
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   };
 
+  const getEffectiveGoal = () => {
+    if (!project) return 0;
+    return project.custom_goal || project.goal;
+  };
+
   const getProgressPercentage = () => {
     if (!project) return 0;
-    return Math.min((project.raised_amount / project.goal) * 100, 100);
+    const effectiveGoal = getEffectiveGoal();
+    return Math.min((project.raised_amount / effectiveGoal) * 100, 100);
   };
 
   const getDaysLeft = () => {
@@ -201,7 +207,8 @@ const ProjectDetail = () => {
 
   const isProjectCompleted = () => {
     if (!project) return false;
-    return project.raised_amount >= project.goal;
+    const effectiveGoal = getEffectiveGoal();
+    return project.raised_amount >= effectiveGoal;
   };
 
   const canSupportProject = () => {
@@ -465,7 +472,7 @@ const ProjectDetail = () => {
             <ProjectComments 
               projectId={project.id}
               projectOwnerId={project.user_id}
-              isProjectCompleted={project.status === 'approved' && project.raised_amount >= project.goal}
+              isProjectCompleted={project.status === 'approved' && project.raised_amount >= getEffectiveGoal()}
               onLoginRequired={() => setShowLoginModal(true)}
             />
 
@@ -481,7 +488,7 @@ const ProjectDetail = () => {
               accountabilityImages={project.accountability_images}
               accountabilitySubmittedAt={project.accountability_submitted_at}
               accountabilityApproved={project.accountability_approved}
-              goalReached={project.raised_amount >= project.goal}
+              goalReached={project.raised_amount >= getEffectiveGoal()}
               projectStatus={project.status}
             />
 
@@ -529,7 +536,7 @@ const ProjectDetail = () => {
                     {formatTokens(project.raised_amount)} tokens
                   </div>
                   <div className="text-sm text-raiz-secondary">
-                    arrecadados de {formatTokens(project.goal)} tokens
+                    arrecadados de {formatTokens(getEffectiveGoal())} tokens
                   </div>
                 </div>
 
@@ -589,7 +596,7 @@ const ProjectDetail = () => {
                     <Target className="w-4 h-4 text-raiz-secondary" />
                     <span className="text-sm text-raiz-secondary">Meta:</span>
                   </div>
-                  <span className="font-semibold">{formatTokens(project.goal)} tokens</span>
+                  <span className="font-semibold">{formatTokens(getEffectiveGoal())} tokens</span>
                 </div>
 
                 <div className="flex items-center justify-between">
