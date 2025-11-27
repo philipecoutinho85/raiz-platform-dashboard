@@ -18,6 +18,7 @@ interface Project {
   description: string;
   category: string;
   goal: number;
+  custom_goal?: number;
   raised_amount: number;
   backers_count: number;
   created_at: string;
@@ -67,6 +68,7 @@ const Marketplace = () => {
           description,
           category,
           goal,
+          custom_goal,
           raised_amount,
           backers_count,
           created_at,
@@ -113,6 +115,9 @@ const Marketplace = () => {
       return matchesSearch && matchesCategory;
     });
 
+    const getEffectiveGoal = (project: Project) =>
+      project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+
     // Sort projects
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -120,14 +125,23 @@ const Marketplace = () => {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         case 'oldest':
           return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'goal_high':
-          return b.goal - a.goal;
-        case 'goal_low':
-          return a.goal - b.goal;
-        case 'progress':
-          const progressA = (a.raised_amount / a.goal) * 100;
-          const progressB = (b.raised_amount / b.goal) * 100;
+        case 'goal_high': {
+          const goalA = getEffectiveGoal(a);
+          const goalB = getEffectiveGoal(b);
+          return goalB - goalA;
+        }
+        case 'goal_low': {
+          const goalA = getEffectiveGoal(a);
+          const goalB = getEffectiveGoal(b);
+          return goalA - goalB;
+        }
+        case 'progress': {
+          const goalA = getEffectiveGoal(a) || 1;
+          const goalB = getEffectiveGoal(b) || 1;
+          const progressA = (a.raised_amount / goalA) * 100;
+          const progressB = (b.raised_amount / goalB) * 100;
           return progressB - progressA;
+        }
         default:
           return 0;
       }
@@ -140,8 +154,9 @@ const Marketplace = () => {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
-  const getProgressPercentage = (raised: number, goal: number) => {
-    return Math.min((raised / goal) * 100, 100);
+  const getProgressPercentage = (project: Project) => {
+    const goal = project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+    return Math.min((project.raised_amount / goal) * 100, 100);
   };
 
   const getDaysLeft = (deadline?: string) => {
@@ -242,7 +257,7 @@ const Marketplace = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProjects.map((project) => {
-              const progressPercentage = getProgressPercentage(project.raised_amount, project.goal);
+              const progressPercentage = getProgressPercentage(project);
               const daysLeft = getDaysLeft(project.deadline);
               const expired = isProjectExpired(project.deadline);
               
@@ -319,7 +334,7 @@ const Marketplace = () => {
                         <div className="text-xs text-raiz-secondary">
                           <div className="flex items-center space-x-1 mb-1">
                             <Target className="w-3 h-3" />
-                            <span>Meta: {formatTokens(project.goal)} tokens</span>
+                            <span>Meta: {formatTokens(project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal)} tokens</span>
                           </div>
                         </div>
                       </div>

@@ -13,6 +13,7 @@ interface Project {
   description: string;
   category: string;
   goal: number;
+  custom_goal?: number;
   raised_amount: number;
   backers_count: number;
   status: string;
@@ -48,6 +49,10 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
     return Math.min((raised / goal) * 100, 100);
   };
 
+  const getEffectiveGoal = (project: Project) => {
+    return project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -76,7 +81,8 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
         ) : (
           <div className="space-y-4">
             {projects.map((project) => {
-              const progressPercentage = getProgressPercentage(project.raised_amount, project.goal);
+              const effectiveGoal = getEffectiveGoal(project);
+              const progressPercentage = getProgressPercentage(project.raised_amount, effectiveGoal);
               
               return (
                 <div
@@ -96,7 +102,7 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
                     {project.status === 'approved' && (
                       <div className="space-y-2 mb-3">
                         <div className="flex justify-between text-xs">
-                          <span>{formatTokens(project.raised_amount)} de {formatTokens(project.goal)} tokens</span>
+                          <span>{formatTokens(project.raised_amount)} de {formatTokens(getEffectiveGoal(project))} tokens</span>
                           <span className="font-medium">{Math.round(progressPercentage)}%</span>
                         </div>
                         <Progress value={progressPercentage} className="h-2" />
@@ -111,7 +117,7 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
                     
                     <div className="flex items-center space-x-4 text-xs text-raiz-secondary">
                       <span>Categoria: {project.category}</span>
-                      <span>Meta: {formatTokens(project.goal)} tokens</span>
+                      <span>Meta: {formatTokens(getEffectiveGoal(project))} tokens</span>
                       <span>Criado: {formatDate(project.created_at)}</span>
                     </div>
                   </div>

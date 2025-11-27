@@ -12,6 +12,7 @@ interface ExpiredProject {
   id: string;
   title: string;
   goal: number;
+  custom_goal?: number;
   raised_amount: number;
   deadline: string;
   status: string;
@@ -42,11 +43,11 @@ const ExpiredProjectsTab = () => {
 
       if (error) throw error;
 
-      // Filtrar projetos que não atingiram a meta (conversão explícita para número)
+      // Filtrar projetos que não atingiram a meta (usando meta efetiva: custom_goal ou goal)
       const projectsNotReachedGoal = (data || []).filter(p => {
         const raised = Number(p.raised_amount) || 0;
-        const goal = Number(p.goal) || 0;
-        return raised < goal;
+        const goal = Number(p.custom_goal ?? p.goal) || 0;
+        return goal > 0 && raised < goal;
       });
       setExpiredProjects(projectsNotReachedGoal);
     } catch (error: any) {
@@ -167,13 +168,14 @@ const ExpiredProjectsTab = () => {
         .eq('id', project.id);
 
       // Notificar o criador do projeto
+      const effectiveGoal = project.custom_goal ?? project.goal;
       await supabase
         .from('notifications')
         .insert({
           user_id: project.user_id,
           type: 'project_expired',
           title: 'Projeto Não Atingiu a Meta',
-          message: `Seu projeto "${project.title}" não atingiu a meta de ${project.goal} tokens dentro do prazo estabelecido. Todos os tokens dos apoiadores foram devolvidos automaticamente. Você pode criar um novo projeto com ajustes na estratégia.`,
+          message: `Seu projeto "${project.title}" não atingiu a meta de ${effectiveGoal} tokens dentro do prazo estabelecido. Todos os tokens dos apoiadores foram devolvidos automaticamente. Você pode criar um novo projeto com ajustes na estratégia.`,
           related_id: project.id
         });
 
@@ -197,7 +199,8 @@ const ExpiredProjectsTab = () => {
   };
 
   const getProgressPercentage = (project: ExpiredProject) => {
-    return Math.round((project.raised_amount / project.goal) * 100);
+    const goal = project.custom_goal ?? project.goal;
+    return goal > 0 ? Math.round((project.raised_amount / goal) * 100) : 0;
   };
 
   const formatDate = (dateString: string) => {

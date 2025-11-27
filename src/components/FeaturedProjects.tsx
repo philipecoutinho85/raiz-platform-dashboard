@@ -14,6 +14,7 @@ interface Project {
   description: string;
   category: string;
   goal: number;
+  custom_goal?: number;
   raised_amount: number;
   backers_count: number;
   created_at: string;
@@ -41,6 +42,7 @@ const FeaturedProjects = () => {
           description,
           category,
           goal,
+          custom_goal,
           raised_amount,
           backers_count,
           created_at,
@@ -91,8 +93,9 @@ const FeaturedProjects = () => {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  const getProgressPercentage = (raised: number, goal: number) => {
-    return Math.min((raised / goal) * 100, 100);
+  const getProgressPercentage = (project: Project) => {
+    const goal = project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+    return Math.min((project.raised_amount / goal) * 100, 100);
   };
 
   if (loading) {
@@ -139,7 +142,7 @@ const FeaturedProjects = () => {
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {projects.map((project, index) => {
-            const progressPercentage = getProgressPercentage(project.raised_amount, project.goal);
+            const progressPercentage = getProgressPercentage(project);
             const daysLeft = getDaysLeft(project.deadline);
             
             return (
@@ -195,7 +198,7 @@ const FeaturedProjects = () => {
                     />
                     
                     <div className="text-xs text-raiz-secondary text-center">
-                      Meta: {formatTokens(project.goal)} tokens
+                      Meta: {formatTokens(project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal)} tokens
                     </div>
                   </div>
                   

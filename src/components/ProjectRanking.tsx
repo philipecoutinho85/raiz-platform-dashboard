@@ -11,6 +11,7 @@ interface RankedProject {
   category: string;
   raised_amount: number;
   goal: number;
+  custom_goal?: number;
   backers_count: number;
   engagement_score: number;
 }
@@ -28,6 +29,10 @@ const ProjectRanking = ({ category }: ProjectRankingProps) => {
     fetchTopProjects();
   }, [category]);
 
+  const getEffectiveGoal = (project: { goal: number; custom_goal?: number }) => {
+    return project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+  };
+
   const fetchTopProjects = async () => {
     try {
       let query = supabase
@@ -43,11 +48,16 @@ const ProjectRanking = ({ category }: ProjectRankingProps) => {
 
       if (error) throw error;
 
-      // Calcular score de engajamento: (raised_amount / goal) * backers_count
-      const projectsWithScore = (data || []).map(project => ({
-        ...project,
-        engagement_score: (project.raised_amount / project.goal) * project.backers_count,
-      }));
+      // Calcular score de engajamento: (raised_amount / meta efetiva) * backers_count
+      const projectsWithScore = (data || []).map(project => {
+        const effectiveGoal = getEffectiveGoal(project);
+        return {
+          ...project,
+          engagement_score: effectiveGoal > 0
+            ? (project.raised_amount / effectiveGoal) * project.backers_count
+            : 0,
+        };
+      });
 
       // Ordenar por score e pegar top 3
       const ranked = projectsWithScore
@@ -126,12 +136,12 @@ const ProjectRanking = ({ category }: ProjectRankingProps) => {
                       <div
                         className="bg-raiz-gold h-2 rounded-full transition-all"
                         style={{
-                          width: `${Math.min((project.raised_amount / project.goal) * 100, 100)}%`,
+                          width: `${Math.min((project.raised_amount / getEffectiveGoal(project)) * 100, 100)}%`,
                         }}
                       />
                     </div>
                     <p className="text-xs text-raiz-secondary mt-1">
-                      {Math.round((project.raised_amount / project.goal) * 100)}% da meta
+                      {Math.round((project.raised_amount / getEffectiveGoal(project)) * 100)}% da meta
                     </p>
                   </div>
                 </div>

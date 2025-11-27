@@ -87,6 +87,10 @@ const ProjectsTab = ({
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
+  const getEffectiveGoal = (project: Project) => {
+    return project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+  };
+
   const handleDeleteProject = (projectId: string) => {
     onProjectAction(projectId, 'delete');
     setDeleteProjectId(null);
@@ -141,7 +145,7 @@ const ProjectsTab = ({
                   </p>
                   {project.status === 'approved' && (
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>Meta: {formatTokens(project.goal)} tokens</span>
+                      <span>Meta: {formatTokens(getEffectiveGoal(project))} tokens</span>
                       <span>Arrecadado: {formatTokens(project.raised_amount || 0)} tokens</span>
                       <span>Apoiadores: {project.backers_count || 0}</span>
                     </div>
@@ -241,7 +245,11 @@ const ProjectsTab = ({
               {(() => {
                 const project = pendingProjects.find(p => p.id === deleteProjectId);
                 if (project && project.raised_amount && project.raised_amount > 0) {
-                  const projectCompleted = project.raised_amount >= project.goal;
+                  const effectiveGoal = getEffectiveGoal(project);
+                  const projectCompleted = project.raised_amount >= effectiveGoal;
+                  const progressPercent = effectiveGoal > 0
+                    ? Math.round((project.raised_amount / effectiveGoal) * 100)
+                    : 0;
                   
                   if (projectCompleted) {
                     return (
@@ -261,7 +269,7 @@ const ProjectsTab = ({
                     return (
                       <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
                         <p className="font-medium text-amber-900 dark:text-amber-100">
-                          ⚠️ Projeto Não Concluído ({Math.round((project.raised_amount / project.goal) * 100)}% da meta)
+                          ⚠️ Projeto Não Concluído ({progressPercent}% da meta)
                         </p>
                         <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                           Este projeto arrecadou <strong>{formatTokens(project.raised_amount)} tokens</strong> de <strong>{project.backers_count || 0} apoiador(es)</strong>.
