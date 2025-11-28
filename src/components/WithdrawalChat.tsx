@@ -13,9 +13,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Message {
   id: string;
-  user_id: string;
+  withdrawal_id: string;
+  sender_id: string;
+  sender_type: 'admin' | 'user';
   message: string;
-  is_admin: boolean;
+  is_read: boolean;
   created_at: string;
 }
 
@@ -77,7 +79,7 @@ export const WithdrawalChat = ({ withdrawalId, chatActive, chatClosedAt }: Withd
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      setMessages((data as Message[]) || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -95,9 +97,10 @@ export const WithdrawalChat = ({ withdrawalId, chatActive, chatClosedAt }: Withd
         .from('withdrawal_messages')
         .insert({
           withdrawal_id: withdrawalId,
-          user_id: user?.id,
+          sender_id: user?.id,
           message: newMessage.trim(),
-          is_admin: false
+          sender_type: 'user',
+          is_read: false
         });
 
       if (error) throw error;
@@ -151,17 +154,17 @@ export const WithdrawalChat = ({ withdrawalId, chatActive, chatClosedAt }: Withd
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex gap-3 ${message.is_admin ? 'flex-row' : 'flex-row-reverse'}`}
+                  className={`flex gap-3 ${message.sender_type === 'admin' ? 'flex-row' : 'flex-row-reverse'}`}
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
-                      {message.is_admin ? 'A' : 'U'}
+                      {message.sender_type === 'admin' ? 'A' : 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div className={`flex-1 ${message.is_admin ? 'text-left' : 'text-right'}`}>
+                  <div className={`flex-1 ${message.sender_type === 'admin' ? 'text-left' : 'text-right'}`}>
                     <div
                       className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
-                        message.is_admin
+                        message.sender_type === 'admin'
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted'
                       }`}

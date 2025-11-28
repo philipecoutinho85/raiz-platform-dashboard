@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Check, X, DollarSign, Eye, MessageSquare, XCircle } from 'lucide-react';
+import { Loader2, Check, X, DollarSign, Eye, MessageSquare, XCircle, Filter, AlertTriangle } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import RejectWithdrawalModal from './RejectWithdrawalModal';
 import { WithdrawalChat } from '@/components/WithdrawalChat';
@@ -29,6 +31,9 @@ interface Withdrawal {
   rejection_reason?: string;
   chat_active?: boolean;
   chat_closed_at?: string;
+  total_messages?: number;
+  unread_messages?: number;
+  last_activity?: string;
   projects: {
     title: string;
   };
@@ -40,44 +45,103 @@ interface Withdrawal {
 
 export const WithdrawalsTab = () => {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [filteredWithdrawals, setFilteredWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showChatDialog, setShowChatDialog] = useState(false);
+  const [showCorrectionDialog, setShowCorrectionDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionCategory, setRejectionCategory] = useState('');
+  const [correctionMessage, setCorrectionMessage] = useState('');
+  
+  // Filtros
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchWithdrawals();
+    
+    // Realtime subscription para novas mensagens
+    const channel = supabase
+      .channel('withdrawal_messages_admin')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'withdrawal_messages',
+        filter: 'sender_type=eq.user'
+      }, () => {
+        toast.info('Nova mensagem recebida em resgate!');
+        fetchWithdrawals();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [withdrawals, statusFilter, searchTerm]);
+
+  const applyFilters = () => {
+    let filtered = [...withdrawals];
+
+    // Filtro de status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(w => w.status === statusFilter);
+    }
+
+    // Filtro de busca
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(w => 
+        w.bank_account?.holder_name?.toLowerCase().includes(search) ||
+        w.bank_account?.document?.includes(search) ||
+        w.projects?.title?.toLowerCase().includes(search) ||
+        w.profiles?.nome?.toLowerCase().includes(search)
+      );
+    }
+
+    setFilteredWithdrawals(filtered);
+  };
 
   const fetchWithdrawals = async () => {
     try {
       const { data, error } = await supabase
-        .from('withdrawals')
-        .select(`
-          *,
-          projects(title)
-        `)
+        .from('admin_withdrawals_with_messages')
+        .select('*')
         .order('requested_at', { ascending: false });
 
       if (error) throw error;
 
-      // Buscar dados dos usuários separadamente
-      const withdrawalsWithProfiles = await Promise.all(
+      // Buscar dados dos projetos e usuários
+      const withdrawalsWithDetails = await Promise.all(
         (data || []).map(async (withdrawal) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('nome, email')
-            .eq('id', withdrawal.user_id)
-            .single();
+          const [{ data: project }, { data: profile }] = await Promise.all([
+            supabase
+              .from('projects')
+              .select('title')
+              .eq('id', withdrawal.project_id)
+              .single(),
+            supabase
+              .from('profiles')
+              .select('nome, email')
+              .eq('id', withdrawal.user_id)
+              .single()
+          ]);
 
-          return { ...withdrawal, profiles: profile };
+          return { 
+            ...withdrawal, 
+            projects: project,
+            profiles: profile 
+          };
         })
       );
 
-      setWithdrawals(withdrawalsWithProfiles as Withdrawal[]);
+      setWithdrawals(withdrawalsWithDetails as Withdrawal[]);
     } catch (error) {
       console.error('Erro ao buscar resgates:', error);
       toast.error('Erro ao carregar resgates');
@@ -150,6 +214,66 @@ export const WithdrawalsTab = () => {
     }
   };
 
+  const handleRequestCorrection = async () => {
+    if (!selectedWithdrawal || !correctionMessage.trim() || correctionMessage.length < 30) {
+      toast.error('Mensagem deve ter no mínimo 30 caracteres');
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Inserir mensagem
+      const { error: messageError } = await supabase
+        .from('withdrawal_messages')
+        .insert({
+          withdrawal_id: selectedWithdrawal.id,
+          sender_id: user?.id,
+          sender_type: 'admin',
+          message: correctionMessage,
+          is_read: false
+        });
+
+      if (messageError) throw messageError;
+
+      // Atualizar status do resgate
+      const { error: updateError } = await supabase
+        .from('withdrawals')
+        .update({ 
+          status: 'pending_correction',
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', selectedWithdrawal.id);
+
+      if (updateError) throw updateError;
+
+      // Criar notificação para o usuário
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: selectedWithdrawal.user_id,
+          type: 'withdrawal_correction',
+          title: 'Correção Necessária no Resgate',
+          message: 'O administrador solicitou correção dos seus dados bancários. Acesse o projeto para ver os detalhes.',
+          related_id: selectedWithdrawal.id
+        });
+
+      toast.success('Solicitação de correção enviada!');
+      setShowCorrectionDialog(false);
+      setCorrectionMessage('');
+      setSelectedWithdrawal(null);
+      fetchWithdrawals();
+    } catch (error) {
+      console.error('Erro ao solicitar correção:', error);
+      toast.error('Erro ao enviar solicitação');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleCloseChat = async (withdrawalId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -174,9 +298,20 @@ export const WithdrawalsTab = () => {
     }
   };
 
+  const getStatusCounts = () => {
+    return {
+      total: withdrawals.length,
+      pending: withdrawals.filter(w => w.status === 'pending' || w.status === 'verification_pending').length,
+      pending_correction: withdrawals.filter(w => w.status === 'pending_correction').length,
+      unread_messages: withdrawals.reduce((sum, w) => sum + (w.unread_messages || 0), 0)
+    };
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
       pending: 'secondary',
+      verification_pending: 'secondary',
+      pending_correction: 'default',
       pending_manual: 'secondary',
       approved: 'default',
       rejected: 'destructive'
@@ -184,6 +319,8 @@ export const WithdrawalsTab = () => {
 
     const labels: Record<string, string> = {
       pending: 'Pendente',
+      verification_pending: 'Aguardando Verificação',
+      pending_correction: 'Pendente de Correção',
       pending_manual: 'Processamento Manual',
       approved: 'Aprovado',
       rejected: 'Rejeitado'
@@ -191,6 +328,8 @@ export const WithdrawalsTab = () => {
 
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>;
   };
+
+  const counts = getStatusCounts();
 
   if (loading) {
     return (
@@ -204,15 +343,58 @@ export const WithdrawalsTab = () => {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Solicitações de Resgate
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Solicitações de Resgate
+            </div>
+            <div className="flex gap-2 text-sm">
+              <Badge variant="secondary">Total: {counts.total}</Badge>
+              <Badge variant="destructive">Aguardando: {counts.pending}</Badge>
+              <Badge variant="default">Correção: {counts.pending_correction}</Badge>
+              {counts.unread_messages > 0 && (
+                <Badge variant="outline" className="bg-blue-50">
+                  💬 {counts.unread_messages} não lidas
+                </Badge>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {withdrawals.length === 0 ? (
+          {/* Filtros */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="verification_pending">Aguardando Verificação</SelectItem>
+                  <SelectItem value="pending_correction">Pendente de Correção</SelectItem>
+                  <SelectItem value="approved">Aprovado</SelectItem>
+                  <SelectItem value="rejected">Rejeitado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-medium">Buscar</label>
+              <Input
+                placeholder="Nome, CPF, projeto..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {filteredWithdrawals.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Nenhuma solicitação de resgate encontrada
+              {withdrawals.length === 0 
+                ? 'Nenhuma solicitação de resgate encontrada'
+                : 'Nenhum resultado para os filtros aplicados'}
             </p>
           ) : (
             <Table>
@@ -233,7 +415,7 @@ export const WithdrawalsTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {withdrawals.map((withdrawal) => (
+                {filteredWithdrawals.map((withdrawal) => (
                   <TableRow key={withdrawal.id}>
                     <TableCell className="font-medium">
                       {withdrawal.projects?.title}
@@ -276,15 +458,15 @@ export const WithdrawalsTab = () => {
                     </TableCell>
                     <TableCell>{getStatusBadge(withdrawal.status)}</TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        {(withdrawal.status === 'pending' || withdrawal.status === 'pending_manual') && (
+                      <div className="flex gap-2 items-center">
+                        {(withdrawal.status === 'pending' || withdrawal.status === 'verification_pending' || withdrawal.status === 'pending_manual') && (
                           <>
                             <Button
                               size="sm"
                               variant="default"
                               onClick={() => handleApprove(withdrawal.id)}
                               disabled={processing}
-                              title={withdrawal.status === 'pending_manual' ? 'Tentar novamente' : 'Aprovar'}
+                              title="Aprovar"
                             >
                               <Check className="h-4 w-4" />
                             </Button>
@@ -296,12 +478,25 @@ export const WithdrawalsTab = () => {
                                 setShowRejectDialog(true);
                               }}
                               disabled={processing}
+                              title="Rejeitar"
                             >
                               <X className="h-4 w-4" />
                             </Button>
+                            <Button
+                              size="sm"
+                              className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                              onClick={() => {
+                                setSelectedWithdrawal(withdrawal);
+                                setShowCorrectionDialog(true);
+                              }}
+                              disabled={processing}
+                              title="Solicitar Correção"
+                            >
+                              <AlertTriangle className="h-4 w-4" />
+                            </Button>
                           </>
                         )}
-                        {withdrawal.status === 'rejected' && withdrawal.chat_active && (
+                        {(withdrawal.status === 'rejected' || withdrawal.status === 'pending_correction') && withdrawal.chat_active && (
                           <>
                             <Button
                               size="sm"
@@ -311,8 +506,17 @@ export const WithdrawalsTab = () => {
                                 setShowChatDialog(true);
                               }}
                               title="Ver Chat"
+                              className="relative"
                             >
                               <MessageSquare className="h-4 w-4" />
+                              {withdrawal.unread_messages && withdrawal.unread_messages > 0 && (
+                                <Badge 
+                                  variant="destructive" 
+                                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                                >
+                                  {withdrawal.unread_messages}
+                                </Badge>
+                              )}
                             </Button>
                             <Button
                               size="sm"
@@ -341,6 +545,7 @@ export const WithdrawalsTab = () => {
         </CardContent>
       </Card>
 
+      {/* Modal de Rejeição */}
       <RejectWithdrawalModal
         isOpen={showRejectDialog}
         onOpenChange={setShowRejectDialog}
@@ -358,6 +563,99 @@ export const WithdrawalsTab = () => {
         }}
         loading={processing}
       />
+
+      {/* Modal de Solicitar Correção */}
+      {selectedWithdrawal && (
+        <Dialog open={showCorrectionDialog} onOpenChange={setShowCorrectionDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Solicitar Correção de Dados</DialogTitle>
+              <DialogDescription>
+                Envie uma mensagem para o usuário solicitando correção dos dados bancários
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Dados Bancários Atuais */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Dados Bancários Atuais</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="font-medium">Titular:</span>
+                      <p>{selectedWithdrawal.bank_account?.holder_name}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">CPF:</span>
+                      <p className="font-mono">{selectedWithdrawal.bank_account?.document}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Banco:</span>
+                      <p>{selectedWithdrawal.bank_account?.bank_code}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Agência:</span>
+                      <p>{selectedWithdrawal.bank_account?.branch}-{selectedWithdrawal.bank_account?.branch_check_digit}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Conta:</span>
+                      <p>{selectedWithdrawal.bank_account?.account}-{selectedWithdrawal.bank_account?.account_check_digit}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Tipo:</span>
+                      <p>{selectedWithdrawal.bank_account?.account_type === 'checking' ? 'Corrente' : 'Poupança'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Mensagem */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Mensagem para o usuário *
+                </label>
+                <Textarea
+                  placeholder="Explique o que precisa ser corrigido nos dados bancários..."
+                  value={correctionMessage}
+                  onChange={(e) => setCorrectionMessage(e.target.value)}
+                  rows={6}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {correctionMessage.length}/30 caracteres (mínimo 30)
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCorrectionDialog(false);
+                  setCorrectionMessage('');
+                }}
+                disabled={processing}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleRequestCorrection}
+                disabled={processing || correctionMessage.length < 30}
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  'Enviar Solicitação'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {selectedWithdrawal && showChatDialog && (
         <Dialog open={showChatDialog} onOpenChange={setShowChatDialog}>
