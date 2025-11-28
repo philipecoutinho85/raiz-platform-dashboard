@@ -69,6 +69,7 @@ import { ProjectWithdrawal } from '@/components/ProjectWithdrawal';
 import { ProjectReport } from '@/components/ProjectReport';
 import { LoginRequiredModal } from '@/components/LoginRequiredModal';
 import RaizScore from '@/components/RaizScore';
+import { WithdrawalCorrectionAlert } from '@/components/WithdrawalCorrectionAlert';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -643,6 +644,14 @@ const ProjectDetail = () => {
               </Card>
             )}
 
+
+            {/* Withdrawal Correction Alert - apenas se o projeto for do usuário */}
+            {isOwner && (
+              <WithdrawalCorrectionAlert 
+                projectId={project.id} 
+                userId={user?.id || ''}
+              />
+            )}
 
             {/* Withdrawal Request - apenas para projetos que atingiram a meta */}
             {isOwner && project.status === 'approved' && progressPercentage >= 100 && (

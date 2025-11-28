@@ -1055,33 +1055,43 @@ export type Database = {
       }
       withdrawal_messages: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          is_admin: boolean
+          is_read: boolean | null
           message: string
-          read_at: string | null
-          user_id: string
+          sender_id: string
+          sender_type: string
+          updated_at: string | null
           withdrawal_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          is_admin?: boolean
+          is_read?: boolean | null
           message: string
-          read_at?: string | null
-          user_id: string
+          sender_id: string
+          sender_type: string
+          updated_at?: string | null
           withdrawal_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          is_admin?: boolean
+          is_read?: boolean | null
           message?: string
-          read_at?: string | null
-          user_id?: string
+          sender_id?: string
+          sender_type?: string
+          updated_at?: string | null
           withdrawal_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "withdrawal_messages_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "admin_withdrawals_with_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "withdrawal_messages_withdrawal_id_fkey"
             columns: ["withdrawal_id"]
@@ -1120,6 +1130,13 @@ export type Database = {
           withdrawal_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "withdrawal_verification_codes_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "admin_withdrawals_with_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "withdrawal_verification_codes_withdrawal_id_fkey"
             columns: ["withdrawal_id"]
@@ -1226,10 +1243,55 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_withdrawals_with_messages: {
+        Row: {
+          admin_fee: number | null
+          bank_account: Json | null
+          chat_active: boolean | null
+          chat_closed_at: string | null
+          chat_closed_by: string | null
+          created_at: string | null
+          id: string | null
+          last_activity: string | null
+          minimum_bypass: boolean | null
+          net_amount: number | null
+          pagarme_recipient_id: string | null
+          pagarme_transfer_id: string | null
+          paid_at: string | null
+          payment_method: string | null
+          pix_key: string | null
+          pix_key_type: string | null
+          project_id: string | null
+          rejection_reason: string | null
+          requested_amount: number | null
+          requested_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          total_messages: number | null
+          transfer_error: string | null
+          transfer_status: string | null
+          unread_messages: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_raizscore_level: { Args: { p_points: number }; Returns: number }
+      count_unread_withdrawal_messages: {
+        Args: { p_recipient_type: string; p_withdrawal_id: string }
+        Returns: number
+      }
       create_financial_alert: {
         Args: {
           p_alert_type: string
