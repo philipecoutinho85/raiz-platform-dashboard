@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/Footer';
 import TokenSimulator from '@/components/TokenSimulator';
 import { useTokens } from '@/hooks/useTokens';
+import { toZonedTime } from 'date-fns-tz';
 
 interface ProjectFormData {
   title: string;
@@ -216,6 +217,15 @@ const CreateProject = () => {
         return;
       }
 
+      // Processar deadline para horário de Brasília às 23:59:59
+      let deadlineISO = null;
+      if (data.deadline) {
+        // Criar data no horário de Brasília às 23:59:59
+        const [year, month, day] = data.deadline.split('-').map(Number);
+        const brasiliaDate = toZonedTime(new Date(year, month - 1, day, 23, 59, 59), 'America/Sao_Paulo');
+        deadlineISO = brasiliaDate.toISOString();
+      }
+
       const { data: project, error } = await supabase
         .from('projects')
         .insert({
@@ -224,7 +234,7 @@ const CreateProject = () => {
           category: data.category,
           description: data.description.trim(),
           goal: data.goal,
-          deadline: data.deadline || null,
+          deadline: deadlineISO,
           youtube_url: data.youtube_url.trim(),
           endereco: data.endereco?.trim() || null,
           numero: data.numero?.trim() || null,

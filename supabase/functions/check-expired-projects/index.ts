@@ -18,12 +18,22 @@ serve(async (req) => {
 
     console.log('[Check Expired Projects] Starting check...');
 
+    // Obter data/hora atual em Brasília (UTC-3)
+    // Subtrair 3 horas do horário UTC para obter o horário de Brasília
+    const now = new Date();
+    const brasiliaOffset = -3 * 60; // -3 horas em minutos
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const brasiliaTime = new Date(utcTime + (brasiliaOffset * 60000));
+    const brasiliaISO = brasiliaTime.toISOString();
+    
+    console.log(`[Check Expired Projects] Current time in Brasilia: ${brasiliaISO}`);
+
     // Buscar projetos aprovados que venceram (excluindo os já cancelados)
     const { data: allProjects, error: projectsError } = await supabase
       .from('projects')
       .select('id, title, user_id, goal, raised_amount, deadline, status')
       .eq('status', 'approved')
-      .lt('deadline', new Date().toISOString().split('T')[0]);
+      .lt('deadline', brasiliaISO);
 
     if (projectsError) {
       console.error('[Check Expired Projects] Error fetching projects:', projectsError);
