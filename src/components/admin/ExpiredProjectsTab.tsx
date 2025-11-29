@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, CheckCircle, RefreshCw, DollarSign, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { formatToBrasilia } from '@/lib/dateUtils';
+import CompletedProjectsCounter from './CompletedProjectsCounter';
 
 interface ExpiredProject {
   id: string;
@@ -221,6 +222,8 @@ const ExpiredProjectsTab = () => {
 
   return (
     <div className="space-y-6">
+      <CompletedProjectsCounter />
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

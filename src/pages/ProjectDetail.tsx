@@ -696,6 +696,8 @@ const ProjectDetail = () => {
         onClose={() => setIsSupportDialogOpen(false)}
         projectId={project.id}
         projectTitle={project.title}
+        projectGoal={getEffectiveGoal()}
+        projectRaisedAmount={project.raised_amount}
         onSuccess={fetchProject}
       />
 

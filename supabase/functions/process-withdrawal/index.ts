@@ -207,6 +207,16 @@ serve(async (req) => {
       // Para transferência bancária, tentar usar Pagar.me
       console.log('[Process Withdrawal] Creating recipient on Pagar.me');
 
+      const bankAccount = withdrawal.bank_account as any;
+      
+      console.log('[Process Withdrawal] Bank account data:', {
+        holder_name: bankAccount.holder_name,
+        bank_code: bankAccount.bank_code,
+        branch: bankAccount.agency,
+        account: bankAccount.account,
+        cpf: bankAccount.cpf
+      });
+
       // Criar Basic Auth header (secret_key + ":" em base64)
       const basicAuth = btoa(`${pagarmeKey}:`);
 
