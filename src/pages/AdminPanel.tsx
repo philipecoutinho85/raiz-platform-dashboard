@@ -2,11 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Menu, BarChart3, Users, FolderOpen, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings } from 'lucide-react';
-import AdminHeader from '@/components/admin/AdminHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
+import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStats from '@/components/admin/AdminStats';
 import UsersTab from '@/components/admin/UsersTab';
 import ProjectsTab from '@/components/admin/ProjectsTab';
@@ -112,7 +109,7 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-raiz-light">
-      <AdminHeader />
+      <AdminHeader activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <Admin2FASetup 
         isOpen={show2FASetup} 
@@ -125,7 +122,7 @@ const AdminPanel = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {isMobile ? (
+          {isMobile && (
             <div className="mb-4">
               <Select value={activeTab} onValueChange={setActiveTab}>
                 <SelectTrigger className="w-full bg-background">
@@ -147,96 +144,6 @@ const AdminPanel = () => {
                   <SelectItem value="settings">⚙️ Configurações</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-primary hover:bg-primary/90 text-primary-foreground border-primary/50 shadow-lg">
-                    <Menu className="mr-2 h-5 w-5" />
-                    Menu de Navegação
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64 bg-background shadow-2xl border-primary/30" align="start">
-                  <DropdownMenuLabel className="text-primary">📊 Análises</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setActiveTab("projects")} className="cursor-pointer hover:bg-primary/10">
-                    <FolderOpen className="mr-2 h-4 w-4 text-primary" />
-                    Projetos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("users")} className="cursor-pointer hover:bg-primary/10">
-                    <Users className="mr-2 h-4 w-4 text-primary" />
-                    Usuários
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("badges")} className="cursor-pointer hover:bg-primary/10">
-                    <Award className="mr-2 h-4 w-4 text-primary" />
-                    Badges
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("reports")} className="cursor-pointer hover:bg-primary/10">
-                    <AlertTriangle className="mr-2 h-4 w-4 text-primary" />
-                    Denúncias
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-primary">💰 Financeiro</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setActiveTab("finance")} className="cursor-pointer hover:bg-primary/10">
-                    <DollarSign className="mr-2 h-4 w-4 text-primary" />
-                    Visão Geral
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("tokens")} className="cursor-pointer hover:bg-primary/10">
-                    <Coins className="mr-2 h-4 w-4 text-primary" />
-                    Tokens
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("transactions")} className="cursor-pointer hover:bg-primary/10">
-                    <ArrowLeftRight className="mr-2 h-4 w-4 text-primary" />
-                    Transações
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("refunds")} className="cursor-pointer hover:bg-primary/10">
-                    <RotateCcw className="mr-2 h-4 w-4 text-primary" />
-                    Reembolsos
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("withdrawals")} className="cursor-pointer hover:bg-primary/10">
-                    <LogOut className="mr-2 h-4 w-4 text-primary" />
-                    Resgates
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-primary">⚙️ Sistema</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setActiveTab("expired")} className="cursor-pointer hover:bg-primary/10">
-                    <Clock className="mr-2 h-4 w-4 text-primary" />
-                    Projetos Expirados
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("logs")} className="cursor-pointer hover:bg-primary/10">
-                    <FileText className="mr-2 h-4 w-4 text-primary" />
-                    Logs do Sistema
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("tests")} className="cursor-pointer hover:bg-primary/10">
-                    <TestTube className="mr-2 h-4 w-4 text-primary" />
-                    Testes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setActiveTab("settings")} className="cursor-pointer hover:bg-primary/10">
-                    <Settings className="mr-2 h-4 w-4 text-primary" />
-                    Configurações
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <div className="text-sm text-muted-foreground">
-                Aba atual: <span className="font-semibold text-primary">{
-                  activeTab === "projects" ? "Projetos" :
-                  activeTab === "users" ? "Usuários" :
-                  activeTab === "badges" ? "Badges" :
-                  activeTab === "reports" ? "Denúncias" :
-                  activeTab === "finance" ? "Financeiro" :
-                  activeTab === "tokens" ? "Tokens" :
-                  activeTab === "transactions" ? "Transações" :
-                  activeTab === "refunds" ? "Reembolsos" :
-                  activeTab === "withdrawals" ? "Resgates" :
-                  activeTab === "expired" ? "Projetos Expirados" :
-                  activeTab === "logs" ? "Logs" :
-                  activeTab === "tests" ? "Testes" :
-                  "Configurações"
-                }</span>
-              </div>
             </div>
           )}
 
