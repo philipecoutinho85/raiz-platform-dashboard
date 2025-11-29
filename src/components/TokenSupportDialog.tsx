@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTokens } from '@/hooks/useTokens';
-import { AlertCircle, Coins } from 'lucide-react';
+import { AlertCircle, Coins, Target } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface TokenSupportDialogProps {
@@ -13,17 +13,23 @@ interface TokenSupportDialogProps {
   onClose: () => void;
   projectId: string;
   projectTitle: string;
+  projectGoal: number;
+  projectRaisedAmount: number;
   onSuccess?: () => void;
 }
 
-const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, onSuccess }: TokenSupportDialogProps) => {
+const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, projectGoal, projectRaisedAmount, onSuccess }: TokenSupportDialogProps) => {
   const { tokens, supportProject } = useTokens();
   const [supportType, setSupportType] = useState<'all' | 'custom'>('custom');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Calcular quanto falta para completar a meta
+  const tokensNeeded = Math.max(0, projectGoal - projectRaisedAmount);
+  const tokensToUse = supportType === 'all' ? Math.min(tokens, tokensNeeded) : parseInt(amount);
+
   const handleSupport = async () => {
-    const supportAmount = supportType === 'all' ? tokens : parseInt(amount);
+    const supportAmount = tokensToUse;
 
     if (!supportAmount || supportAmount <= 0) return;
 
@@ -73,11 +79,23 @@ const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, onSucces
             </AlertDescription>
           </Alert>
 
+          {tokensNeeded > 0 && (
+            <Alert>
+              <Target className="h-4 w-4" />
+              <AlertDescription>
+                Faltam <strong>{tokensNeeded} tokens</strong> para completar a meta
+              </AlertDescription>
+            </Alert>
+          )}
+
           <RadioGroup value={supportType} onValueChange={(value) => setSupportType(value as 'all' | 'custom')}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="all" id="all" />
               <Label htmlFor="all" className="cursor-pointer">
-                Usar todos os meus tokens ({tokens} tokens)
+                {tokensNeeded > 0 && tokens >= tokensNeeded 
+                  ? `Completar a meta (${tokensNeeded} tokens)`
+                  : `Usar todos os meus tokens (${tokens} tokens)`
+                }
               </Label>
             </div>
             <div className="flex items-center space-x-2">
