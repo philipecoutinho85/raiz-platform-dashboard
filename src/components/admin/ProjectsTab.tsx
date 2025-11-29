@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Eye, Check, X, Search, Trash2 } from 'lucide-react';
+import { Eye, Check, X, Search, Trash2, Clock } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -44,6 +44,7 @@ interface Project {
   featured_image?: string;
   custom_goal?: number;
   admin_fee_percentage?: number;
+  updated_at?: string;
 }
 
 interface ProjectsTabProps {
@@ -89,6 +90,21 @@ const ProjectsTab = ({
 
   const getEffectiveGoal = (project: Project) => {
     return project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+  };
+
+  const calculateDaysUntilDeletion = (project: Project) => {
+    const effectiveGoal = getEffectiveGoal(project);
+    const isCompleted = project.raised_amount && project.raised_amount >= effectiveGoal;
+    
+    if (!isCompleted || project.status !== 'approved') return null;
+    
+    // Usar updated_at se disponível, senão submittedDate
+    const referenceDate = new Date(project.updated_at || project.submittedDate);
+    const today = new Date();
+    const daysPassed = Math.floor((today.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = 20 - daysPassed;
+    
+    return daysRemaining > 0 ? daysRemaining : 0;
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -139,6 +155,21 @@ const ProjectsTab = ({
                   <div className="flex items-center gap-2 mb-2">
                     {getStatusBadge(project.status)}
                     <Badge variant="outline">{project.category}</Badge>
+                    {(() => {
+                      const daysRemaining = calculateDaysUntilDeletion(project);
+                      if (daysRemaining !== null) {
+                        return (
+                          <Badge 
+                            variant={daysRemaining <= 5 ? "destructive" : "secondary"}
+                            className="flex items-center gap-1"
+                          >
+                            <Clock className="w-3 h-3" />
+                            {daysRemaining === 0 ? 'Excluir hoje' : `${daysRemaining} dias até exclusão`}
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
                     por <strong>{project.author}</strong> • {project.submittedDate}
