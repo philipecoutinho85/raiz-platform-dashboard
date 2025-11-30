@@ -302,7 +302,15 @@ serve(async (req) => {
       // 2. Criar transferência no Pagar.me
       console.log('[Process Withdrawal] Creating transfer on Pagar.me');
 
+      // REGRA: 1 token = R$1,00
+      // net_amount já está em reais (conversão feita na criação do withdrawal)
       const amountInCents = Math.round(Number(withdrawal.net_amount) * 100);
+      
+      console.log('[Process Withdrawal] Amount details:', {
+        net_amount_reais: withdrawal.net_amount,
+        amount_cents: amountInCents,
+        conversion_rate: '1 token = R$1.00'
+      });
 
       const transferPayload = {
         amount: amountInCents,

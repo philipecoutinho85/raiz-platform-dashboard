@@ -93,18 +93,34 @@ const ProjectsTab = ({
   };
 
   const calculateDaysUntilDeletion = (project: Project) => {
+    if (project.status !== 'approved') return null;
+    
     const effectiveGoal = getEffectiveGoal(project);
     const isCompleted = project.raised_amount && project.raised_amount >= effectiveGoal;
-    
-    if (!isCompleted || project.status !== 'approved') return null;
-    
-    // Usar updated_at se disponível, senão submittedDate
-    const referenceDate = new Date(project.updated_at || project.submittedDate);
     const today = new Date();
-    const daysPassed = Math.floor((today.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
-    const daysRemaining = 20 - daysPassed;
     
-    return daysRemaining > 0 ? daysRemaining : 0;
+    // Projeto concluído (atingiu 100% da meta)
+    if (isCompleted) {
+      const referenceDate = new Date(project.updated_at || project.submittedDate);
+      const daysPassed = Math.floor((today.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysRemaining = 20 - daysPassed;
+      return daysRemaining > 0 ? daysRemaining : 0;
+    }
+    
+    // Projeto expirado (passou da deadline sem atingir a meta)
+    if (project.deadline && !isCompleted) {
+      const deadlineDate = new Date(project.deadline);
+      deadlineDate.setHours(23, 59, 59, 999); // Final do dia
+      
+      // Só mostrar contador se já passou da deadline
+      if (today > deadlineDate) {
+        const daysPassed = Math.floor((today.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysRemaining = 20 - daysPassed;
+        return daysRemaining > 0 ? daysRemaining : 0;
+      }
+    }
+    
+    return null;
   };
 
   const handleDeleteProject = (projectId: string) => {
