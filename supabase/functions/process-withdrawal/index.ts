@@ -72,31 +72,7 @@ serve(async (req) => {
     if (action === 'approve') {
       console.log('[Process Withdrawal] Approving withdrawal');
 
-      // Para transferência bancária (TED), apenas aprovar para processamento manual
-      if (withdrawal.payment_method === 'bank_transfer') {
-        console.log('[Process Withdrawal] TED - Marking for manual processing');
-        
-        const { error: updateError } = await supabase
-          .from('withdrawals')
-          .update({
-            status: 'approved',
-            reviewed_by: adminId,
-            reviewed_at: new Date().toISOString()
-          })
-          .eq('id', withdrawalId);
-
-        if (updateError) throw updateError;
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Resgate aprovado. Processamento manual via TED em até 7 dias úteis.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Para PIX, criar pagamento PIX automático no Pagar.me (código existente mantido)
+      // Para PIX, criar pagamento PIX automático no Pagar.me
       if (withdrawal.payment_method === 'pix') {
         console.log('[Process Withdrawal] Creating automatic PIX payment via Pagar.me');
         
@@ -204,17 +180,16 @@ serve(async (req) => {
         );
       }
 
-      // Para transferência bancária, tentar usar Pagar.me
-      console.log('[Process Withdrawal] Creating recipient on Pagar.me');
+      // Para transferência bancária (TED), criar recipient e transfer no Pagar.me
+      console.log('[Process Withdrawal] Creating TED recipient and transfer on Pagar.me');
 
       const bankAccount = withdrawal.bank_account as any;
       
       console.log('[Process Withdrawal] Bank account data:', {
         holder_name: bankAccount.holder_name,
         bank_code: bankAccount.bank_code,
-        branch: bankAccount.agency,
-        account: bankAccount.account,
-        cpf: bankAccount.cpf
+        account_type: bankAccount.account_type,
+        cpf: bankAccount.cpf?.substring(0, 3) + '***'
       });
 
       // Criar Basic Auth header (secret_key + ":" em base64)
@@ -224,21 +199,35 @@ serve(async (req) => {
       let recipientId = withdrawal.pagarme_recipient_id;
 
       if (!recipientId) {
+        // Preparar dados bancários do JSONB
+        const cpfClean = bankAccount.cpf?.replace(/\D/g, '') || bankAccount.document?.replace(/\D/g, '');
+        const accountType = bankAccount.account_type === 'Conta Corrente' ? 'checking' : 'savings';
+        
+        // Extrair agência e dígito
+        const agencyParts = bankAccount.agency?.split('-') || ['0', '0'];
+        const branchNumber = agencyParts[0];
+        const branchCheckDigit = agencyParts[1] || '0';
+        
+        // Extrair conta e dígito
+        const accountParts = bankAccount.account?.split('-') || ['0', '0'];
+        const accountNumber = accountParts[0];
+        const accountCheckDigit = accountParts[1] || '0';
+
         const recipientPayload = {
           type: 'individual',
-          name: withdrawal.bank_account.holder_name,
-          email: withdrawal.bank_account.email || 'user@example.com',
-          document: withdrawal.bank_account.document,
+          name: bankAccount.name || bankAccount.holder_name,
+          email: bankAccount.email || `user${Date.now()}@raiztoken.com.br`,
+          document: cpfClean,
           default_bank_account: {
-            holder_name: withdrawal.bank_account.holder_name,
-            holder_type: withdrawal.bank_account.holder_type || 'individual',
-            holder_document: withdrawal.bank_account.document,
-            bank: withdrawal.bank_account.bank_code,
-            branch_number: withdrawal.bank_account.branch,
-            branch_check_digit: withdrawal.bank_account.branch_check_digit || '0',
-            account_number: withdrawal.bank_account.account,
-            account_check_digit: withdrawal.bank_account.account_check_digit,
-            type: withdrawal.bank_account.account_type || 'checking'
+            holder_name: bankAccount.name || bankAccount.holder_name,
+            holder_type: 'individual',
+            holder_document: cpfClean,
+            bank: bankAccount.bank || bankAccount.bank_code,
+            branch_number: branchNumber,
+            branch_check_digit: branchCheckDigit,
+            account_number: accountNumber,
+            account_check_digit: accountCheckDigit,
+            type: accountType
           },
           transfer_settings: {
             transfer_enabled: true,
@@ -357,7 +346,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Withdrawal approved and transfer created',
+          message: '✅ Resgate aprovado! Recipient e transfer criados automaticamente no Pagar.me.',
+          recipient_id: recipientId,
           transfer_id: transferData.id
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

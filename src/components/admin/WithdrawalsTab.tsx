@@ -164,7 +164,7 @@ export const WithdrawalsTab = () => {
       if (data?.requiresManual) {
         toast.warning(data.message || 'Resgate marcado para processamento manual');
       } else {
-        toast.success('Resgate aprovado e transferência iniciada!');
+        toast.success(data?.message || '✅ Resgate aprovado! Recipient e transfer criados no Pagar.me.');
       }
       
       fetchWithdrawals();
