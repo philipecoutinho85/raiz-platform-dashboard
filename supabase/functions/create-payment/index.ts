@@ -32,9 +32,16 @@ serve(async (req) => {
     
     const { userId, amount, paymentMethod }: PaymentRequest = await req.json();
     
-    // Calcular preço (R$ 0,10 por token)
-    const price = amount * 0.10;
+    // REGRA: 1 token = R$1,00
+    const price = amount * 1.00;
     const priceInCents = Math.round(price * 100);
+    
+    console.log('Cálculo do preço:', {
+      tokens: amount,
+      price_reais: price,
+      price_cents: priceInCents,
+      conversion_rate: '1 token = R$1.00'
+    });
     
     // Buscar dados do usuário
     const { data: profile } = await supabase
