@@ -32,16 +32,29 @@ serve(async (req) => {
 
     console.log('[Process Withdrawal] Processing:', { withdrawalId, action });
 
-    // Buscar withdrawal
+    // Buscar withdrawal com dados do projeto e do criador
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawals')
-      .select('*, projects(title, user_id)')
+      .select(`
+        *, 
+        projects(
+          title, 
+          user_id,
+          profiles:user_id (nome, sobrenome, email)
+        )
+      `)
       .eq('id', withdrawalId)
       .single();
 
     if (withdrawalError || !withdrawal) {
       throw new Error('Withdrawal not found');
     }
+
+    // Extrair dados do criador para facilitar uso
+    const projectData = withdrawal.projects as any;
+    const creatorProfile = projectData?.profiles;
+    const creatorName = creatorProfile ? `${creatorProfile.nome} ${creatorProfile.sobrenome}` : 'Criador';
+    const creatorEmail = creatorProfile?.email || 'sem-email@raiztoken.com.br';
 
     // Pegar dados do usuário admin do token
     const token = authHeader.replace('Bearer ', '');
@@ -100,10 +113,18 @@ serve(async (req) => {
             type: 'individual'
           },
           metadata: {
+            plataforma: 'Raiz Token',
             withdrawal_id: withdrawalId,
             project_id: withdrawal.project_id,
+            project_title: projectData?.title || 'Projeto',
+            creator_name: creatorName,
+            creator_email: creatorEmail,
+            user_id: withdrawal.user_id,
             pix_key: withdrawal.pix_key,
-            pix_key_type: withdrawal.pix_key_type
+            pix_key_type: withdrawal.pix_key_type,
+            amount_reais: withdrawal.net_amount.toString(),
+            tipo_transacao: 'resgate_projeto_pix',
+            descricao: `Resgate PIX do projeto "${projectData?.title}" - Criador: ${creatorName}`
           }
         };
 
@@ -236,6 +257,17 @@ serve(async (req) => {
           },
           automatic_anticipation_settings: {
             enabled: false
+          },
+          metadata: {
+            // Metadados para identificação no dashboard Pagar.me
+            plataforma: 'Raiz Token',
+            withdrawal_id: withdrawalId,
+            project_id: withdrawal.project_id,
+            project_title: projectData?.title || 'Projeto',
+            creator_name: creatorName,
+            creator_email: creatorEmail,
+            user_id: withdrawal.user_id,
+            tipo_transacao: 'resgate_projeto'
           }
         };
 
@@ -305,8 +337,17 @@ serve(async (req) => {
         amount: amountInCents,
         recipient_id: recipientId,
         metadata: {
+          // Metadados para identificação no dashboard Pagar.me
+          plataforma: 'Raiz Token',
           withdrawal_id: withdrawalId,
-          project_id: withdrawal.project_id
+          project_id: withdrawal.project_id,
+          project_title: projectData?.title || 'Projeto',
+          creator_name: creatorName,
+          creator_email: creatorEmail,
+          user_id: withdrawal.user_id,
+          amount_reais: withdrawal.net_amount.toString(),
+          tipo_transacao: 'resgate_projeto',
+          descricao: `Resgate do projeto "${projectData?.title}" - Criador: ${creatorName}`
         }
       };
 
