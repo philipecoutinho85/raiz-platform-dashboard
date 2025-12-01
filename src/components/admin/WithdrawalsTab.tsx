@@ -298,6 +298,45 @@ export const WithdrawalsTab = () => {
     }
   };
 
+  const handleSyncPastWithdrawals = async () => {
+    try {
+      setProcessing(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Sessão expirada');
+        return;
+      }
+
+      toast.info('Iniciando sincronização de resgates antigos...');
+
+      const { data, error } = await supabase.functions.invoke('sync-past-withdrawals', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(data.message);
+        if (data.synced > 0) {
+          fetchWithdrawals(); // Atualizar lista
+        }
+        if (data.errors && data.errors.length > 0) {
+          console.error('Erros na sincronização:', data.errors);
+        }
+      } else {
+        throw new Error(data.error || 'Erro desconhecido');
+      }
+    } catch (error: any) {
+      console.error('Erro ao sincronizar resgates:', error);
+      toast.error(error.message || 'Erro ao sincronizar resgates antigos');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const getStatusCounts = () => {
     return {
       total: withdrawals.length,
@@ -361,6 +400,29 @@ export const WithdrawalsTab = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Botão de Sincronização de Resgates Antigos */}
+          <Alert className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Tem resgates aprovados que não aparecem no Pagar.me? Sincronize-os agora.</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSyncPastWithdrawals}
+                disabled={processing}
+              >
+                {processing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sincronizando...
+                  </>
+                ) : (
+                  'Sincronizar Resgates Antigos'
+                )}
+              </Button>
+            </AlertDescription>
+          </Alert>
+
           {/* Filtros */}
           <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
