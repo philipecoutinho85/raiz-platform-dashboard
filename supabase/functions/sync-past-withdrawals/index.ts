@@ -24,26 +24,45 @@ serve(async (req) => {
     // Verificar autenticação admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('[Sync Past Withdrawals] Authorization header missing');
       throw new Error('Authorization header missing');
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError) {
+      console.error('[Sync Past Withdrawals] Auth error:', authError);
+      throw new Error('Authentication failed');
+    }
     
     if (!user) {
+      console.error('[Sync Past Withdrawals] No user found');
       throw new Error('User not authenticated');
     }
 
-    // Verificar se é admin
-    const { data: userRole } = await supabase
+    console.log('[Sync Past Withdrawals] User authenticated:', user.id);
+
+    // Verificar se é admin - buscar qualquer role admin do usuário
+    const { data: userRoles, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single();
+      .eq('role', 'admin');
 
-    if (!userRole || userRole.role !== 'admin') {
+    if (roleError) {
+      console.error('[Sync Past Withdrawals] Role query error:', roleError);
+      throw new Error('Failed to verify admin role');
+    }
+
+    console.log('[Sync Past Withdrawals] User roles:', userRoles);
+
+    if (!userRoles || userRoles.length === 0) {
+      console.error('[Sync Past Withdrawals] User is not admin:', user.id);
       throw new Error('Only admins can sync past withdrawals');
     }
+
+    console.log('[Sync Past Withdrawals] Admin verified, proceeding...');
 
     // Buscar withdrawals aprovados sem pagarme_transfer_id
     const { data: withdrawals, error: fetchError } = await supabase
