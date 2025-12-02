@@ -32,29 +32,44 @@ serve(async (req) => {
 
     console.log('[Process Withdrawal] Processing:', { withdrawalId, action });
 
-    // Buscar withdrawal com dados do projeto e do criador
+    // Buscar withdrawal com dados do projeto (sem join direto com profiles)
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawals')
       .select(`
         *, 
-        projects(
-          title, 
-          user_id,
-          profiles:user_id (nome, sobrenome, email)
-        )
+        projects(title, user_id)
       `)
       .eq('id', withdrawalId)
       .single();
 
-    if (withdrawalError || !withdrawal) {
+    if (withdrawalError) {
+      console.error('[Process Withdrawal] Error fetching withdrawal:', withdrawalError);
+      throw new Error(`Withdrawal not found: ${withdrawalError.message}`);
+    }
+    
+    if (!withdrawal) {
       throw new Error('Withdrawal not found');
     }
 
-    // Extrair dados do criador para facilitar uso
+    // Extrair dados do projeto
     const projectData = withdrawal.projects as any;
-    const creatorProfile = projectData?.profiles;
-    const creatorName = creatorProfile ? `${creatorProfile.nome} ${creatorProfile.sobrenome}` : 'Criador';
-    const creatorEmail = creatorProfile?.email || 'sem-email@raiztoken.com.br';
+    
+    // Buscar perfil do criador separadamente
+    let creatorName = 'Criador';
+    let creatorEmail = 'sem-email@raiztoken.com.br';
+    
+    if (projectData?.user_id) {
+      const { data: creatorProfile } = await supabase
+        .from('profiles')
+        .select('nome, sobrenome, email')
+        .eq('id', projectData.user_id)
+        .maybeSingle();
+      
+      if (creatorProfile) {
+        creatorName = `${creatorProfile.nome} ${creatorProfile.sobrenome}`;
+        creatorEmail = creatorProfile.email || creatorEmail;
+      }
+    }
 
     // Pegar dados do usuário admin do token
     const token = authHeader.replace('Bearer ', '');
@@ -139,7 +154,7 @@ serve(async (req) => {
           body: JSON.stringify({
             items: [{
               amount: amountInCents,
-              description: `Resgate do projeto ${withdrawal.projects?.title}`,
+              description: `Resgate do projeto ${projectData?.title}`,
               quantity: 1,
               code: withdrawalId
             }],
