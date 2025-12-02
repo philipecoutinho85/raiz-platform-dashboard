@@ -178,7 +178,7 @@ const AdminPanel = () => {
           </TabsContent>
 
           <TabsContent value="tokens">
-            <TokensTab stats={stats} />
+            <TokensTab stats={stats} refetchData={fetchAdminData} />
           </TabsContent>
 
           <TabsContent value="transactions">
