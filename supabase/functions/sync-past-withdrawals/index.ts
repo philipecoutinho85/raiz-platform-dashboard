@@ -69,11 +69,7 @@ serve(async (req) => {
       .from('withdrawals')
       .select(`
         *, 
-        projects(
-          title, 
-          user_id,
-          profiles:user_id (nome, sobrenome, email)
-        )
+        projects(title, user_id)
       `)
       .eq('status', 'approved')
       .is('pagarme_transfer_id', null)
@@ -110,9 +106,23 @@ serve(async (req) => {
         console.log(`[Sync Past Withdrawals] Processing withdrawal ${withdrawal.id}`);
 
         const projectData = withdrawal.projects as any;
-        const creatorProfile = projectData?.profiles;
-        const creatorName = creatorProfile ? `${creatorProfile.nome} ${creatorProfile.sobrenome}` : 'Criador';
-        const creatorEmail = creatorProfile?.email || 'sem-email@raiztoken.com.br';
+        
+        // Buscar perfil do criador separadamente
+        let creatorName = 'Criador';
+        let creatorEmail = 'sem-email@raiztoken.com.br';
+        
+        if (projectData?.user_id) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('nome, sobrenome, email')
+            .eq('id', projectData.user_id)
+            .maybeSingle();
+          
+          if (profileData) {
+            creatorName = `${profileData.nome} ${profileData.sobrenome}`;
+            creatorEmail = profileData.email || creatorEmail;
+          }
+        }
         
         const bankAccount = withdrawal.bank_account as any;
 
