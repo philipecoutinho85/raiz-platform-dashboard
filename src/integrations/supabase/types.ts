@@ -1252,7 +1252,9 @@ export type Database = {
           chat_closed_by: string | null
           created_at: string | null
           id: string | null
-          last_activity: string | null
+          message: string | null
+          message_created_at: string | null
+          message_id: string | null
           minimum_bypass: boolean | null
           net_amount: number | null
           pagarme_recipient_id: string | null
@@ -1267,11 +1269,11 @@ export type Database = {
           requested_at: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          sender_id: string | null
+          sender_type: string | null
           status: string | null
-          total_messages: number | null
           transfer_error: string | null
           transfer_status: string | null
-          unread_messages: number | null
           updated_at: string | null
           user_id: string | null
         }
