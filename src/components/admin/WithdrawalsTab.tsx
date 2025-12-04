@@ -737,8 +737,10 @@ export const WithdrawalsTab = () => {
             </DialogHeader>
             <WithdrawalChat 
               withdrawalId={selectedWithdrawal.id}
-              chatActive={selectedWithdrawal.chat_active || false}
+              chatActive={selectedWithdrawal.chat_active !== false}
               chatClosedAt={selectedWithdrawal.chat_closed_at}
+              isAdminView={true}
+              withdrawalUserId={selectedWithdrawal.user_id}
             />
             {selectedWithdrawal.chat_active && (
               <DialogFooter>

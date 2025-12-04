@@ -27,24 +27,39 @@ const NotificationBell = () => {
       if (notification.type === 'token_purchase') {
         navigate('/carteira');
       } else if (notification.type === 'withdrawal_correction' || notification.type === 'withdrawal_message') {
-        // Para notificações de withdrawal, related_id é o withdrawal_id
-        // Precisamos buscar o project_id do withdrawal
-        try {
-          const { data: withdrawal } = await supabase
-            .from('withdrawals')
-            .select('project_id')
-            .eq('id', notification.related_id)
-            .single();
-          
-          if (withdrawal?.project_id) {
-            navigate(`/projeto/${withdrawal.project_id}`);
-          } else {
+        // Verificar se é admin
+        const { data: userRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user?.id)
+          .eq('role', 'admin')
+          .single();
+        
+        if (userRole) {
+          // Admin: navegar para painel admin com aba de resgates
+          navigate('/admin?tab=withdrawals');
+        } else {
+          // Usuário: buscar project_id do withdrawal para navegar
+          try {
+            const { data: withdrawal } = await supabase
+              .from('withdrawals')
+              .select('project_id')
+              .eq('id', notification.related_id)
+              .single();
+            
+            if (withdrawal?.project_id) {
+              navigate(`/projeto/${withdrawal.project_id}`);
+            } else {
+              navigate('/meus-projetos');
+            }
+          } catch (error) {
+            console.error('Erro ao buscar withdrawal:', error);
             navigate('/meus-projetos');
           }
-        } catch (error) {
-          console.error('Erro ao buscar withdrawal:', error);
-          navigate('/meus-projetos');
         }
+      } else if (notification.type === 'new_withdrawal') {
+        // Notificação para admin sobre novo resgate
+        navigate('/admin?tab=withdrawals');
       } else {
         navigate(`/projeto/${notification.related_id}`);
       }
