@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/useNotifications';
 import { formatToBrasilia } from '@/lib/dateUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const NotificationBell = () => {
   const { user } = useAuth();
@@ -19,12 +20,31 @@ const NotificationBell = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [open, setOpen] = useState(false);
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = async (notification: any) => {
     markAsRead(notification.id);
     
     if (notification.related_id) {
       if (notification.type === 'token_purchase') {
         navigate('/carteira');
+      } else if (notification.type === 'withdrawal_correction' || notification.type === 'withdrawal_message') {
+        // Para notificações de withdrawal, related_id é o withdrawal_id
+        // Precisamos buscar o project_id do withdrawal
+        try {
+          const { data: withdrawal } = await supabase
+            .from('withdrawals')
+            .select('project_id')
+            .eq('id', notification.related_id)
+            .single();
+          
+          if (withdrawal?.project_id) {
+            navigate(`/projeto/${withdrawal.project_id}`);
+          } else {
+            navigate('/meus-projetos');
+          }
+        } catch (error) {
+          console.error('Erro ao buscar withdrawal:', error);
+          navigate('/meus-projetos');
+        }
       } else {
         navigate(`/projeto/${notification.related_id}`);
       }
