@@ -628,8 +628,14 @@ export const WithdrawalsTab = () => {
 
       {/* Modal de Solicitar Correção */}
       {selectedWithdrawal && (
-        <Dialog open={showCorrectionDialog} onOpenChange={setShowCorrectionDialog}>
-          <DialogContent className="max-w-2xl">
+        <Dialog open={showCorrectionDialog} onOpenChange={(open) => {
+          setShowCorrectionDialog(open);
+          if (!open) {
+            setCorrectionMessage('');
+            setSelectedWithdrawal(null);
+          }
+        }}>
+          <DialogContent className="max-w-2xl z-[100]">
             <DialogHeader>
               <DialogTitle>Solicitar Correção de Dados</DialogTitle>
               <DialogDescription>
@@ -696,6 +702,7 @@ export const WithdrawalsTab = () => {
                 onClick={() => {
                   setShowCorrectionDialog(false);
                   setCorrectionMessage('');
+                  setSelectedWithdrawal(null);
                 }}
                 disabled={processing}
               >
@@ -747,7 +754,7 @@ export const WithdrawalsTab = () => {
         </Dialog>
       )}
 
-      {selectedWithdrawal && !showRejectDialog && !showChatDialog && (
+      {selectedWithdrawal && !showRejectDialog && !showChatDialog && !showCorrectionDialog && (
         <Dialog open={!!selectedWithdrawal} onOpenChange={() => setSelectedWithdrawal(null)}>
           <DialogContent>
             <DialogHeader>
