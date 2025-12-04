@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, MessageSquare, Loader2 } from 'lucide-react';
+import { AlertTriangle, MessageSquare, Loader2, Send } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 
@@ -35,61 +34,12 @@ export const WithdrawalCorrectionAlert = ({ projectId, userId }: WithdrawalCorre
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    fetchWithdrawalStatus();
-    
-    // Realtime subscription para novas mensagens
-    const channel = supabase
-      .channel('withdrawal_messages_user')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'withdrawal_messages',
-        filter: `sender_type=eq.admin`
-      }, (payload) => {
-        if (messages.some(m => m.withdrawal_id === payload.new.withdrawal_id)) {
-          fetchMessages();
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [projectId, userId]);
-
-  const fetchWithdrawalStatus = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('withdrawals')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('user_id', userId)
-        .eq('status', 'pending_correction')
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-
-      setWithdrawal(data);
-      
-      if (data) {
-        await fetchMessages();
-      }
-    } catch (error) {
-      console.error('Erro ao buscar status do resgate:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = async () => {
-    if (!withdrawal?.id) return;
-
+  const fetchMessages = useCallback(async (withdrawalId: string) => {
     try {
       const { data, error } = await supabase
         .from('withdrawal_messages')
         .select('*')
-        .eq('withdrawal_id', withdrawal.id)
+        .eq('withdrawal_id', withdrawalId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -107,7 +57,61 @@ export const WithdrawalCorrectionAlert = ({ projectId, userId }: WithdrawalCorre
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const fetchWithdrawalStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('withdrawals')
+          .select('*')
+          .eq('project_id', projectId)
+          .eq('user_id', userId)
+          .eq('status', 'pending_correction')
+          .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+
+        setWithdrawal(data);
+        
+        if (data?.id) {
+          await fetchMessages(data.id);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar status do resgate:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWithdrawalStatus();
+  }, [projectId, userId, fetchMessages]);
+
+  // Realtime subscription para novas mensagens
+  useEffect(() => {
+    if (!withdrawal?.id) return;
+
+    const channel = supabase
+      .channel(`withdrawal_messages_user_${withdrawal.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'withdrawal_messages',
+        filter: `withdrawal_id=eq.${withdrawal.id}`
+      }, (payload) => {
+        const newMessage = payload.new as Message;
+        setMessages(prev => [...prev, newMessage]);
+        
+        if (newMessage.sender_type === 'admin') {
+          toast.info('Nova mensagem do administrador!');
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [withdrawal?.id]);
 
   const handleSendReply = async () => {
     if (!replyMessage.trim() || !withdrawal) return;
@@ -115,44 +119,44 @@ export const WithdrawalCorrectionAlert = ({ projectId, userId }: WithdrawalCorre
     setSending(true);
 
     try {
-      const { error } = await supabase
+      // Inserir mensagem
+      const { error: msgError } = await supabase
         .from('withdrawal_messages')
         .insert({
           withdrawal_id: withdrawal.id,
           sender_id: userId,
           sender_type: 'user',
-          message: replyMessage,
+          message: replyMessage.trim(),
           is_read: false
         });
 
-      if (error) throw error;
+      if (msgError) throw msgError;
 
-      // Criar notificação para admins
+      // Criar notificações para admins
       const { data: admins } = await supabase
         .from('user_roles')
         .select('user_id')
         .eq('role', 'admin');
 
-      if (admins) {
-        await Promise.all(
-          admins.map(admin =>
-            supabase.from('notifications').insert({
-              user_id: admin.user_id,
-              type: 'withdrawal_message',
-              title: 'Nova Resposta de Usuário',
-              message: 'Um usuário respondeu sobre a correção de resgate.',
-              related_id: withdrawal.id
-            })
-          )
-        );
+      if (admins && admins.length > 0) {
+        const notifications = admins.map(admin => ({
+          user_id: admin.user_id,
+          type: 'withdrawal_message',
+          title: 'Nova Resposta de Resgate',
+          message: 'O usuário respondeu à solicitação de correção do resgate.',
+          related_id: withdrawal.id
+        }));
+
+        await supabase
+          .from('notifications')
+          .insert(notifications);
       }
 
       toast.success('Resposta enviada com sucesso!');
       setReplyMessage('');
-      fetchMessages();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao enviar resposta:', error);
-      toast.error('Erro ao enviar resposta');
+      toast.error('Erro ao enviar resposta. Tente novamente.');
     } finally {
       setSending(false);
     }
@@ -179,12 +183,17 @@ export const WithdrawalCorrectionAlert = ({ projectId, userId }: WithdrawalCorre
               size="sm"
               onClick={() => {
                 setShowDialog(true);
-                fetchMessages();
+                fetchMessages(withdrawal.id);
               }}
               className="ml-4"
             >
               <MessageSquare className="mr-2 h-4 w-4" />
               Ver Mensagens
+              {messages.some(m => m.sender_type === 'admin' && !m.is_read) && (
+                <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 text-xs">
+                  !
+                </Badge>
+              )}
             </Button>
           </div>
         </AlertDescription>
@@ -201,41 +210,42 @@ export const WithdrawalCorrectionAlert = ({ projectId, userId }: WithdrawalCorre
 
           <ScrollArea className="h-96 pr-4">
             <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+              {messages.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhuma mensagem ainda
+                </p>
+              ) : (
+                messages.map((message) => (
                   <div
-                    className={`flex gap-2 max-w-[80%] ${
-                      message.sender_type === 'user' ? 'flex-row-reverse' : 'flex-row'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        {message.sender_type === 'admin' ? 'ADM' : 'EU'}
-                      </AvatarFallback>
-                    </Avatar>
                     <div
-                      className={`rounded-lg p-3 ${
-                        message.sender_type === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                      className={`flex gap-2 max-w-[80%] ${
+                        message.sender_type === 'user' ? 'flex-row-reverse' : 'flex-row'
                       }`}
                     >
-                      <p className="text-sm">{message.message}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {formatToBrasilia(message.created_at, 'dd/MM HH:mm')}
-                      </p>
-                      {!message.is_read && message.sender_type === 'admin' && (
-                        <Badge variant="destructive" className="text-xs mt-1">
-                          Não lida
-                        </Badge>
-                      )}
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {message.sender_type === 'admin' ? 'ADM' : 'EU'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div
+                        className={`rounded-lg p-3 ${
+                          message.sender_type === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <p className="text-sm">{message.message}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {message.sender_type === 'admin' ? 'Admin' : 'Você'} • {formatToBrasilia(message.created_at, 'dd/MM HH:mm')}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </ScrollArea>
 
@@ -258,7 +268,7 @@ export const WithdrawalCorrectionAlert = ({ projectId, userId }: WithdrawalCorre
                   </>
                 ) : (
                   <>
-                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <Send className="mr-2 h-4 w-4" />
                     Enviar Resposta
                   </>
                 )}

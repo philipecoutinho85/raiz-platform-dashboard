@@ -25,9 +25,17 @@ interface WithdrawalChatProps {
   withdrawalId: string;
   chatActive: boolean;
   chatClosedAt?: string;
+  isAdminView?: boolean;
+  withdrawalUserId?: string;
 }
 
-export const WithdrawalChat = ({ withdrawalId, chatActive, chatClosedAt }: WithdrawalChatProps) => {
+export const WithdrawalChat = ({ 
+  withdrawalId, 
+  chatActive, 
+  chatClosedAt, 
+  isAdminView = false,
+  withdrawalUserId 
+}: WithdrawalChatProps) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -80,6 +88,21 @@ export const WithdrawalChat = ({ withdrawalId, chatActive, chatClosedAt }: Withd
 
       if (error) throw error;
       setMessages((data as Message[]) || []);
+      
+      // Marcar mensagens como lidas
+      if (data && data.length > 0) {
+        const unreadMessages = data.filter(m => 
+          !m.is_read && 
+          (isAdminView ? m.sender_type === 'user' : m.sender_type === 'admin')
+        );
+        
+        if (unreadMessages.length > 0) {
+          await supabase
+            .from('withdrawal_messages')
+            .update({ is_read: true })
+            .in('id', unreadMessages.map(m => m.id));
+        }
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -93,19 +116,57 @@ export const WithdrawalChat = ({ withdrawalId, chatActive, chatClosedAt }: Withd
     setLoading(true);
 
     try {
+      const senderType = isAdminView ? 'admin' : 'user';
+      
+      // Inserir mensagem
       const { error } = await supabase
         .from('withdrawal_messages')
         .insert({
           withdrawal_id: withdrawalId,
           sender_id: user?.id,
           message: newMessage.trim(),
-          sender_type: 'user',
+          sender_type: senderType,
           is_read: false
         });
 
       if (error) throw error;
 
+      // Criar notificação para o destinatário
+      if (isAdminView && withdrawalUserId) {
+        // Admin enviou mensagem - notificar usuário
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: withdrawalUserId,
+            type: 'withdrawal_message',
+            title: 'Nova mensagem sobre seu resgate',
+            message: 'O administrador enviou uma mensagem sobre sua solicitação de resgate.',
+            related_id: withdrawalId
+          });
+      } else {
+        // Usuário enviou mensagem - notificar todos os admins
+        const { data: adminRoles } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'admin');
+
+        if (adminRoles && adminRoles.length > 0) {
+          const notifications = adminRoles.map(admin => ({
+            user_id: admin.user_id,
+            type: 'withdrawal_message',
+            title: 'Nova resposta de resgate',
+            message: 'Um usuário respondeu à solicitação de correção do resgate.',
+            related_id: withdrawalId
+          }));
+
+          await supabase
+            .from('notifications')
+            .insert(notifications);
+        }
+      }
+
       setNewMessage('');
+      toast.success('Mensagem enviada!');
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast.error('Erro ao enviar mensagem. Tente novamente.');
@@ -141,42 +202,58 @@ export const WithdrawalChat = ({ withdrawalId, chatActive, chatClosedAt }: Withd
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Chat com Administrador
+          {isAdminView ? 'Chat com Usuário' : 'Chat com Administrador'}
         </CardTitle>
         <CardDescription>
-          Converse com o administrador sobre seu resgate
+          {isAdminView 
+            ? 'Converse com o usuário sobre o resgate' 
+            : 'Converse com o administrador sobre seu resgate'}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <ScrollArea ref={scrollRef} className="h-[300px] rounded-md border p-4">
             <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${message.sender_type === 'admin' ? 'flex-row' : 'flex-row-reverse'}`}
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {message.sender_type === 'admin' ? 'A' : 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className={`flex-1 ${message.sender_type === 'admin' ? 'text-left' : 'text-right'}`}>
-                    <div
-                      className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
-                        message.sender_type === 'admin'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="text-sm">{message.message}</p>
+              {messages.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhuma mensagem ainda
+                </p>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${
+                      (isAdminView ? message.sender_type === 'user' : message.sender_type === 'admin') 
+                        ? 'flex-row' 
+                        : 'flex-row-reverse'
+                    }`}
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {message.sender_type === 'admin' ? 'A' : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className={`flex-1 ${
+                      (isAdminView ? message.sender_type === 'user' : message.sender_type === 'admin')
+                        ? 'text-left' 
+                        : 'text-right'
+                    }`}>
+                      <div
+                        className={`inline-block rounded-lg px-4 py-2 max-w-[80%] ${
+                          (isAdminView ? message.sender_type === 'user' : message.sender_type === 'admin')
+                            ? 'bg-muted'
+                            : 'bg-primary text-primary-foreground'
+                        }`}
+                      >
+                        <p className="text-sm">{message.message}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {message.sender_type === 'admin' ? 'Admin' : 'Usuário'} • {formatToBrasilia(message.created_at)}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {formatToBrasilia(message.created_at)}
-                    </p>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </ScrollArea>
 
