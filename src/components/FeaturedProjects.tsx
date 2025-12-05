@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ const FeaturedProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchFeaturedProjects();
@@ -148,8 +150,9 @@ const FeaturedProjects = () => {
             return (
               <Card 
                 key={project.id} 
-                className="card-hover overflow-hidden border-raiz-accent/20 group"
+                className="card-hover overflow-hidden border-raiz-accent/20 group cursor-pointer"
                 style={{ animationDelay: `${index * 0.2}s` }}
+                onClick={() => navigate(`/projeto/${project.id}`)}
               >
                 <div className="relative overflow-hidden">
                   <img 
@@ -216,8 +219,14 @@ const FeaturedProjects = () => {
                     )}
                   </div>
                   
-                  <Button className="w-full bg-gradient-raiz hover:opacity-90 text-white font-medium py-3 rounded-lg transform hover:scale-[1.02] transition-all duration-200">
-                    Apoiar com Tokens
+                  <Button 
+                    className="w-full bg-gradient-raiz hover:opacity-90 text-white font-medium py-3 rounded-lg transform hover:scale-[1.02] transition-all duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/projeto/${project.id}`);
+                    }}
+                  >
+                    Ver Projeto
                   </Button>
                 </CardContent>
               </Card>
@@ -230,6 +239,7 @@ const FeaturedProjects = () => {
             variant="outline" 
             size="lg"
             className="border-raiz-primary text-raiz-primary hover:bg-raiz-primary hover:text-white transform hover:scale-105 transition-all duration-200"
+            onClick={() => navigate('/marketplace')}
           >
             <TrendingUp className="mr-2 w-5 h-5" />
             Ver Todos os Projetos
