@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Heart, Users, Clock, MapPin, Target } from 'lucide-react';
+import { Search, Filter, Heart, Users, Clock, MapPin, Target, Flame, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
@@ -260,30 +260,58 @@ const Marketplace = () => {
               const progressPercentage = getProgressPercentage(project);
               const daysLeft = getDaysLeft(project.deadline);
               const expired = isProjectExpired(project.deadline);
+              const isNearGoal = progressPercentage >= 70 && progressPercentage < 100 && !expired;
+              const isCompleted = progressPercentage >= 100;
               
               return (
                 <Card 
                   key={project.id} 
-                  className={`card-hover overflow-hidden border-raiz-accent/20 group cursor-pointer ${expired ? 'opacity-75' : ''}`}
+                  className={`overflow-hidden border-raiz-accent/20 group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-raiz-primary/40 ${
+                    expired ? 'opacity-75' : ''
+                  } ${isNearGoal ? 'ring-2 ring-orange-400/50' : ''} ${isCompleted ? 'ring-2 ring-green-500/50' : ''}`}
                 >
                   <Link to={`/projeto/${project.id}`}>
                     <div className="relative overflow-hidden">
                       <img 
                         src={project.featured_image} 
                         alt={project.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <Badge className="absolute top-4 left-4 bg-raiz-gold text-raiz-dark hover:bg-raiz-gold/90">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <Badge className="absolute top-4 left-4 bg-raiz-gold text-raiz-dark hover:bg-raiz-gold/90 transition-transform group-hover:scale-105">
                         {project.category}
                       </Badge>
+                      
+                      {/* Indicador de expirado */}
                       {expired && (
                         <Badge className="absolute top-4 right-4 bg-red-600 text-white">
                           Expirado
                         </Badge>
                       )}
-                      {!expired && (
+                      
+                      {/* Indicador de projeto próximo da meta */}
+                      {isNearGoal && !expired && (
                         <div className="absolute top-4 right-4">
+                          <Badge className="bg-orange-500 text-white animate-pulse flex items-center gap-1">
+                            <Flame className="w-3 h-3" />
+                            Quase lá!
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* Indicador de meta atingida */}
+                      {isCompleted && !expired && (
+                        <div className="absolute top-4 right-4">
+                          <Badge className="bg-green-500 text-white flex items-center gap-1">
+                            <Trophy className="w-3 h-3" />
+                            Meta atingida!
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* Botão de favorito */}
+                      {!expired && !isNearGoal && !isCompleted && (
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -300,7 +328,7 @@ const Marketplace = () => {
                     </div>
                     
                     <CardHeader className="pb-4">
-                      <CardTitle className="text-raiz-dark line-clamp-2 group-hover:text-raiz-primary transition-colors">
+                      <CardTitle className="text-raiz-dark line-clamp-2 group-hover:text-raiz-primary transition-colors duration-300">
                         {project.title}
                       </CardTitle>
                       <CardDescription className="text-raiz-secondary line-clamp-2">
@@ -321,15 +349,24 @@ const Marketplace = () => {
                           <span className="text-raiz-secondary">
                             {formatTokens(project.raised_amount)} tokens
                           </span>
-                          <span className="text-raiz-gold font-bold">
+                          <span className={`font-bold ${
+                            isCompleted ? 'text-green-500' : isNearGoal ? 'text-orange-500' : 'text-raiz-gold'
+                          }`}>
                             {Math.round(progressPercentage)}%
                           </span>
                         </div>
                         
-                        <Progress 
-                          value={progressPercentage} 
-                          className="h-2 bg-gray-200"
-                        />
+                        <div className="relative">
+                          <Progress 
+                            value={progressPercentage} 
+                            className={`h-2 bg-gray-200 ${
+                              isCompleted ? '[&>div]:bg-green-500' : isNearGoal ? '[&>div]:bg-orange-500' : ''
+                            }`}
+                          />
+                          {isNearGoal && (
+                            <div className="absolute -right-1 -top-1 w-4 h-4 bg-orange-500 rounded-full animate-ping opacity-75" />
+                          )}
+                        </div>
                         
                         <div className="text-xs text-raiz-secondary">
                           <div className="flex items-center space-x-1 mb-1">
