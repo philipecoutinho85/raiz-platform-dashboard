@@ -111,16 +111,16 @@ export const WithdrawalsTab = () => {
   const fetchWithdrawals = async () => {
     try {
       const { data, error } = await supabase
-        .from('admin_withdrawals_with_messages')
+        .from('withdrawals')
         .select('*')
         .order('requested_at', { ascending: false });
 
       if (error) throw error;
 
-      // Buscar dados dos projetos e usuários
+      // Buscar dados dos projetos, usuários e contagem de mensagens não lidas
       const withdrawalsWithDetails = await Promise.all(
         (data || []).map(async (withdrawal) => {
-          const [{ data: project }, { data: profile }] = await Promise.all([
+          const [{ data: project }, { data: profile }, { count: unreadCount }] = await Promise.all([
             supabase
               .from('projects')
               .select('title')
@@ -130,13 +130,20 @@ export const WithdrawalsTab = () => {
               .from('profiles')
               .select('nome, email')
               .eq('id', withdrawal.user_id)
-              .single()
+              .single(),
+            supabase
+              .from('withdrawal_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('withdrawal_id', withdrawal.id)
+              .eq('sender_type', 'user')
+              .eq('is_read', false)
           ]);
 
           return { 
             ...withdrawal, 
             projects: project,
-            profiles: profile 
+            profiles: profile,
+            unread_messages: unreadCount || 0
           };
         })
       );
@@ -478,9 +485,16 @@ export const WithdrawalsTab = () => {
               </TableHeader>
               <TableBody>
                 {filteredWithdrawals.map((withdrawal) => (
-                  <TableRow key={withdrawal.id}>
+                  <TableRow key={withdrawal.id} className={withdrawal.unread_messages && withdrawal.unread_messages > 0 ? 'bg-blue-50 dark:bg-blue-950/20' : ''}>
                     <TableCell className="font-medium">
-                      {withdrawal.projects?.title}
+                      <div className="flex items-center gap-2">
+                        {withdrawal.projects?.title}
+                        {withdrawal.unread_messages && withdrawal.unread_messages > 0 && (
+                          <Badge variant="destructive" className="animate-pulse text-xs">
+                            {withdrawal.unread_messages} {withdrawal.unread_messages === 1 ? 'msg' : 'msgs'}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div>
