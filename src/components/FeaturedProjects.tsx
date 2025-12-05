@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Users, Clock, TrendingUp, Heart } from 'lucide-react';
+import { Users, Clock, TrendingUp, Heart, Flame, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -146,11 +146,15 @@ const FeaturedProjects = () => {
           {projects.map((project, index) => {
             const progressPercentage = getProgressPercentage(project);
             const daysLeft = getDaysLeft(project.deadline);
+            const isNearGoal = progressPercentage >= 70 && progressPercentage < 100;
+            const isCompleted = progressPercentage >= 100;
             
             return (
               <Card 
                 key={project.id} 
-                className="card-hover overflow-hidden border-raiz-accent/20 group cursor-pointer"
+                className={`overflow-hidden border-raiz-accent/20 group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-raiz-primary/40 ${
+                  isNearGoal ? 'ring-2 ring-orange-400/50' : ''
+                } ${isCompleted ? 'ring-2 ring-green-500/50' : ''}`}
                 style={{ animationDelay: `${index * 0.2}s` }}
                 onClick={() => navigate(`/projeto/${project.id}`)}
               >
@@ -158,25 +162,49 @@ const FeaturedProjects = () => {
                   <img 
                     src={project.featured_image} 
                     alt={project.title}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <Badge className="absolute top-4 left-4 bg-raiz-gold text-raiz-dark hover:bg-raiz-gold/90">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <Badge className="absolute top-4 left-4 bg-raiz-gold text-raiz-dark hover:bg-raiz-gold/90 transition-transform group-hover:scale-105">
                     {project.category}
                   </Badge>
-                  <div className="absolute top-4 right-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 p-0"
-                    >
-                      <Heart className="w-4 h-4 text-white" />
-                    </Button>
-                  </div>
+                  
+                  {/* Indicador de projeto próximo da meta */}
+                  {isNearGoal && (
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-orange-500 text-white animate-pulse flex items-center gap-1">
+                        <Flame className="w-3 h-3" />
+                        Quase lá!
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {/* Indicador de meta atingida */}
+                  {isCompleted && (
+                    <div className="absolute top-4 right-4">
+                      <Badge className="bg-green-500 text-white flex items-center gap-1">
+                        <Trophy className="w-3 h-3" />
+                        Meta atingida!
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {!isNearGoal && !isCompleted && (
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 p-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Heart className="w-4 h-4 text-white" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-raiz-dark line-clamp-2 group-hover:text-raiz-primary transition-colors">
+                  <CardTitle className="text-raiz-dark line-clamp-2 group-hover:text-raiz-primary transition-colors duration-300">
                     {project.title}
                   </CardTitle>
                   <CardDescription className="text-raiz-secondary line-clamp-3">
@@ -190,15 +218,24 @@ const FeaturedProjects = () => {
                       <span className="text-raiz-secondary">
                         {formatTokens(project.raised_amount)} tokens arrecadados
                       </span>
-                      <span className="text-raiz-gold font-bold text-lg">
+                      <span className={`font-bold text-lg ${
+                        isCompleted ? 'text-green-500' : isNearGoal ? 'text-orange-500' : 'text-raiz-gold'
+                      }`}>
                         {Math.round(progressPercentage)}%
                       </span>
                     </div>
                     
-                    <Progress 
-                      value={progressPercentage} 
-                      className="h-3 bg-gray-200"
-                    />
+                    <div className="relative">
+                      <Progress 
+                        value={progressPercentage} 
+                        className={`h-3 bg-gray-200 ${
+                          isCompleted ? '[&>div]:bg-green-500' : isNearGoal ? '[&>div]:bg-orange-500' : ''
+                        }`}
+                      />
+                      {isNearGoal && (
+                        <div className="absolute -right-1 -top-1 w-5 h-5 bg-orange-500 rounded-full animate-ping opacity-75" />
+                      )}
+                    </div>
                     
                     <div className="text-xs text-raiz-secondary text-center">
                       Meta: {formatTokens(project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal)} tokens
@@ -220,13 +257,19 @@ const FeaturedProjects = () => {
                   </div>
                   
                   <Button 
-                    className="w-full bg-gradient-raiz hover:opacity-90 text-white font-medium py-3 rounded-lg transform hover:scale-[1.02] transition-all duration-200"
+                    className={`w-full font-medium py-3 rounded-lg transform transition-all duration-300 group-hover:scale-[1.02] ${
+                      isCompleted 
+                        ? 'bg-green-500 hover:bg-green-600 text-white' 
+                        : isNearGoal 
+                          ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                          : 'bg-gradient-raiz hover:opacity-90 text-white'
+                    }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/projeto/${project.id}`);
                     }}
                   >
-                    Ver Projeto
+                    {isCompleted ? 'Ver Projeto Completo' : isNearGoal ? 'Ajude a Completar!' : 'Ver Projeto'}
                   </Button>
                 </CardContent>
               </Card>
