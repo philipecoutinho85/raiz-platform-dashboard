@@ -709,6 +709,111 @@ export type Database = {
           },
         ]
       }
+      project_update_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          order_index: number
+          update_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          order_index?: number
+          update_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          order_index?: number
+          update_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_update_images_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "project_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_update_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          reaction_type: Database["public"]["Enums"]["update_reaction_type"]
+          update_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reaction_type: Database["public"]["Enums"]["update_reaction_type"]
+          update_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reaction_type?: Database["public"]["Enums"]["update_reaction_type"]
+          update_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_update_reactions_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "project_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_updates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_exclusive: boolean
+          project_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_exclusive?: boolean
+          project_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_exclusive?: boolean
+          project_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           accountability_approved: boolean | null
@@ -1344,6 +1449,7 @@ export type Database = {
     Enums: {
       admin_type: "master" | "financial" | "operational" | "support"
       app_role: "admin" | "user" | "moderator"
+      update_reaction_type: "loved" | "congrats" | "inspiring" | "full_support"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1473,6 +1579,7 @@ export const Constants = {
     Enums: {
       admin_type: ["master", "financial", "operational", "support"],
       app_role: ["admin", "user", "moderator"],
+      update_reaction_type: ["loved", "congrats", "inspiring", "full_support"],
     },
   },
 } as const
