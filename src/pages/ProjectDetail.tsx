@@ -70,6 +70,7 @@ import { ProjectReport } from '@/components/ProjectReport';
 import { LoginRequiredModal } from '@/components/LoginRequiredModal';
 import RaizScore from '@/components/RaizScore';
 import { WithdrawalCorrectionAlert } from '@/components/WithdrawalCorrectionAlert';
+import ProjectUpdates from '@/components/ProjectUpdates';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -85,6 +86,7 @@ const ProjectDetail = () => {
   const [editedDescription, setEditedDescription] = useState('');
   const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isSupporter, setIsSupporter] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -138,6 +140,18 @@ const ProjectDetail = () => {
         setImages(images);
         const featuredImage = images.find(img => img.is_featured);
         setSelectedImage(featuredImage?.image_url || images[0]?.image_url || '');
+      }
+
+      // Check if current user is a supporter
+      if (user) {
+        const { data: contribution } = await supabase
+          .from('project_contributions')
+          .select('id')
+          .eq('project_id', id)
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+          .maybeSingle();
+        setIsSupporter(!!contribution);
       }
 
     } catch (error) {
@@ -467,6 +481,14 @@ const ProjectDetail = () => {
               title={project.title}
               description={project.description}
               url={window.location.href}
+            />
+
+            {/* Novidades do Projeto */}
+            <ProjectUpdates
+              projectId={project.id}
+              projectOwnerId={project.user_id}
+              isSupporter={isSupporter}
+              onLoginRequired={() => setShowLoginModal(true)}
             />
 
             {/* Comments and Feedback */}
