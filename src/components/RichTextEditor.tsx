@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Bold, 
   Italic, 
@@ -8,9 +9,11 @@ import {
   ListOrdered, 
   Heading2,
   ImagePlus,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { containsExternalLinks } from '@/lib/sanitize';
 
 interface RichTextEditorProps {
   value: string;
@@ -32,6 +35,9 @@ const RichTextEditor = ({
   maxImages = 5,
 }: RichTextEditorProps) => {
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+
+  // Detectar se há links externos no conteúdo
+  const hasExternalLinks = useMemo(() => containsExternalLinks(value), [value]);
 
   const handleTextareaSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
     const target = e.target as HTMLTextAreaElement;
@@ -194,6 +200,16 @@ const RichTextEditor = ({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Link Warning */}
+      {hasExternalLinks && (
+        <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm">
+            <strong>Aviso de segurança:</strong> Links externos detectados. Por segurança, links não são clicáveis e serão exibidos apenas como texto.
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Help text */}
