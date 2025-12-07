@@ -129,9 +129,7 @@ export const FinanceTab = () => {
       <FinancialSummary summary={summary} />
 
       {/* Alertas */}
-      {alerts.length > 0 && (
-        <FinancialAlerts alerts={alerts} onMarkAsRead={markAlertAsRead} />
-      )}
+      <FinancialAlerts />
 
       {/* Tabelas */}
       <Tabs defaultValue="purchases" className="w-full">
