@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ImagePlus, X, Lock, Globe, Loader2, AlertTriangle } from 'lucide-react';
+import { Lock, Globe, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sanitizeTitle, sanitizeUserContent, containsExternalLinks } from '@/lib/sanitize';
+import RichTextEditor from '@/components/RichTextEditor';
 
 interface ProjectUpdate {
   id: string;
@@ -221,72 +221,45 @@ const ProjectUpdateForm = ({ projectId, existingUpdate, onSuccess, onCancel }: P
         />
       </div>
 
-      {/* Content */}
+      {/* Content with Rich Text Editor */}
       <div className="space-y-2">
-        <Label htmlFor="content">Conteúdo *</Label>
-        <Textarea
-          id="content"
+        <Label>Conteúdo *</Label>
+        <RichTextEditor
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={setContent}
           placeholder="Compartilhe novidades sobre o projeto..."
-          className="min-h-[200px] resize-y"
+          images={images}
+          onImagesChange={setImages}
+          maxImages={5 - visibleExistingImages.length}
         />
       </div>
 
-      {/* Images */}
-      <div className="space-y-2">
-        <Label>Imagens (máximo 5)</Label>
-        <div className="grid grid-cols-5 gap-2">
-          {visibleExistingImages.map((image) => (
-            <div key={image.id} className="relative">
-              <img
-                src={image.image_url}
-                alt=""
-                className="w-full h-20 object-cover rounded-lg"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute -top-2 -right-2 w-6 h-6"
-                onClick={() => removeExistingImage(image.id)}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-          {images.map((file, index) => (
-            <div key={index} className="relative">
-              <img
-                src={URL.createObjectURL(file)}
-                alt=""
-                className="w-full h-20 object-cover rounded-lg"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute -top-2 -right-2 w-6 h-6"
-                onClick={() => removeNewImage(index)}
-              >
-                <X className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-          {visibleExistingImages.length + images.length < 5 && (
-            <label className="flex items-center justify-center w-full h-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <ImagePlus className="w-6 h-6 text-muted-foreground" />
-            </label>
-          )}
+      {/* Existing Images */}
+      {visibleExistingImages.length > 0 && (
+        <div className="space-y-2">
+          <Label>Imagens existentes</Label>
+          <div className="grid grid-cols-5 gap-2">
+            {visibleExistingImages.map((image) => (
+              <div key={image.id} className="relative group">
+                <img
+                  src={image.image_url}
+                  alt=""
+                  className="w-full h-20 object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => removeExistingImage(image.id)}
+                >
+                  ×
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Visibility Toggle */}
       <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
