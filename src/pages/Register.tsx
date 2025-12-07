@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import TermsConsentCheckbox from '@/components/forms/TermsConsentCheckbox';
 
 const Register = () => {
   const { toast } = useToast();
@@ -23,6 +24,8 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState('');
   const [maintenanceMode, setMaintenanceMode] = useState<{ enabled: boolean; message: string } | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
@@ -90,6 +93,18 @@ const Register = () => {
       return;
     }
     
+    // Validar aceite de termos
+    if (!termsAccepted) {
+      setTermsError('Você deve aceitar os Termos de Uso e Política de Privacidade.');
+      toast({
+        title: "Erro",
+        description: "Você deve aceitar os Termos de Uso e Política de Privacidade.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setTermsError('');
+
     const requiredFields = ['nome', 'sobrenome', 'email', 'celular', 'senha', 'confirmarSenha'];
     const emptyFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
@@ -334,6 +349,12 @@ const Register = () => {
                     <strong>Importante:</strong> Após o cadastro, você precisará completar seu perfil com CPF, data de nascimento e endereço para poder apoiar ou criar projetos.
                   </p>
                 </div>
+
+                <TermsConsentCheckbox
+                  checked={termsAccepted}
+                  onCheckedChange={setTermsAccepted}
+                  error={termsError}
+                />
               </CardContent>
             </Card>
 

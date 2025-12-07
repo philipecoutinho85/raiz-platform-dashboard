@@ -226,6 +226,52 @@ const Security = () => {
 
         </div>
 
+        {/* Vulnerability Report */}
+        <Card className="max-w-4xl mx-auto mb-16 bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+          <CardHeader>
+            <CardTitle className="text-2xl text-raiz-gold flex items-center gap-2">
+              <AlertTriangle className="w-8 h-8" />
+              Reporte de Vulnerabilidades
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-raiz-light/80 space-y-4">
+            <p>
+              Se você identificou uma vulnerabilidade de segurança em nossa plataforma, pedimos que nos 
+              reporte de forma responsável. Trataremos todas as comunicações com seriedade e confidencialidade.
+            </p>
+            <div className="bg-raiz-accent/10 p-4 rounded-lg">
+              <h4 className="font-semibold text-raiz-light mb-2">📧 Canal de Reporte:</h4>
+              <p className="text-raiz-gold font-medium">contato@raiztoken.com.br</p>
+              <p className="text-sm mt-2">Assunto sugerido: [SEGURANÇA] Descrição breve da vulnerabilidade</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-raiz-light mb-2">Política de Resposta a Incidentes:</h4>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Confirmação de recebimento em até 24 horas</li>
+                <li>Análise inicial em até 72 horas</li>
+                <li>Atualizações sobre o progresso da correção</li>
+                <li>Reconhecimento público (se desejado) após correção</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* DPO Section */}
+        <Card className="max-w-4xl mx-auto mb-16 bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+          <CardHeader>
+            <CardTitle className="text-xl text-raiz-gold">
+              Encarregado de Dados (DPO)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-raiz-light/80">
+            <p>
+              A ser oficialmente nomeado. Até sua nomeação, utilize o e-mail{' '}
+              <span className="text-raiz-gold font-medium">contato@raiztoken.com.br</span>{' '}
+              para solicitações relacionadas à privacidade.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Mission Statement */}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-raiz-light mb-6">

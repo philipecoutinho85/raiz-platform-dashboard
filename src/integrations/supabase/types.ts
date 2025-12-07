@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_requests: {
+        Row: {
+          cancellation_reason: string | null
+          created_at: string | null
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          requested_at: string | null
+          scheduled_deletion_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string | null
+          scheduled_deletion_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          created_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string | null
+          scheduled_deletion_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_2fa: {
         Row: {
           backup_codes: string[] | null
@@ -236,6 +272,48 @@ export type Database = {
           success_history_points?: number | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      data_processing_registry: {
+        Row: {
+          created_at: string | null
+          data_categories: string[]
+          data_subjects: string
+          id: string
+          international_transfers: boolean | null
+          legal_basis: string
+          operators: string[] | null
+          processing_purpose: string
+          retention_period: string
+          security_measures: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_categories: string[]
+          data_subjects: string
+          id?: string
+          international_transfers?: boolean | null
+          legal_basis: string
+          operators?: string[] | null
+          processing_purpose: string
+          retention_period: string
+          security_measures?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_categories?: string[]
+          data_subjects?: string
+          id?: string
+          international_transfers?: boolean | null
+          legal_basis?: string
+          operators?: string[] | null
+          processing_purpose?: string
+          retention_period?: string
+          security_measures?: string[] | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1183,6 +1261,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_consent_preferences: {
+        Row: {
+          analytics_tracking: boolean | null
+          created_at: string | null
+          id: string
+          marketing_emails: boolean | null
+          new_projects_notifications: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          analytics_tracking?: boolean | null
+          created_at?: string | null
+          id?: string
+          marketing_emails?: boolean | null
+          new_projects_notifications?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          analytics_tracking?: boolean | null
+          created_at?: string | null
+          id?: string
+          marketing_emails?: boolean | null
+          new_projects_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

@@ -84,16 +84,19 @@ const Footer = () => {
               <li><Link to="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Explorar Projetos</Link></li>
               <li><Link to="/criar-projeto" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Criar Projeto</Link></li>
               <li><Link to="/como-funciona" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Como Funciona</Link></li>
+              <li><Link to="/faq" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">FAQ</Link></li>
             </ul>
           </div>
           
-          {/* Support - Sempre visíveis */}
+          {/* Políticas e Suporte */}
           <div className="col-span-1">
-            <h3 className="text-base md:text-lg font-semibold text-raiz-gold mb-3 md:mb-4">Suporte</h3>
+            <h3 className="text-base md:text-lg font-semibold text-raiz-gold mb-3 md:mb-4">Políticas</h3>
             <ul className="space-y-2">
-              <li><Link to="/faq" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">FAQ</Link></li>
-              <li><Link to="/terms" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Termos de Uso</Link></li>
               <li><Link to="/privacy" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Privacidade</Link></li>
+              <li><Link to="/privacidade-apoiadores" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Privacidade Apoiadores</Link></li>
+              <li><Link to="/privacidade-criadores" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Privacidade Criadores</Link></li>
+              <li><Link to="/politica-de-cookies" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Política de Cookies</Link></li>
+              <li><Link to="/terms" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Termos de Uso</Link></li>
               <li><Link to="/security" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Segurança</Link></li>
               <li><Link to="/contato" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Contato</Link></li>
             </ul>

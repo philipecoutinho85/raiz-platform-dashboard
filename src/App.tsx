@@ -33,6 +33,7 @@ import Security from "./pages/Security";
 import Contact from "./pages/Contact";
 import Wallet from "./pages/Wallet";
 import CheckoutPayment from "./pages/CheckoutPayment";
+import CookiePolicy from "./pages/CookiePolicy";
 import CookieConsent from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
@@ -135,6 +136,7 @@ const App = () => (
               <Route path="/privacidade-apoiadores" element={<PrivacySupporters />} />
               <Route path="/privacidade-criadores" element={<PrivacyCreators />} />
               <Route path="/security" element={<Security />} />
+              <Route path="/politica-de-cookies" element={<CookiePolicy />} />
               <Route path="/contato" element={<Contact />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
