@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,11 +8,11 @@ import {
   Edit, 
   Trash2, 
   Heart, 
-  PartyPopper, 
-  Sparkles, 
-  HandHeart,
+  HandMetal,
+  Flame,
   MoreVertical,
-  Calendar
+  Calendar,
+  Users
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -64,6 +64,7 @@ interface ProjectUpdateCardProps {
   update: ProjectUpdate;
   isOwner: boolean;
   isLocked: boolean;
+  isProjectActive?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onReact: () => void;
@@ -72,17 +73,18 @@ interface ProjectUpdateCardProps {
 
 type ReactionType = 'loved' | 'congrats' | 'inspiring' | 'full_support';
 
-const REACTIONS: { type: ReactionType; icon: any; label: string; color: string }[] = [
-  { type: 'loved', icon: Heart, label: 'Amei', color: 'text-red-500' },
-  { type: 'congrats', icon: PartyPopper, label: 'Parabéns', color: 'text-yellow-500' },
-  { type: 'inspiring', icon: Sparkles, label: 'Inspirador', color: 'text-purple-500' },
-  { type: 'full_support', icon: HandHeart, label: 'Apoio total', color: 'text-green-500' },
+// NOVO SISTEMA DE REAÇÕES: ❤️ Apoio, 👏 Parabéns, 🔥 Incrível
+const REACTIONS: { type: ReactionType; emoji: string; label: string; color: string }[] = [
+  { type: 'loved', emoji: '❤️', label: 'Apoio', color: 'text-red-500 hover:bg-red-50' },
+  { type: 'congrats', emoji: '👏', label: 'Parabéns', color: 'text-amber-500 hover:bg-amber-50' },
+  { type: 'inspiring', emoji: '🔥', label: 'Incrível', color: 'text-orange-500 hover:bg-orange-50' },
 ];
 
 const ProjectUpdateCard = ({
   update,
   isOwner,
   isLocked,
+  isProjectActive = true,
   onEdit,
   onDelete,
   onReact,
@@ -95,7 +97,7 @@ const ProjectUpdateCard = ({
   const [profile, setProfile] = useState<{ nome: string; sobrenome: string; avatar_url?: string } | null>(null);
 
   // Fetch creator profile
-  useState(() => {
+  useEffect(() => {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from('profiles')
@@ -105,7 +107,7 @@ const ProjectUpdateCard = ({
       if (data) setProfile(data);
     };
     fetchProfile();
-  });
+  }, [update.user_id]);
 
   const handleReaction = async (reactionType: 'loved' | 'congrats' | 'inspiring' | 'full_support') => {
     if (!user) {
@@ -160,25 +162,41 @@ const ProjectUpdateCard = ({
 
   if (isLocked) {
     return (
-      <Card className="border-dashed border-2 bg-muted/30">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-full bg-muted">
-              <Lock className="w-6 h-6 text-muted-foreground" />
+      <Card className="border-dashed border-2 bg-muted/20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-muted/10 to-muted/30 backdrop-blur-[2px]" />
+        <CardContent className="p-6 relative">
+          <div className="flex flex-col items-center text-center gap-4 py-4">
+            <div className="p-4 rounded-full bg-muted/60">
+              <Lock className="w-8 h-8 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-muted-foreground">
-                Conteúdo Exclusivo para Apoiadores
+              <h3 className="font-semibold text-foreground mb-1">
+                Conteúdo exclusivo para apoiadores
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {update.is_exclusive ? 'Esta novidade está disponível apenas para quem apoiou este projeto.' : ''}
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Esta novidade está disponível apenas para quem apoiou este projeto.
               </p>
             </div>
+            {isProjectActive ? (
+              <Button 
+                className="bg-raiz-primary hover:bg-raiz-primary/90 mt-2"
+                onClick={() => {
+                  // Scroll to support section or trigger support action
+                  const supportSection = document.getElementById('support-section');
+                  if (supportSection) {
+                    supportSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Apoiar para desbloquear
+              </Button>
+            ) : (
+              <Badge variant="secondary" className="mt-2">
+                Campanha encerrada
+              </Badge>
+            )}
           </div>
-          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-            <Lock className="w-3 h-3 mr-1" />
-            Exclusivo para apoiadores
-          </Badge>
         </CardContent>
       </Card>
     );
@@ -266,32 +284,40 @@ const ProjectUpdateCard = ({
             </div>
           )}
 
-          {/* Reactions */}
-          <div className="flex items-center gap-2 pt-4 border-t">
+          {/* Reactions - Novo sistema: ❤️ Apoio, 👏 Parabéns, 🔥 Incrível */}
+          <div className="flex items-center gap-2 pt-4 border-t flex-wrap">
             {REACTIONS.map((reaction) => {
-              const Icon = reaction.icon;
               const count = getReactionCount(reaction.type);
               const isSelected = update.user_reaction === reaction.type;
               
               return (
                 <Button
                   key={reaction.type}
-                  variant={isSelected ? 'default' : 'outline'}
+                  variant={isSelected ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => handleReaction(reaction.type)}
                   disabled={isReacting}
-                  className={`flex items-center gap-1 ${isSelected ? '' : 'hover:bg-muted'}`}
+                  className={`flex items-center gap-1.5 transition-all ${
+                    isSelected 
+                      ? 'bg-raiz-primary/10 text-raiz-primary border border-raiz-primary/30' 
+                      : `border border-transparent ${reaction.color}`
+                  }`}
                   title={reaction.label}
                 >
-                  <Icon className={`w-4 h-4 ${isSelected ? 'text-white' : reaction.color}`} />
-                  {count > 0 && <span className="text-xs">{count}</span>}
+                  <span className="text-base">{reaction.emoji}</span>
+                  <span className="text-xs font-medium">{reaction.label}</span>
+                  {count > 0 && (
+                    <span className={`text-xs font-semibold ml-0.5 ${isSelected ? 'text-raiz-primary' : 'text-muted-foreground'}`}>
+                      {count}
+                    </span>
+                  )}
                 </Button>
               );
             })}
             
             {totalReactions > 0 && (
-              <span className="text-xs text-muted-foreground ml-auto">
-                {totalReactions} {totalReactions === 1 ? 'reação' : 'reações'}
+              <span className="text-sm text-muted-foreground ml-auto">
+                {totalReactions} {totalReactions === 1 ? 'pessoa reagiu' : 'pessoas reagiram'}
               </span>
             )}
           </div>

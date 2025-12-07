@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Newspaper, List, GitBranch, Plus, FileDown, Lock } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Newspaper, List, GitBranch, Plus, Lock, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ProjectUpdateCard from './ProjectUpdateCard';
@@ -28,17 +28,18 @@ interface ProjectUpdatesProps {
   projectId: string;
   projectOwnerId: string;
   isSupporter: boolean;
+  projectStatus?: string;
   onLoginRequired?: () => void;
 }
 
-const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, onLoginRequired }: ProjectUpdatesProps) => {
+const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus, onLoginRequired }: ProjectUpdatesProps) => {
   const { user } = useAuth();
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
   const [showForm, setShowForm] = useState(false);
   const [editingUpdate, setEditingUpdate] = useState<ProjectUpdate | null>(null);
-  const [filter, setFilter] = useState<'all' | 'milestones' | 'exclusive'>('all');
+  const [filter, setFilter] = useState<'all' | 'deliveries' | 'exclusive'>('all');
 
   const isOwner = user?.id === projectOwnerId;
 
@@ -168,7 +169,7 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, onLoginRequire
 
   const filteredUpdates = updates.filter(update => {
     if (filter === 'exclusive') return update.is_exclusive;
-    // For milestones, we could add a category field in the future
+    if (filter === 'deliveries') return !update.is_exclusive; // Public updates are "deliveries"
     return true;
   });
 
@@ -180,10 +181,8 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, onLoginRequire
     return false;
   });
 
-  const handleExportPDF = () => {
-    // PDF export functionality will be implemented
-    console.log('Export PDF');
-  };
+  // Check if project is active for support button
+  const isProjectActive = projectStatus === 'approved';
 
   if (loading) {
     return (
@@ -199,89 +198,96 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, onLoginRequire
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Newspaper className="w-5 h-5" />
-            Novidades do Projeto
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {isOwner && (
-              <Button
-                onClick={() => setShowForm(true)}
-                size="sm"
-                className="bg-raiz-primary hover:bg-raiz-primary/90"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Publicar Novidade
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportPDF}
-              title="Exportar Timeline em PDF"
-            >
-              <FileDown className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <Newspaper className="w-5 h-5" />
+          Novidades do Projeto
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* View Toggle */}
-        <div className="flex items-center justify-between">
+        {/* AÇÕES PRIMÁRIAS - Linha superior com maior destaque */}
+        {isOwner && (
+          <div className="pb-4 border-b">
+            <Button
+              onClick={() => setShowForm(true)}
+              className="bg-raiz-primary hover:bg-raiz-primary/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Publicar Novidade
+            </Button>
+          </div>
+        )}
+
+        {/* MODO DE VISUALIZAÇÃO - Linha secundária */}
+        <div className="flex items-center justify-between pb-3 border-b">
+          <span className="text-sm text-muted-foreground font-medium">Visualização:</span>
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'timeline')}>
-            <TabsList>
-              <TabsTrigger value="list" className="flex items-center gap-1">
+            <TabsList className="h-9">
+              <TabsTrigger value="list" className="flex items-center gap-1.5 px-3">
                 <List className="w-4 h-4" />
                 Lista
               </TabsTrigger>
-              <TabsTrigger value="timeline" className="flex items-center gap-1">
+              <TabsTrigger value="timeline" className="flex items-center gap-1.5 px-3">
                 <GitBranch className="w-4 h-4" />
                 Timeline
               </TabsTrigger>
             </TabsList>
           </Tabs>
+        </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('all')}
-            >
-              Todas
-            </Button>
-            <Button
-              variant={filter === 'milestones' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('milestones')}
-            >
-              Marcos
-            </Button>
-            {(isOwner || isSupporter) && (
-              <Button
-                variant={filter === 'exclusive' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilter('exclusive')}
-              >
-                <Lock className="w-3 h-3 mr-1" />
-                Exclusivas
-              </Button>
-            )}
-          </div>
+        {/* FILTROS DE CONTEÚDO - Linha abaixo, estilo abas */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant={filter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('all')}
+          >
+            Todas
+          </Button>
+          <Button
+            variant={filter === 'deliveries' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('deliveries')}
+          >
+            Entregas
+          </Button>
+          <Button
+            variant={filter === 'exclusive' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('exclusive')}
+          >
+            <Users className="w-3 h-3 mr-1.5" />
+            Para Apoiadores
+          </Button>
         </div>
 
         {/* Content */}
-        {visibleUpdates.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Nenhuma novidade publicada ainda.</p>
-            {isOwner && (
-              <p className="text-sm mt-1">
-                Clique em "Publicar Novidade" para compartilhar atualizações com seus apoiadores.
-              </p>
+        {updates.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Newspaper className="w-16 h-16 mx-auto mb-4 opacity-40" />
+            {isOwner ? (
+              <>
+                <p className="text-lg font-medium mb-2">Nenhuma novidade publicada ainda</p>
+                <p className="text-sm mb-6 max-w-md mx-auto">
+                  Mantenha seus apoiadores informados sobre o progresso do projeto publicando atualizações regulares.
+                </p>
+                <Button
+                  onClick={() => setShowForm(true)}
+                  size="lg"
+                  className="bg-raiz-primary hover:bg-raiz-primary/90"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Publicar primeira novidade
+                </Button>
+              </>
+            ) : (
+              <p className="text-base">Este projeto ainda não publicou nenhuma novidade.</p>
             )}
+          </div>
+        ) : visibleUpdates.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Lock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Nenhuma novidade encontrada com este filtro.</p>
           </div>
         ) : viewMode === 'list' ? (
           <div className="space-y-4">
@@ -294,6 +300,7 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, onLoginRequire
                   update={update}
                   isOwner={isOwner}
                   isLocked={isLocked}
+                  isProjectActive={isProjectActive}
                   onEdit={() => handleEdit(update)}
                   onDelete={() => handleDelete(update.id)}
                   onReact={fetchUpdates}
