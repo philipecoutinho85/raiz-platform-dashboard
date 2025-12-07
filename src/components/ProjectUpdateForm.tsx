@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ImagePlus, X, Lock, Globe, Loader2 } from 'lucide-react';
+import { ImagePlus, X, Lock, Globe, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { sanitizeTitle, sanitizeUserContent, containsExternalLinks } from '@/lib/sanitize';
 
 interface ProjectUpdate {
   id: string;
@@ -40,6 +41,9 @@ const ProjectUpdateForm = ({ projectId, existingUpdate, onSuccess, onCancel }: P
   const [existingImages, setExistingImages] = useState(existingUpdate?.images || []);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Detecta links externos no conteúdo
+  const hasExternalLinks = containsExternalLinks(content) || containsExternalLinks(title);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -88,6 +92,10 @@ const ProjectUpdateForm = ({ projectId, existingUpdate, onSuccess, onCancel }: P
       return;
     }
 
+    // Sanitiza conteúdo antes de salvar
+    const sanitizedTitle = sanitizeTitle(title);
+    const sanitizedContent = sanitizeUserContent(content);
+
     setIsSubmitting(true);
 
     try {
@@ -98,8 +106,8 @@ const ProjectUpdateForm = ({ projectId, existingUpdate, onSuccess, onCancel }: P
         const { error } = await supabase
           .from('project_updates')
           .update({
-            title: title.trim(),
-            content: content.trim(),
+            title: sanitizedTitle,
+            content: sanitizedContent,
             is_exclusive: isExclusive,
             updated_at: new Date().toISOString(),
           })
@@ -113,8 +121,8 @@ const ProjectUpdateForm = ({ projectId, existingUpdate, onSuccess, onCancel }: P
           .insert({
             project_id: projectId,
             user_id: user.id,
-            title: title.trim(),
-            content: content.trim(),
+            title: sanitizedTitle,
+            content: sanitizedContent,
             is_exclusive: isExclusive,
           })
           .select('id')
@@ -188,6 +196,19 @@ const ProjectUpdateForm = ({ projectId, existingUpdate, onSuccess, onCancel }: P
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Aviso de links externos */}
+      {hasExternalLinks && (
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium text-amber-800 dark:text-amber-200">Links detectados</p>
+            <p className="text-amber-700 dark:text-amber-300">
+              Por segurança, links externos não são clicáveis na plataforma. URLs digitadas aparecerão como texto comum.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="title">Título *</Label>

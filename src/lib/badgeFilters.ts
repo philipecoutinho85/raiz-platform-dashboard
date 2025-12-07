@@ -16,6 +16,7 @@ export interface BadgeData {
 /**
  * Badges essenciais para exibir na página do projeto
  * Focado em badges de credibilidade e impacto
+ * NOTA: Badge "Confiável" é exibida quando RaizScore >= 3 (lógica separada)
  */
 export const PROJECT_ESSENTIAL_BADGES = [
   'verified',             // Verificado pela Raiz Token
@@ -23,6 +24,14 @@ export const PROJECT_ESSENTIAL_BADGES = [
   'experienced',         // Criador Experiente
   'social_impact',       // Impacto Social (apenas projetos sociais)
   'environmental_impact' // Impacto Ambiental (apenas projetos ambientais)
+];
+
+// Badges removidas do projeto (não exibir)
+export const REMOVED_PROJECT_BADGES = [
+  'community_impact',    // Impacto Comunitário - removido
+  'active_communication', // Comunicação Ativa - removido
+  'promising_seed',      // Semente Promissora - removido
+  'beta_founder'         // Beta Founder - removido
 ];
 
 /**

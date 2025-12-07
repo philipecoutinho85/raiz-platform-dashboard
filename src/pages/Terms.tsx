@@ -18,7 +18,7 @@ const Terms = () => {
             <span className="text-raiz-gold"> Uso</span>
           </h1>
           <p className="text-xl text-raiz-light/80 max-w-3xl mx-auto mb-8">
-            Versão simplificada para MVP. Ao usar a plataforma Raiz Token, você concorda com os seguintes termos.
+            Ao usar a plataforma Raiz Token, você concorda com os seguintes termos e condições.
           </p>
         </div>
 
