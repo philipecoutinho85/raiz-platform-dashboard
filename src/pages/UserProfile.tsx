@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Camera, MapPin, Coins, Lock, AlertCircle } from 'lucide-react';
+import { User, Camera, MapPin, Coins, Lock, AlertCircle, MessageCircle } from 'lucide-react';
 import TokenPurchase from '@/components/TokenPurchase';
 import Footer from '@/components/Footer';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import SupportCenter from '@/components/support/SupportCenter';
 
 interface ProfileFormData {
   nome: string;
@@ -35,6 +37,7 @@ interface ProfileFormData {
 const UserProfile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
@@ -44,6 +47,8 @@ const UserProfile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isCpfLocked, setIsCpfLocked] = useState(false);
+  
+  const initialTab = searchParams.get('tab') || 'personal';
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileFormData>();
 
@@ -247,12 +252,16 @@ const UserProfile = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="personal" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue={initialTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
             <TabsTrigger value="address">Endereço</TabsTrigger>
             <TabsTrigger value="security">Segurança</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            <TabsTrigger value="support" className="flex items-center gap-1">
+              <MessageCircle className="h-4 w-4" />
+              Suporte
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal">
@@ -553,6 +562,20 @@ const UserProfile = () => {
 
           <TabsContent value="tokens">
             <TokenPurchase />
+          </TabsContent>
+
+          <TabsContent value="support">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <MessageCircle className="w-5 h-5" />
+                  <span>Suporte</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SupportCenter />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

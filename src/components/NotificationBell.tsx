@@ -26,6 +26,20 @@ const NotificationBell = () => {
     if (notification.related_id) {
       if (notification.type === 'token_purchase') {
         navigate('/carteira');
+      } else if (notification.type === 'support_message' || notification.type === 'support_reply') {
+        // Mensagem de suporte
+        const { data: userRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user?.id)
+          .eq('role', 'admin')
+          .single();
+        
+        if (userRole) {
+          navigate('/admin?tab=support');
+        } else {
+          navigate('/perfil?tab=support');
+        }
       } else if (notification.type === 'withdrawal_correction' || notification.type === 'withdrawal_message') {
         // Verificar se é admin
         const { data: userRole } = await supabase

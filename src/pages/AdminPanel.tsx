@@ -17,6 +17,7 @@ import ExpiredProjectsTab from '@/components/admin/ExpiredProjectsTab';
 import AdminTestPanel from '@/components/admin/AdminTestPanel';
 import { WithdrawalsTab } from '@/components/admin/WithdrawalsTab';
 import { ReportsManagement } from '@/components/admin/ReportsManagement';
+import SupportTab from '@/components/admin/SupportTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -139,6 +140,7 @@ const AdminPanel = () => {
                   <SelectItem value="refunds">🔄 Reembolsos</SelectItem>
                   <SelectItem value="withdrawals">💵 Resgates</SelectItem>
                   <SelectItem value="expired">⏱️ Proj. Expirados</SelectItem>
+                  <SelectItem value="support">💬 Suporte</SelectItem>
                   <SelectItem value="logs">📋 Logs</SelectItem>
                   <SelectItem value="tests">🧪 Testes</SelectItem>
                   <SelectItem value="settings">⚙️ Configurações</SelectItem>
@@ -195,6 +197,10 @@ const AdminPanel = () => {
 
           <TabsContent value="expired">
             <ExpiredProjectsTab />
+          </TabsContent>
+
+          <TabsContent value="support">
+            <SupportTab />
           </TabsContent>
 
           <TabsContent value="logs">
