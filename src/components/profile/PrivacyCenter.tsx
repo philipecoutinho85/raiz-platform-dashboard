@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Download, Settings, Trash2, Shield, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Download, Settings, Trash2, Shield, Loader2, CheckCircle2, AlertTriangle, FileJson, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -172,7 +172,23 @@ const PrivacyCenter = () => {
         } : null,
       };
 
-      // Criar e baixar arquivo JSON
+      return exportData;
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível exportar os dados.',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+
+  const downloadAsJSON = async () => {
+    setDownloading(true);
+    try {
+      const exportData = await downloadMyData();
+      if (!exportData) return;
+
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -185,13 +201,64 @@ const PrivacyCenter = () => {
 
       toast({
         title: 'Download iniciado',
-        description: 'Seus dados foram exportados com sucesso.',
+        description: 'Seus dados foram exportados em formato JSON.',
       });
-    } catch (error) {
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const downloadAsCSV = async () => {
+    setDownloading(true);
+    try {
+      const exportData = await downloadMyData();
+      if (!exportData) return;
+
+      // Criar CSV com dados do perfil
+      let csvContent = 'DADOS PESSOAIS\n';
+      csvContent += 'Campo,Valor\n';
+      if (exportData.profile) {
+        Object.entries(exportData.profile).forEach(([key, value]) => {
+          csvContent += `"${key}","${value || ''}"\n`;
+        });
+      }
+
+      // Projetos criados
+      csvContent += '\nPROJETOS CRIADOS\n';
+      csvContent += 'Título,Categoria,Status,Meta,Arrecadado,Data de Criação\n';
+      exportData.projectsCreated.forEach((p: any) => {
+        csvContent += `"${p.title}","${p.category}","${p.status}","${p.goal}","${p.raised_amount}","${p.created_at}"\n`;
+      });
+
+      // Projetos apoiados
+      csvContent += '\nPROJETOS APOIADOS\n';
+      csvContent += 'Projeto,Valor,Data,Status\n';
+      exportData.projectsSupported.forEach((p: any) => {
+        csvContent += `"${p.project || ''}","${p.amount}","${p.date}","${p.status}"\n`;
+      });
+
+      // Consentimentos
+      csvContent += '\nPREFERÊNCIAS DE CONSENTIMENTO\n';
+      csvContent += 'Preferência,Valor\n';
+      if (exportData.consentPreferences) {
+        Object.entries(exportData.consentPreferences).forEach(([key, value]) => {
+          csvContent += `"${key}","${value}"\n`;
+        });
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `meus-dados-raiztoken-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
       toast({
-        title: 'Erro',
-        description: 'Não foi possível exportar os dados.',
-        variant: 'destructive',
+        title: 'Download iniciado',
+        description: 'Seus dados foram exportados em formato CSV.',
       });
     } finally {
       setDownloading(false);
@@ -300,19 +367,34 @@ const PrivacyCenter = () => {
           <p className="text-sm text-muted-foreground mb-4">
             O arquivo incluirá seus dados cadastrais, projetos criados, projetos apoiados e preferências de consentimento.
           </p>
-          <Button onClick={downloadMyData} disabled={downloading}>
-            {downloading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Preparando...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                Baixar meus dados
-              </>
-            )}
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={downloadAsJSON} disabled={downloading} variant="outline">
+              {downloading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Preparando...
+                </>
+              ) : (
+                <>
+                  <FileJson className="w-4 h-4 mr-2" />
+                  Baixar JSON
+                </>
+              )}
+            </Button>
+            <Button onClick={downloadAsCSV} disabled={downloading} variant="outline">
+              {downloading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Preparando...
+                </>
+              ) : (
+                <>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Baixar CSV
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
