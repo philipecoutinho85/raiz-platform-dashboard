@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FinancialFilters } from '@/hooks/useAdvancedFinancialData';
+import { Button } from '@/components/ui/button';
+import { FinancialFilters, useAdvancedFinancialData } from '@/hooks/useAdvancedFinancialData';
 import { FinancialOverview } from './dashboard/FinancialOverview';
 import { FinancialFiltersBar } from './dashboard/FinancialFiltersBar';
 import { TokensCharts } from './dashboard/TokensCharts';
@@ -14,6 +15,10 @@ import { CategoryPerformance } from './dashboard/CategoryPerformance';
 import { InactiveTokensView } from './dashboard/InactiveTokensView';
 import { ProfitCalculator } from './dashboard/ProfitCalculator';
 import { FinancialTables } from './dashboard/FinancialTables';
+import { PeriodComparisonCharts } from './dashboard/PeriodComparisonCharts';
+import { FinancialAlerts } from './FinancialAlerts';
+import { generateFinancialReportPDF } from '@/lib/pdfExport';
+import { toast } from 'sonner';
 import { 
   LayoutDashboard, 
   TrendingUp, 
@@ -21,7 +26,10 @@ import {
   PieChart, 
   Users,
   Calculator,
-  Table
+  Table,
+  FileDown,
+  Bell,
+  GitCompare
 } from 'lucide-react';
 
 export const FinancialDashboard = () => {
@@ -37,22 +45,64 @@ export const FinancialDashboard = () => {
     city: '',
   });
 
+  const {
+    loading,
+    monthlyMetrics,
+    tokenMetrics,
+    withdrawalMetrics,
+    projectMetrics,
+    categoryMetrics,
+    yearlyMetrics,
+  } = useAdvancedFinancialData(filters);
+
+  const handleExportPDF = () => {
+    try {
+      generateFinancialReportPDF({
+        period: {
+          month: filters.month,
+          year: filters.year,
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+        },
+        monthlyMetrics,
+        tokenMetrics,
+        withdrawalMetrics,
+        projectMetrics,
+        categoryMetrics,
+        yearlyMetrics,
+      });
+      toast.success('Relatório PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Erro ao gerar relatório PDF');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Financeiro</h1>
-        <p className="text-muted-foreground">
-          Visão completa da operação financeira da plataforma Raiz Token
-        </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard Financeiro</h1>
+          <p className="text-muted-foreground">
+            Visão completa da operação financeira da plataforma Raiz Token
+          </p>
+        </div>
+        <Button onClick={handleExportPDF} disabled={loading} className="gap-2">
+          <FileDown className="h-4 w-4" />
+          Exportar PDF
+        </Button>
       </div>
+
+      {/* Alerts */}
+      <FinancialAlerts />
 
       {/* Filters */}
       <FinancialFiltersBar filters={filters} onFiltersChange={setFilters} />
 
       {/* Main Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 h-auto gap-2">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-9 h-auto gap-2">
           <TabsTrigger value="overview" className="flex items-center gap-2 py-3">
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:inline">Visão Geral</span>
@@ -60,6 +110,10 @@ export const FinancialDashboard = () => {
           <TabsTrigger value="charts" className="flex items-center gap-2 py-3">
             <TrendingUp className="h-4 w-4" />
             <span className="hidden sm:inline">Gráficos</span>
+          </TabsTrigger>
+          <TabsTrigger value="comparison" className="flex items-center gap-2 py-3">
+            <GitCompare className="h-4 w-4" />
+            <span className="hidden sm:inline">Comparação</span>
           </TabsTrigger>
           <TabsTrigger value="forecast" className="flex items-center gap-2 py-3">
             <Calendar className="h-4 w-4" />
@@ -76,6 +130,10 @@ export const FinancialDashboard = () => {
           <TabsTrigger value="profit" className="flex items-center gap-2 py-3">
             <Calculator className="h-4 w-4" />
             <span className="hidden sm:inline">Lucro</span>
+          </TabsTrigger>
+          <TabsTrigger value="alerts" className="flex items-center gap-2 py-3">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Alertas</span>
           </TabsTrigger>
           <TabsTrigger value="tables" className="flex items-center gap-2 py-3">
             <Table className="h-4 w-4" />
@@ -100,6 +158,10 @@ export const FinancialDashboard = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="comparison" className="space-y-6">
+          <PeriodComparisonCharts filters={filters} />
+        </TabsContent>
+
         <TabsContent value="forecast" className="space-y-6">
           <MonthlyForecastView filters={filters} />
         </TabsContent>
@@ -114,6 +176,10 @@ export const FinancialDashboard = () => {
 
         <TabsContent value="profit" className="space-y-6">
           <ProfitCalculator filters={filters} />
+        </TabsContent>
+
+        <TabsContent value="alerts" className="space-y-6">
+          <FinancialAlerts />
         </TabsContent>
 
         <TabsContent value="tables" className="space-y-6">
