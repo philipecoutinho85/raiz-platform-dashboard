@@ -488,6 +488,7 @@ const ProjectDetail = () => {
               projectId={project.id}
               projectOwnerId={project.user_id}
               isSupporter={isSupporter}
+              projectStatus={project.status}
               onLoginRequired={() => setShowLoginModal(true)}
             />
 

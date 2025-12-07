@@ -1,4 +1,4 @@
-import { Lock, Calendar, CheckCircle, Circle, Sparkles } from 'lucide-react';
+import { Lock, Calendar, Circle, Users, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatToBrasilia } from '@/lib/dateUtils';
 
@@ -40,7 +40,7 @@ const ProjectTimeline = ({ updates, isOwner, isSupporter, onUpdateClick }: Proje
     const progress = (total - index - 1) / Math.max(total - 1, 1);
     if (progress < 0.33) return 'bg-green-500';
     if (progress < 0.66) return 'bg-raiz-primary';
-    return 'bg-raiz-gold';
+    return 'bg-amber-500';
   };
 
   const getReactionTotal = (update: ProjectUpdate) => {
@@ -109,11 +109,11 @@ const ProjectTimeline = ({ updates, isOwner, isSupporter, onUpdateClick }: Proje
                     </p>
 
                     {/* Footer */}
-                    <div className="flex items-center gap-2 mt-3">
+                    <div className="flex items-center gap-2 mt-3 flex-wrap">
                       {update.is_exclusive && (
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
-                          <Lock className="w-2.5 h-2.5 mr-1" />
-                          Exclusivo
+                          <Users className="w-2.5 h-2.5 mr-1" />
+                          Para Apoiadores
                         </Badge>
                       )}
                       {update.images.length > 0 && (
@@ -123,8 +123,7 @@ const ProjectTimeline = ({ updates, isOwner, isSupporter, onUpdateClick }: Proje
                       )}
                       {reactionCount > 0 && (
                         <Badge variant="secondary" className="text-xs">
-                          <Sparkles className="w-2.5 h-2.5 mr-1" />
-                          {reactionCount} {reactionCount === 1 ? 'reação' : 'reações'}
+                          ❤️ {reactionCount} {reactionCount === 1 ? 'reação' : 'reações'}
                         </Badge>
                       )}
                     </div>
@@ -138,10 +137,10 @@ const ProjectTimeline = ({ updates, isOwner, isSupporter, onUpdateClick }: Proje
 
       {/* Legend */}
       <div className="mt-8 pt-4 border-t">
-        <p className="text-xs text-muted-foreground mb-3">Legenda da linha do tempo:</p>
+        <p className="text-xs text-muted-foreground mb-3 font-medium">Legenda:</p>
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-raiz-gold" />
+            <div className="w-3 h-3 rounded-full bg-amber-500" />
             <span className="text-muted-foreground">Início</span>
           </div>
           <div className="flex items-center gap-2">
@@ -153,8 +152,8 @@ const ProjectTimeline = ({ updates, isOwner, isSupporter, onUpdateClick }: Proje
             <span className="text-muted-foreground">Recente</span>
           </div>
           <div className="flex items-center gap-2">
-            <Lock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-muted-foreground">Conteúdo exclusivo</span>
+            <Users className="w-3 h-3 text-muted-foreground" />
+            <span className="text-muted-foreground">Para Apoiadores</span>
           </div>
         </div>
       </div>

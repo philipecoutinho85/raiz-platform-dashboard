@@ -277,7 +277,7 @@ const ProjectUpdateForm = ({ projectId, existingUpdate, onSuccess, onCancel }: P
           )}
           <div>
             <p className="font-medium">
-              {isExclusive ? 'Exclusivo para Apoiadores' : 'Público'}
+              {isExclusive ? 'Para Apoiadores' : 'Pública'}
             </p>
             <p className="text-sm text-muted-foreground">
               {isExclusive 
