@@ -16,6 +16,7 @@ import Footer from '@/components/Footer';
 import TokenSimulator from '@/components/TokenSimulator';
 import { useTokens } from '@/hooks/useTokens';
 import { toZonedTime } from 'date-fns-tz';
+import CreatorDataProtectionNotice from '@/components/forms/CreatorDataProtectionNotice';
 
 interface ProjectFormData {
   title: string;
@@ -787,6 +788,9 @@ const CreateProject = () => {
                   </div>
                 </div>
               </div>
+
+              {/* LGPD Data Protection Notice */}
+              <CreatorDataProtectionNotice />
 
               <div className="flex justify-end space-x-4">
                 <Button type="button" variant="outline" onClick={() => navigate('/meus-projetos')}>

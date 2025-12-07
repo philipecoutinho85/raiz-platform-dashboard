@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import LGPDConsentCheckbox from '@/components/checkout/LGPDConsentCheckbox';
 
 const CheckoutPayment = () => {
   const [searchParams] = useSearchParams();
@@ -34,6 +35,7 @@ const CheckoutPayment = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [boletoUrl, setBoletoUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [lgpdConsent, setLgpdConsent] = useState(false);
 
   useEffect(() => {
     if (!purchaseId) {
@@ -350,6 +352,18 @@ const CheckoutPayment = () => {
                   <li>Guarde o comprovante de pagamento</li>
                 </ul>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* LGPD Consent - exibir apenas para pagamentos pendentes */}
+        {isPending && (
+          <Card className="mt-6 bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+            <CardContent className="pt-6">
+              <LGPDConsentCheckbox 
+                checked={lgpdConsent} 
+                onCheckedChange={setLgpdConsent} 
+              />
             </CardContent>
           </Card>
         )}
