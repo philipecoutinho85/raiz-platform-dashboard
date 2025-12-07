@@ -31,6 +31,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { useToast } from '@/hooks/use-toast';
+import { sanitizeUserContent, sanitizeTitle } from '@/lib/sanitize';
 
 interface UpdateImage {
   id: string;
@@ -250,12 +251,12 @@ const ProjectUpdateCard = ({
             </div>
           </div>
 
-          {/* Título */}
-          <h3 className="text-lg font-semibold mb-3">{update.title}</h3>
+          {/* Título - sanitizado */}
+          <h3 className="text-lg font-semibold mb-3">{sanitizeTitle(update.title)}</h3>
 
-          {/* Conteúdo */}
+          {/* Conteúdo - sanitizado, links aparecem como texto */}
           <p className="text-muted-foreground whitespace-pre-wrap mb-4 leading-relaxed">
-            {update.content}
+            {sanitizeUserContent(update.content)}
           </p>
 
           {/* Grid de imagens responsivo */}
