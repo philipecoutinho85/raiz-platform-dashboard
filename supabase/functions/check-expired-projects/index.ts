@@ -31,7 +31,7 @@ serve(async (req) => {
     // Buscar projetos aprovados que venceram (excluindo os já cancelados)
     const { data: allProjects, error: projectsError } = await supabase
       .from('projects')
-      .select('id, title, user_id, goal, raised_amount, deadline, status')
+      .select('id, title, user_id, goal, custom_goal, raised_amount, deadline, status')
       .eq('status', 'approved')
       .lt('deadline', brasiliaISO);
 
@@ -40,12 +40,16 @@ serve(async (req) => {
       throw projectsError;
     }
 
-    // Filtrar projetos que não atingiram a meta (comparação em JS)
+    // Filtrar projetos que não atingiram a meta (usando meta efetiva: custom_goal ou goal)
+    // IMPORTANTE: Projetos que atingiram 100% da meta NÃO podem ter reembolso
     const expiredProjects = (allProjects || []).filter(p => {
       const raised = Number(p.raised_amount) || 0;
-      const goal = Number(p.goal) || 0;
-      // Apenas projetos aprovados e que não atingiram a meta
-      return p.status === 'approved' && raised < goal;
+      // Usar custom_goal se definido, senão goal
+      const effectiveGoal = Number(p.custom_goal ?? p.goal) || 0;
+      // Apenas projetos aprovados que NÃO atingiram a meta podem ter reembolso
+      const reachedGoal = effectiveGoal > 0 && raised >= effectiveGoal;
+      console.log(`[Check Expired Projects] Project ${p.id}: raised=${raised}, effectiveGoal=${effectiveGoal}, reachedGoal=${reachedGoal}`);
+      return p.status === 'approved' && !reachedGoal;
     });
 
     console.log(`[Check Expired Projects] Found ${expiredProjects.length} expired projects without reaching goal`);
@@ -196,14 +200,15 @@ serve(async (req) => {
         })
         .eq('id', project.id);
 
-      // Notificar o criador do projeto
+      // Notificar o criador do projeto (usar meta efetiva)
+      const effectiveGoal = project.custom_goal ?? project.goal;
       await supabase
         .from('notifications')
         .insert({
           user_id: project.user_id,
           type: 'project_expired',
           title: 'Projeto Não Atingiu a Meta',
-          message: `Seu projeto "${project.title}" não atingiu a meta de ${project.goal} tokens dentro do prazo estabelecido. Todos os tokens dos apoiadores foram devolvidos automaticamente. Você pode criar um novo projeto com ajustes na estratégia.`,
+          message: `Seu projeto "${project.title}" não atingiu a meta de ${effectiveGoal} tokens dentro do prazo estabelecido. Todos os tokens dos apoiadores foram devolvidos automaticamente. Você pode criar um novo projeto com ajustes na estratégia.`,
           related_id: project.id
         });
 
