@@ -207,35 +207,66 @@ const Privacy = () => {
             </CardContent>
           </Card>
 
+          {/* Dados do Controlador */}
+          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+            <CardHeader>
+              <CardTitle className="text-xl text-raiz-gold">Dados do Controlador</CardTitle>
+            </CardHeader>
+            <CardContent className="text-raiz-light/80 space-y-2">
+              <p><strong>Razão Social:</strong> Raiz Token Tecnologia LTDA</p>
+              <p><strong>CNPJ:</strong> 32.351.662/0001-00</p>
+              <p><strong>Endereço:</strong> Rua General Castrioto, 500, Barreto, Niterói-RJ</p>
+              <p><strong>E-mail:</strong> contato@raiztoken.com.br</p>
+            </CardContent>
+          </Card>
+
+          {/* DPO */}
+          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+            <CardHeader>
+              <CardTitle className="text-xl text-raiz-gold">Encarregado de Dados (DPO)</CardTitle>
+            </CardHeader>
+            <CardContent className="text-raiz-light/80">
+              <p>A ser oficialmente nomeado. Até sua nomeação, utilize o e-mail <span className="text-raiz-gold">contato@raiztoken.com.br</span> para solicitações relacionadas à privacidade.</p>
+            </CardContent>
+          </Card>
+
+          {/* Histórico de Alterações */}
+          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+            <CardHeader>
+              <CardTitle className="text-xl text-raiz-gold">Histórico de Alterações</CardTitle>
+            </CardHeader>
+            <CardContent className="text-raiz-light/80">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-raiz-accent/20">
+                    <th className="text-left py-2 text-raiz-light">Data</th>
+                    <th className="text-left py-2 text-raiz-light">Descrição</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td className="py-2">07/12/2025</td><td className="py-2">Versão inicial publicada</td></tr>
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Políticas Específicas */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-raiz-light mb-6">
-            Políticas Específicas
-          </h2>
-          <p className="text-xl text-raiz-light/80 mb-8">
-            Confira as políticas de privacidade específicas para cada tipo de usuário
-          </p>
+          <h2 className="text-3xl font-bold text-raiz-light mb-6">Políticas Específicas</h2>
+          <p className="text-xl text-raiz-light/80 mb-8">Confira as políticas de privacidade específicas para cada tipo de usuário</p>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <Link to="/privacidade-apoiadores">
               <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20 hover:border-raiz-gold/50 transition-all cursor-pointer h-full">
-                <CardHeader>
-                  <CardTitle className="text-raiz-gold">Para Apoiadores</CardTitle>
-                </CardHeader>
-                <CardContent className="text-raiz-light/80">
-                  <p>Política de privacidade específica para quem apoia projetos na plataforma</p>
-                </CardContent>
+                <CardHeader><CardTitle className="text-raiz-gold">Para Apoiadores</CardTitle></CardHeader>
+                <CardContent className="text-raiz-light/80"><p>Política de privacidade específica para quem apoia projetos</p></CardContent>
               </Card>
             </Link>
             <Link to="/privacidade-criadores">
               <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20 hover:border-raiz-gold/50 transition-all cursor-pointer h-full">
-                <CardHeader>
-                  <CardTitle className="text-raiz-gold">Para Criadores</CardTitle>
-                </CardHeader>
-                <CardContent className="text-raiz-light/80">
-                  <p>Política de privacidade específica para quem cria e gerencia projetos</p>
-                </CardContent>
+                <CardHeader><CardTitle className="text-raiz-gold">Para Criadores</CardTitle></CardHeader>
+                <CardContent className="text-raiz-light/80"><p>Política de privacidade específica para quem cria projetos</p></CardContent>
               </Card>
             </Link>
           </div>
@@ -243,23 +274,11 @@ const Privacy = () => {
 
         {/* Contact CTA */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-raiz-light mb-6">
-            Transparência Total
-          </h2>
-          <p className="text-xl text-raiz-light/80 mb-8">
-            Sua privacidade é nossa prioridade. Qualquer dúvida, estamos à disposição para esclarecer.
-          </p>
+          <h2 className="text-3xl font-bold text-raiz-light mb-6">Transparência Total</h2>
+          <p className="text-xl text-raiz-light/80 mb-8">Sua privacidade é nossa prioridade.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/security">
-              <Button size="lg" className="bg-raiz-gold hover:bg-raiz-gold/90 text-black font-semibold px-8">
-                Segurança
-              </Button>
-            </Link>
-            <Link to="/terms">
-              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
-                Termos de Uso
-              </Button>
-            </Link>
+            <Link to="/security"><Button size="lg" className="bg-raiz-gold hover:bg-raiz-gold/90 text-black font-semibold px-8">Segurança</Button></Link>
+            <Link to="/terms"><Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">Termos de Uso</Button></Link>
           </div>
         </div>
       </div>

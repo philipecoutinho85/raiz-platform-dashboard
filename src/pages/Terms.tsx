@@ -143,6 +143,34 @@ const Terms = () => {
             </CardContent>
           </Card>
 
+          {/* Histórico de Alterações */}
+          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
+            <CardHeader>
+              <CardTitle className="text-xl text-raiz-gold">
+                Histórico de Alterações
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-raiz-light/80">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-raiz-accent/20">
+                    <th className="text-left py-2 text-raiz-light">Data</th>
+                    <th className="text-left py-2 text-raiz-light">Descrição</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-raiz-accent/10">
+                    <td className="py-2">07/12/2025</td>
+                    <td className="py-2">Versão inicial publicada</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-xs mt-4 text-raiz-light/60">
+                Futuras alterações serão adicionadas a esta tabela com a respectiva data e descrição.
+              </p>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Agreement Section */}
