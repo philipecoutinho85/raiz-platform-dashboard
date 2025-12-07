@@ -10,7 +10,7 @@ import ProjectsTab from '@/components/admin/ProjectsTab';
 import TokensTab from '@/components/admin/TokensTab';
 import TransactionsTab from '@/components/admin/TransactionsTab';
 import SettingsTab from '@/components/admin/SettingsTab';
-import { FinanceTab } from '@/components/admin/FinanceTab';
+import { FinancialDashboard } from '@/components/admin/financial/FinancialDashboard';
 import BadgesTab from '@/components/admin/BadgesTab';
 import RefundsTab from '@/components/admin/RefundsTab';
 import ExpiredProjectsTab from '@/components/admin/ExpiredProjectsTab';
@@ -174,7 +174,7 @@ const AdminPanel = () => {
           </TabsContent>
 
           <TabsContent value="finance">
-            <FinanceTab />
+            <FinancialDashboard />
           </TabsContent>
 
           <TabsContent value="tokens">
