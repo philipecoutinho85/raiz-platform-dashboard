@@ -7,9 +7,6 @@ import {
   Lock, 
   Edit, 
   Trash2, 
-  Heart, 
-  HandMetal,
-  Flame,
   MoreVertical,
   Calendar,
   Users
@@ -71,13 +68,13 @@ interface ProjectUpdateCardProps {
   onLoginRequired?: () => void;
 }
 
-type ReactionType = 'loved' | 'congrats' | 'inspiring' | 'full_support';
+type ReactionType = 'loved' | 'congrats' | 'inspiring';
 
-// NOVO SISTEMA DE REAÇÕES: ❤️ Apoio, 👏 Parabéns, 🔥 Incrível
-const REACTIONS: { type: ReactionType; emoji: string; label: string; color: string }[] = [
-  { type: 'loved', emoji: '❤️', label: 'Apoio', color: 'text-red-500 hover:bg-red-50' },
-  { type: 'congrats', emoji: '👏', label: 'Parabéns', color: 'text-amber-500 hover:bg-amber-50' },
-  { type: 'inspiring', emoji: '🔥', label: 'Incrível', color: 'text-orange-500 hover:bg-orange-50' },
+// Sistema de reações: ❤️ Apoio, 👏 Parabéns, 🔥 Incrível
+const REACTIONS: { type: ReactionType; emoji: string; label: string }[] = [
+  { type: 'loved', emoji: '❤️', label: 'Apoio' },
+  { type: 'congrats', emoji: '👏', label: 'Parabéns' },
+  { type: 'inspiring', emoji: '🔥', label: 'Incrível' },
 ];
 
 const ProjectUpdateCard = ({
@@ -96,7 +93,6 @@ const ProjectUpdateCard = ({
   const [isReacting, setIsReacting] = useState(false);
   const [profile, setProfile] = useState<{ nome: string; sobrenome: string; avatar_url?: string } | null>(null);
 
-  // Fetch creator profile
   useEffect(() => {
     const fetchProfile = async () => {
       const { data } = await supabase
@@ -109,7 +105,7 @@ const ProjectUpdateCard = ({
     fetchProfile();
   }, [update.user_id]);
 
-  const handleReaction = async (reactionType: 'loved' | 'congrats' | 'inspiring' | 'full_support') => {
+  const handleReaction = async (reactionType: ReactionType) => {
     if (!user) {
       onLoginRequired?.();
       return;
@@ -118,22 +114,19 @@ const ProjectUpdateCard = ({
     setIsReacting(true);
     try {
       if (update.user_reaction === reactionType) {
-        // Remove reaction
         await supabase
           .from('project_update_reactions')
           .delete()
           .eq('update_id', update.id)
           .eq('user_id', user.id);
       } else if (update.user_reaction) {
-        // Update reaction
         await supabase
           .from('project_update_reactions')
           .update({ reaction_type: reactionType })
           .eq('update_id', update.id)
           .eq('user_id', user.id);
       } else {
-        // Add reaction using raw insert to bypass type check for update_id
-        const { error } = await supabase
+        await supabase
           .from('project_update_reactions')
           .insert([{
             update_id: update.id,
@@ -160,28 +153,27 @@ const ProjectUpdateCard = ({
 
   const totalReactions = update.reactions.reduce((acc, r) => acc + r.count, 0);
 
+  // Card bloqueado para conteúdo exclusivo
   if (isLocked) {
     return (
       <Card className="border-dashed border-2 bg-muted/20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-muted/10 to-muted/30 backdrop-blur-[2px]" />
         <CardContent className="p-6 relative">
-          <div className="flex flex-col items-center text-center gap-4 py-4">
+          <div className="flex flex-col items-center text-center gap-4 py-6">
             <div className="p-4 rounded-full bg-muted/60">
               <Lock className="w-8 h-8 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground mb-1">
+              <h3 className="font-semibold text-foreground mb-2">
                 Conteúdo exclusivo para apoiadores
               </h3>
               <p className="text-sm text-muted-foreground max-w-sm">
-                Esta novidade está disponível apenas para quem apoiou este projeto.
+                Apoie este projeto para destravar esta atualização.
               </p>
             </div>
             {isProjectActive ? (
               <Button 
-                className="bg-raiz-primary hover:bg-raiz-primary/90 mt-2"
                 onClick={() => {
-                  // Scroll to support section or trigger support action
                   const supportSection = document.getElementById('support-section');
                   if (supportSection) {
                     supportSection.scrollIntoView({ behavior: 'smooth' });
@@ -192,9 +184,9 @@ const ProjectUpdateCard = ({
                 Apoiar para desbloquear
               </Button>
             ) : (
-              <Badge variant="secondary" className="mt-2">
-                Campanha encerrada
-              </Badge>
+              <p className="text-sm text-muted-foreground font-medium">
+                Esta campanha já foi encerrada.
+              </p>
             )}
           </div>
         </CardContent>
@@ -206,12 +198,12 @@ const ProjectUpdateCard = ({
     <>
       <Card className="hover:shadow-md transition-shadow">
         <CardContent className="p-6">
-          {/* Header */}
+          {/* Header com avatar, nome e data */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
                 <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="bg-raiz-primary text-white">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   {profile?.nome?.charAt(0)}{profile?.sobrenome?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
@@ -228,9 +220,9 @@ const ProjectUpdateCard = ({
             
             <div className="flex items-center gap-2">
               {update.is_exclusive && (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
                   <Lock className="w-3 h-3 mr-1" />
-                  Exclusivo
+                  Exclusivo para apoiadores
                 </Badge>
               )}
               {isOwner && (
@@ -258,73 +250,69 @@ const ProjectUpdateCard = ({
             </div>
           </div>
 
-          {/* Title */}
+          {/* Título */}
           <h3 className="text-lg font-semibold mb-3">{update.title}</h3>
 
-          {/* Content */}
-          <p className="text-muted-foreground whitespace-pre-wrap mb-4">
+          {/* Conteúdo */}
+          <p className="text-muted-foreground whitespace-pre-wrap mb-4 leading-relaxed">
             {update.content}
           </p>
 
-          {/* Images */}
+          {/* Grid de imagens responsivo */}
           {update.images.length > 0 && (
             <div className={`grid gap-2 mb-4 ${
               update.images.length === 1 ? 'grid-cols-1' :
               update.images.length === 2 ? 'grid-cols-2' :
-              update.images.length >= 3 ? 'grid-cols-3' : ''
+              'grid-cols-2 sm:grid-cols-3'
             }`}>
               {update.images.slice(0, 5).map((image) => (
                 <img
                   key={image.id}
                   src={image.image_url}
                   alt=""
-                  className="w-full h-40 object-cover rounded-lg"
+                  className="w-full h-40 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => window.open(image.image_url, '_blank')}
                 />
               ))}
             </div>
           )}
 
-          {/* Reactions - Novo sistema: ❤️ Apoio, 👏 Parabéns, 🔥 Incrível */}
-          <div className="flex items-center gap-2 pt-4 border-t flex-wrap">
+          {/* Sistema de reações: ❤️ Apoio, 👏 Parabéns, 🔥 Incrível */}
+          <div className="flex items-center gap-3 pt-4 border-t flex-wrap">
             {REACTIONS.map((reaction) => {
               const count = getReactionCount(reaction.type);
               const isSelected = update.user_reaction === reaction.type;
               
               return (
-                <Button
+                <button
                   key={reaction.type}
-                  variant={isSelected ? 'default' : 'ghost'}
-                  size="sm"
                   onClick={() => handleReaction(reaction.type)}
                   disabled={isReacting}
-                  className={`flex items-center gap-1.5 transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-sm ${
                     isSelected 
-                      ? 'bg-raiz-primary/10 text-raiz-primary border border-raiz-primary/30' 
-                      : `border border-transparent ${reaction.color}`
+                      ? 'bg-primary/10 ring-1 ring-primary/30' 
+                      : 'hover:bg-muted'
                   }`}
-                  title={reaction.label}
+                  title={user ? reaction.label : 'Faça login para reagir'}
                 >
-                  <span className="text-base">{reaction.emoji}</span>
-                  <span className="text-xs font-medium">{reaction.label}</span>
-                  {count > 0 && (
-                    <span className={`text-xs font-semibold ml-0.5 ${isSelected ? 'text-raiz-primary' : 'text-muted-foreground'}`}>
-                      {count}
-                    </span>
-                  )}
-                </Button>
+                  <span className="text-lg">{reaction.emoji}</span>
+                  <span className={`font-medium ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {count > 0 ? count : ''}
+                  </span>
+                </button>
               );
             })}
             
             {totalReactions > 0 && (
               <span className="text-sm text-muted-foreground ml-auto">
-                {totalReactions} {totalReactions === 1 ? 'pessoa reagiu' : 'pessoas reagiram'}
+                {totalReactions} {totalReactions === 1 ? 'reação' : 'reações'}
               </span>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Dialog de confirmação de exclusão */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

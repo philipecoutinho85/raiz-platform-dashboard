@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Newspaper, List, GitBranch, Plus, Lock, Users } from 'lucide-react';
+import { Newspaper, Plus, Lock, Users, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import ProjectUpdateCard from './ProjectUpdateCard';
 import ProjectUpdateForm from './ProjectUpdateForm';
-import ProjectTimeline from './ProjectTimeline';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ProjectUpdate {
@@ -36,10 +34,9 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
   const { user } = useAuth();
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
   const [showForm, setShowForm] = useState(false);
   const [editingUpdate, setEditingUpdate] = useState<ProjectUpdate | null>(null);
-  const [filter, setFilter] = useState<'all' | 'deliveries' | 'exclusive'>('all');
+  const [filter, setFilter] = useState<'deliveries' | 'exclusive'>('deliveries');
 
   const isOwner = user?.id === projectOwnerId;
 
@@ -47,7 +44,6 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
     try {
       setLoading(true);
       
-      // Fetch updates
       const { data: updatesData, error: updatesError } = await supabase
         .from('project_updates')
         .select('*')
@@ -56,30 +52,25 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
 
       if (updatesError) throw updatesError;
 
-      // Fetch images and reactions for each update
       const updatesWithDetails = await Promise.all(
         (updatesData || []).map(async (update) => {
-          // Fetch images
           const { data: images } = await supabase
             .from('project_update_images')
             .select('id, image_url, order_index')
             .eq('update_id', update.id)
             .order('order_index');
 
-          // Fetch reactions counts
           const { data: reactions } = await supabase
             .from('project_update_reactions')
             .select('reaction_type')
             .eq('update_id', update.id);
 
-          // Count reactions by type
           const reactionCounts: Record<string, number> = {};
           reactions?.forEach((r) => {
             const type = r.reaction_type as string;
             reactionCounts[type] = (reactionCounts[type] || 0) + 1;
           });
 
-          // Get user's reaction if logged in
           let userReaction = null;
           if (user) {
             const { data: userReactionData } = await supabase
@@ -115,7 +106,6 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
     fetchUpdates();
   }, [fetchUpdates]);
 
-  // Realtime subscription for reactions
   useEffect(() => {
     const channel = supabase
       .channel(`updates-reactions-${projectId}`)
@@ -167,29 +157,31 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
     fetchUpdates();
   };
 
+  // Filtrar: Entregas = públicas, Para Apoiadores = exclusivas
   const filteredUpdates = updates.filter(update => {
     if (filter === 'exclusive') return update.is_exclusive;
-    if (filter === 'deliveries') return !update.is_exclusive; // Public updates are "deliveries"
+    if (filter === 'deliveries') return !update.is_exclusive;
     return true;
   });
 
-  // Filter updates based on visibility
-  const visibleUpdates = filteredUpdates.filter(update => {
-    if (!update.is_exclusive) return true;
-    if (isOwner) return true;
-    if (isSupporter) return true;
-    return false;
+  // Verificar visibilidade (conteúdo exclusivo)
+  const visibleUpdates = filteredUpdates.map(update => {
+    const isLocked = update.is_exclusive && !isOwner && !isSupporter;
+    return { ...update, isLocked };
   });
 
-  // Check if project is active for support button
   const isProjectActive = projectStatus === 'approved';
+
+  // Contar novidades por tipo
+  const deliveriesCount = updates.filter(u => !u.is_exclusive).length;
+  const exclusiveCount = updates.filter(u => u.is_exclusive).length;
 
   if (loading) {
     return (
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-raiz-primary"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -199,18 +191,19 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
   return (
     <Card>
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2">
-          <Newspaper className="w-5 h-5" />
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <Newspaper className="w-5 h-5 text-primary" />
           Novidades do Projeto
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* AÇÕES PRIMÁRIAS - Linha superior com maior destaque */}
+      <CardContent className="space-y-6">
+        {/* AÇÃO PRIMÁRIA - Botão de publicar (apenas para criador) */}
         {isOwner && (
           <div className="pb-4 border-b">
             <Button
               onClick={() => setShowForm(true)}
-              className="bg-raiz-primary hover:bg-raiz-primary/90"
+              size="lg"
+              className="w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
               Publicar Novidade
@@ -218,70 +211,62 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
           </div>
         )}
 
-        {/* MODO DE VISUALIZAÇÃO - Linha secundária */}
-        <div className="flex items-center justify-between pb-3 border-b">
-          <span className="text-sm text-muted-foreground font-medium">Visualização:</span>
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'timeline')}>
-            <TabsList className="h-9">
-              <TabsTrigger value="list" className="flex items-center gap-1.5 px-3">
-                <List className="w-4 h-4" />
-                Lista
-              </TabsTrigger>
-              <TabsTrigger value="timeline" className="flex items-center gap-1.5 px-3">
-                <GitBranch className="w-4 h-4" />
-                Timeline
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* FILTROS DE CONTEÚDO - Linha abaixo, estilo abas */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('all')}
-          >
-            Todas
-          </Button>
+        {/* FILTROS - Apenas dois: Entregas e Para Apoiadores */}
+        <div className="flex items-center gap-2">
           <Button
             variant={filter === 'deliveries' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('deliveries')}
+            className="flex items-center gap-2"
           >
+            <Package className="w-4 h-4" />
             Entregas
+            {deliveriesCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-background/20">
+                {deliveriesCount}
+              </span>
+            )}
           </Button>
           <Button
             variant={filter === 'exclusive' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('exclusive')}
+            className="flex items-center gap-2"
           >
-            <Users className="w-3 h-3 mr-1.5" />
+            <Users className="w-4 h-4" />
             Para Apoiadores
+            {exclusiveCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-background/20">
+                {exclusiveCount}
+              </span>
+            )}
           </Button>
         </div>
 
-        {/* Content */}
+        {/* CONTEÚDO */}
         {updates.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Newspaper className="w-16 h-16 mx-auto mb-4 opacity-40" />
             {isOwner ? (
               <>
-                <p className="text-lg font-medium mb-2">Nenhuma novidade publicada ainda</p>
+                <p className="text-lg font-medium mb-2">
+                  Você ainda não publicou nenhuma novidade.
+                </p>
                 <p className="text-sm mb-6 max-w-md mx-auto">
-                  Mantenha seus apoiadores informados sobre o progresso do projeto publicando atualizações regulares.
+                  Mantenha seus apoiadores informados sobre o andamento do projeto.
                 </p>
                 <Button
                   onClick={() => setShowForm(true)}
                   size="lg"
-                  className="bg-raiz-primary hover:bg-raiz-primary/90"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Publicar primeira novidade
                 </Button>
               </>
             ) : (
-              <p className="text-base">Este projeto ainda não publicou nenhuma novidade.</p>
+              <p className="text-base">
+                Este projeto ainda não publicou nenhuma novidade.
+              </p>
             )}
           </div>
         ) : visibleUpdates.length === 0 ? (
@@ -289,40 +274,26 @@ const ProjectUpdates = ({ projectId, projectOwnerId, isSupporter, projectStatus,
             <Lock className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>Nenhuma novidade encontrada com este filtro.</p>
           </div>
-        ) : viewMode === 'list' ? (
-          <div className="space-y-4">
-            {filteredUpdates.map((update) => {
-              const isLocked = update.is_exclusive && !isOwner && !isSupporter;
-              
-              return (
-                <ProjectUpdateCard
-                  key={update.id}
-                  update={update}
-                  isOwner={isOwner}
-                  isLocked={isLocked}
-                  isProjectActive={isProjectActive}
-                  onEdit={() => handleEdit(update)}
-                  onDelete={() => handleDelete(update.id)}
-                  onReact={fetchUpdates}
-                  onLoginRequired={onLoginRequired}
-                />
-              );
-            })}
-          </div>
         ) : (
-          <ProjectTimeline
-            updates={filteredUpdates}
-            isOwner={isOwner}
-            isSupporter={isSupporter}
-            onUpdateClick={(update) => {
-              // Could open a modal with full update details
-              console.log('Update clicked:', update);
-            }}
-          />
+          <div className="space-y-4">
+            {visibleUpdates.map((update) => (
+              <ProjectUpdateCard
+                key={update.id}
+                update={update}
+                isOwner={isOwner}
+                isLocked={update.isLocked}
+                isProjectActive={isProjectActive}
+                onEdit={() => handleEdit(update)}
+                onDelete={() => handleDelete(update.id)}
+                onReact={fetchUpdates}
+                onLoginRequired={onLoginRequired}
+              />
+            ))}
+          </div>
         )}
       </CardContent>
 
-      {/* Form Dialog */}
+      {/* Modal de Formulário */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
