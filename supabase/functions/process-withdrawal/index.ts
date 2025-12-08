@@ -235,9 +235,23 @@ serve(async (req) => {
       let recipientId = withdrawal.pagarme_recipient_id;
 
       if (!recipientId) {
-        // Preparar dados bancários do JSONB
+      // Preparar dados bancários do JSONB
         const cpfClean = bankAccount.cpf?.replace(/\D/g, '') || bankAccount.document?.replace(/\D/g, '');
-        const accountType = bankAccount.account_type === 'Conta Corrente' ? 'checking' : 'savings';
+        
+        // Mapear tipo de conta corretamente
+        // O valor vem como 'checking' ou 'savings' do formulário
+        // Pagar.me aceita 'checking' ou 'savings'
+        let accountType = 'checking'; // default
+        if (bankAccount.account_type === 'savings' || bankAccount.account_type === 'Poupança') {
+          accountType = 'savings';
+        } else if (bankAccount.account_type === 'checking' || bankAccount.account_type === 'Conta Corrente') {
+          accountType = 'checking';
+        }
+        
+        console.log('[Process Withdrawal] Account type mapping:', {
+          original: bankAccount.account_type,
+          mapped: accountType
+        });
         
         // Extrair agência e dígito
         const agencyParts = bankAccount.agency?.split('-') || ['0', '0'];
