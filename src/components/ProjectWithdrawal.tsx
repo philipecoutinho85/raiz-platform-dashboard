@@ -227,6 +227,43 @@ export const ProjectWithdrawal = ({
     return null;
   }
 
+  const getStatusBadgeStyles = (status: string) => {
+    switch (status) {
+      case 'pending':
+      case 'verification_pending':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-yellow-300';
+      case 'pending_correction':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-300';
+      case 'pending_manual':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-300';
+      case 'approved':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300';
+      case 'rejected':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300';
+      default:
+        return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'Em Análise';
+      case 'verification_pending':
+        return 'Aguardando Verificação';
+      case 'pending_correction':
+        return 'Correção Solicitada';
+      case 'pending_manual':
+        return 'Processamento Manual';
+      case 'approved':
+        return 'Aprovado';
+      case 'rejected':
+        return 'Rejeitado';
+      default:
+        return status;
+    }
+  };
+
   if (hasWithdrawal) {
     return (
       <>
@@ -237,16 +274,62 @@ export const ProjectWithdrawal = ({
               Status do Resgate
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Alert>
+          <CardContent className="space-y-4">
+            {/* Badge de Status Visível */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-muted-foreground">Status:</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusBadgeStyles(withdrawalStatus)}`}>
+                {getStatusLabel(withdrawalStatus)}
+              </span>
+            </div>
+
+            {/* Informações do Resgate */}
+            {withdrawalData && (
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Valor solicitado:</span>
+                  <span className="font-medium">R$ {withdrawalData.requested_amount?.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taxa administrativa:</span>
+                  <span className="font-medium">- R$ {withdrawalData.admin_fee?.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="text-muted-foreground font-medium">Valor líquido:</span>
+                  <span className="font-bold text-primary">R$ {withdrawalData.net_amount?.toFixed(2)}</span>
+                </div>
+                {withdrawalData.requested_at && (
+                  <div className="flex justify-between text-xs text-muted-foreground pt-2">
+                    <span>Solicitado em:</span>
+                    <span>{new Date(withdrawalData.requested_at).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mensagem de Status */}
+            <Alert className={
+              withdrawalStatus === 'approved' ? 'border-green-500 bg-green-50 dark:bg-green-950' :
+              withdrawalStatus === 'rejected' ? 'border-red-500 bg-red-50 dark:bg-red-950' :
+              withdrawalStatus === 'pending_correction' ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' :
+              ''
+            }>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {withdrawalStatus === 'pending' && 'Sua solicitação de resgate está em análise.'}
-                {withdrawalStatus === 'pending_manual' && 'Seu resgate está aguardando processamento manual.'}
-                {withdrawalStatus === 'approved' && 'Seu resgate foi aprovado e será processado em breve!'}
+                {withdrawalStatus === 'pending' && 'Sua solicitação de resgate está em análise. Você será notificado assim que for processada.'}
+                {withdrawalStatus === 'verification_pending' && 'Aguardando verificação do código enviado por email.'}
+                {withdrawalStatus === 'pending_manual' && 'Seu resgate está aguardando processamento manual pela equipe. Prazo: até 7 dias úteis.'}
+                {withdrawalStatus === 'pending_correction' && 'O administrador solicitou correções nos dados bancários. Verifique as mensagens abaixo.'}
+                {withdrawalStatus === 'approved' && (
+                  <>
+                    <span className="font-medium">✅ Seu resgate foi aprovado!</span>
+                    <p className="mt-1">A transferência será processada em até 7 dias úteis.</p>
+                  </>
+                )}
                 {withdrawalStatus === 'rejected' && (
                   <>
-                    Seu resgate foi rejeitado. Motivo: {withdrawalData?.rejection_reason}
+                    <span className="font-medium">❌ Seu resgate foi rejeitado.</span>
+                    <p className="mt-1">Motivo: {withdrawalData?.rejection_reason || 'Não especificado'}</p>
                     {withdrawalData?.rejection_reason?.includes('[dados_incorretos]') && (
                       <p className="mt-2 font-medium">Você pode corrigir os dados e solicitar novamente.</p>
                     )}
@@ -257,7 +340,7 @@ export const ProjectWithdrawal = ({
           </CardContent>
         </Card>
         
-        {withdrawalStatus === 'rejected' && withdrawalData?.chat_active && (
+        {(withdrawalStatus === 'rejected' || withdrawalStatus === 'pending_correction') && withdrawalData?.chat_active && (
           <WithdrawalChat 
             withdrawalId={withdrawalId}
             chatActive={withdrawalData.chat_active}
