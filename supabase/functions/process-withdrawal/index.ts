@@ -378,7 +378,57 @@ serve(async (req) => {
       if (!transferResponse.ok) {
         const errorData = await transferResponse.text();
         console.error('[Process Withdrawal] Pagar.me transfer error:', errorData);
-        throw new Error(`Failed to create transfer: ${errorData}`);
+        
+        // Verificar se é erro de status do recipient (precisa de verificação KYC)
+        if (errorData.includes('status registration') || errorData.includes('not allowed')) {
+          console.log('[Process Withdrawal] Recipient needs KYC verification - saving recipient and marking for manual processing');
+          
+          // Salvar o recipient_id mesmo que a transferência falhe
+          // Isso permite tentar novamente depois que o KYC for aprovado
+          await supabase
+            .from('withdrawals')
+            .update({
+              status: 'pending_manual',
+              reviewed_by: adminId,
+              reviewed_at: new Date().toISOString(),
+              pagarme_recipient_id: recipientId,
+              transfer_error: 'Recipient aguardando verificação KYC no Pagar.me',
+              rejection_reason: 'O recebedor foi criado no Pagar.me mas precisa de verificação KYC para receber transferências. Será processado manualmente após aprovação.'
+            })
+            .eq('id', withdrawalId);
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              requiresManual: true,
+              recipient_id: recipientId,
+              message: '⚠️ Recipient criado, mas aguardando verificação KYC no Pagar.me. O resgate será processado manualmente após aprovação do cadastro. Acesse o dashboard do Pagar.me para verificar o status.'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+        
+        // Outros erros de transferência
+        await supabase
+          .from('withdrawals')
+          .update({
+            status: 'pending_manual',
+            reviewed_by: adminId,
+            reviewed_at: new Date().toISOString(),
+            pagarme_recipient_id: recipientId,
+            transfer_error: errorData
+          })
+          .eq('id', withdrawalId);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            requiresManual: true,
+            recipient_id: recipientId,
+            message: `⚠️ Recipient criado (${recipientId}), mas houve erro na transferência. Será processado manualmente. Erro: ${errorData.substring(0, 100)}`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
       }
 
       const transferData = await transferResponse.json();
@@ -393,7 +443,9 @@ serve(async (req) => {
           reviewed_by: adminId,
           reviewed_at: new Date().toISOString(),
           pagarme_recipient_id: recipientId,
-          pagarme_transfer_id: transferData.id
+          pagarme_transfer_id: transferData.id,
+          transfer_status: 'completed',
+          paid_at: new Date().toISOString()
         })
         .eq('id', withdrawalId);
 
@@ -402,7 +454,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: '✅ Resgate aprovado! Recipient e transfer criados automaticamente no Pagar.me.',
+          message: `✅ Resgate aprovado! Transferência de R$ ${withdrawal.net_amount.toFixed(2)} criada no Pagar.me para ${bankAccount.holder_name || bankAccount.name}.`,
           recipient_id: recipientId,
           transfer_id: transferData.id
         }),
