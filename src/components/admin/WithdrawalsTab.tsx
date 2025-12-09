@@ -173,7 +173,7 @@ export const WithdrawalsTab = () => {
           duration: 10000, // 10 segundos para ler a mensagem
         });
       } else if (data?.success) {
-        toast.success(data?.message || '✅ Resgate aprovado! Transferência criada no Pagar.me.', {
+        toast.success(data?.message || '✅ Resgate aprovado! Pagamento processado via Stripe.', {
           duration: 8000,
         });
       } else {
@@ -417,22 +417,7 @@ export const WithdrawalsTab = () => {
           <Alert className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
-              <span>Tem resgates aprovados que não aparecem no Pagar.me? Sincronize-os agora.</span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSyncPastWithdrawals}
-                disabled={processing}
-              >
-                {processing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sincronizando...
-                  </>
-                ) : (
-                  'Sincronizar Resgates Antigos'
-                )}
-              </Button>
+              <span>Pagamentos são processados via Stripe. Criadores precisam configurar conta Stripe para receber.</span>
             </AlertDescription>
           </Alert>
 
@@ -812,12 +797,11 @@ export const WithdrawalsTab = () => {
                       <p><strong>Tipo de Chave:</strong> {selectedWithdrawal.pix_key_type?.toUpperCase()}</p>
                       <p><strong>Chave PIX:</strong> <code className="bg-background px-2 py-1 rounded">{selectedWithdrawal.pix_key}</code></p>
                       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded">
-                        <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">✅ PROCESSO AUTOMÁTICO:</p>
+                        <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">✅ PROCESSO VIA STRIPE:</p>
                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                          1. Clique em "Aprovar" para enviar o pagamento ao Pagar.me<br/>
-                          2. O PIX será criado automaticamente no Pagar.me<br/>
-                          3. O Pagar.me processará o pagamento<br/>
-                          4. Acompanhe o status no dashboard do Pagar.me
+                          1. Clique em "Aprovar" para processar o pagamento via Stripe<br/>
+                          2. O pagamento será enviado para a conta Stripe do criador<br/>
+                          3. Acompanhe o status no dashboard da Stripe
                         </p>
                       </div>
                     </>
