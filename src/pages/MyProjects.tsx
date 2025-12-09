@@ -13,6 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users } from 'lucide-react';
 import Footer from '@/components/Footer';
 import ProjectAdminMessages from '@/components/ProjectAdminMessages';
+import { StripeConnectSetup } from '@/components/StripeConnectSetup';
+import { CreatorPayoutPanel } from '@/components/CreatorPayoutPanel';
 
 interface Project {
   id: string;
@@ -154,6 +156,12 @@ const MyProjects = () => {
               Novo Projeto
             </Button>
           </Link>
+        </div>
+
+        {/* Stripe Connect Setup */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <StripeConnectSetup />
+          <CreatorPayoutPanel />
         </div>
 
         {/* Filters */}

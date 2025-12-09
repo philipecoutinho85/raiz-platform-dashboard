@@ -224,6 +224,50 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_payouts: {
+        Row: {
+          amount: number
+          created_at: string | null
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          project_id: string | null
+          status: string | null
+          stripe_payout_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          project_id?: string | null
+          status?: string | null
+          stripe_payout_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          project_id?: string | null
+          status?: string | null
+          stripe_payout_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_payouts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_scores: {
         Row: {
           accountability_points: number | null
@@ -489,6 +533,9 @@ export type Database = {
           nome: string
           numero: string | null
           sobrenome: string
+          stripe_account_id: string | null
+          stripe_account_status: string | null
+          stripe_onboarding_complete: boolean | null
           updated_at: string
         }
         Insert: {
@@ -509,6 +556,9 @@ export type Database = {
           nome: string
           numero?: string | null
           sobrenome: string
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
+          stripe_onboarding_complete?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -529,6 +579,9 @@ export type Database = {
           nome?: string
           numero?: string | null
           sobrenome?: string
+          stripe_account_id?: string | null
+          stripe_account_status?: string | null
+          stripe_onboarding_complete?: boolean | null
           updated_at?: string
         }
         Relationships: []
@@ -920,6 +973,7 @@ export type Database = {
           meta_pixel_id: string | null
           numero: string | null
           pending_requirements: string | null
+          platform_fee_percentage: number | null
           raised_amount: number
           rejection_reason: string | null
           reviewed_at: string | null
@@ -957,6 +1011,7 @@ export type Database = {
           meta_pixel_id?: string | null
           numero?: string | null
           pending_requirements?: string | null
+          platform_fee_percentage?: number | null
           raised_amount?: number
           rejection_reason?: string | null
           reviewed_at?: string | null
@@ -994,6 +1049,7 @@ export type Database = {
           meta_pixel_id?: string | null
           numero?: string | null
           pending_requirements?: string | null
+          platform_fee_percentage?: number | null
           raised_amount?: number
           rejection_reason?: string | null
           reviewed_at?: string | null
@@ -1056,6 +1112,56 @@ export type Database = {
           },
           {
             foreignKeyName: "refunds_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_payments: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          creator_amount: number
+          id: string
+          platform_fee: number
+          project_id: string | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          creator_amount: number
+          id?: string
+          platform_fee: number
+          project_id?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          creator_amount?: number
+          id?: string
+          platform_fee?: number
+          project_id?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_payments_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
