@@ -25,11 +25,11 @@ const FAQ = () => {
     },
     {
       question: "É seguro apoiar projetos pelo Raiz Token?",
-      answer: "Sim, é totalmente seguro. Utilizamos gateways de pagamento confiáveis e certificados, devolvemos os tokens automaticamente caso a meta não seja alcançada, e oferecemos transparência total na auditoria de cada projeto. Todos os dados são protegidos por criptografia SSL."
+      answer: "Sim, é totalmente seguro. Utilizamos a Stripe, líder global em pagamentos online, para processar todas as transações. Devolvemos os tokens automaticamente caso a meta não seja alcançada, e oferecemos transparência total na auditoria de cada projeto. Todos os dados são protegidos por criptografia SSL."
     },
     {
       question: "Como funciona o reembolso?",
-      answer: "Você pode solicitar reembolso do valor pago em reais a qualquer momento antes do encerramento do projeto. O valor será devolvido via o mesmo meio de pagamento utilizado (PIX/cartão) e a quantidade correspondente de tokens será removida da sua carteira."
+      answer: "Você pode solicitar reembolso do valor pago em reais a qualquer momento antes do encerramento do projeto. O valor será devolvido via o mesmo meio de pagamento utilizado e a quantidade correspondente de tokens será removida da sua carteira."
     },
     {
       question: "Os criadores de projeto são verificados?",
@@ -49,7 +49,7 @@ const FAQ = () => {
     },
     {
       question: "Quais são as taxas para resgate de valores?",
-      answer: "Para criadores que atingiram a meta e desejam resgatar os valores arrecadados, é cobrada uma taxa de saque via TED no valor de R$ 3,67 por transação. Esta taxa é referente ao processamento da transferência bancária pela plataforma de pagamento Pagar.me."
+      answer: "Para criadores que atingiram a meta e desejam resgatar os valores arrecadados, é cobrada uma taxa de processamento pela Stripe. Esta taxa varia de acordo com o método de pagamento utilizado e é automaticamente calculada no momento do resgate."
     }
   ];
 

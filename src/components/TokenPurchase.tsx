@@ -1,30 +1,19 @@
-
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Coins, CreditCard, QrCode, FileText, Shield, Lock, CheckCircle2 } from 'lucide-react';
+import { Coins, CreditCard, Shield, Lock, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const TokenPurchase = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
 
   // Calcular valor em reais baseado na quantidade de tokens (1 token = R$ 1,00)
   const calculatePrice = (tokens: number) => {
@@ -51,25 +40,15 @@ const TokenPurchase = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          userId: user.id,
-          amount: tokens,
-          paymentMethod
-        }
+      const { data, error } = await supabase.functions.invoke('stripe-token-checkout', {
+        body: { amount: tokens }
       });
 
       if (error) throw error;
 
-      // Para cartão de crédito, redirecionar para página do Pagar.me
-      if (paymentMethod === 'credit_card' && data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-        return;
-      }
-
-      if (data.purchaseId) {
-        // Redirecionar para página de checkout (PIX/Boleto)
-        navigate(`/checkout-pagamento?purchaseId=${data.purchaseId}&method=${paymentMethod}`);
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
       } else {
         toast({
           title: 'Atenção',
@@ -111,7 +90,7 @@ const TokenPurchase = () => {
           <CheckCircle2 className="w-8 h-8 text-purple-600" />
           <div>
             <p className="font-semibold text-sm text-purple-900 dark:text-purple-100">Aprovação Rápida</p>
-            <p className="text-xs text-purple-700 dark:text-purple-300">PIX instantâneo</p>
+            <p className="text-xs text-purple-700 dark:text-purple-300">Processamento imediato</p>
           </div>
         </div>
       </div>
@@ -131,123 +110,102 @@ const TokenPurchase = () => {
             </AlertDescription>
           </Alert>
 
-        <div className="space-y-2">
-          <Label>Método de Pagamento</Label>
-          <Select value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pix">
-                <div className="flex items-center">
-                  <QrCode className="w-4 h-4 mr-2" />
-                  PIX (aprovação instantânea)
-                </div>
-              </SelectItem>
-              <SelectItem value="credit_card">
-                <div className="flex items-center">
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Cartão de Crédito
-                </div>
-              </SelectItem>
-              <SelectItem value="boleto">
-                <div className="flex items-center">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Boleto (até 3 dias úteis)
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {tokenPackages.map((pkg) => (
-            <div
-              key={pkg.tokens}
-              className="border rounded-lg p-4 space-y-3 hover:border-raiz-primary transition-colors"
-            >
-              <div className="text-center">
-                <div className="text-2xl font-bold text-raiz-primary">
-                  {pkg.tokens}{pkg.bonus > 0 && `+${pkg.bonus}`}
-                </div>
-                <div className="text-sm text-raiz-secondary">tokens</div>
-                {pkg.bonus > 0 && (
-                  <div className="text-xs text-raiz-gold font-medium">
-                    +{pkg.bonus} bônus!
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tokenPackages.map((pkg) => (
+              <div
+                key={pkg.tokens}
+                className="border rounded-lg p-4 space-y-3 hover:border-raiz-primary transition-colors"
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-raiz-primary">
+                    {pkg.tokens}{pkg.bonus > 0 && `+${pkg.bonus}`}
                   </div>
-                )}
-              </div>
-              
-              <div className="text-center">
-                <div className="text-xl font-semibold">R$ {pkg.price}</div>
-              </div>
+                  <div className="text-sm text-raiz-secondary">tokens</div>
+                  {pkg.bonus > 0 && (
+                    <div className="text-xs text-raiz-gold font-medium">
+                      +{pkg.bonus} bônus!
+                    </div>
+                  )}
+                </div>
+                
+                <div className="text-center">
+                  <div className="text-xl font-semibold">R$ {pkg.price}</div>
+                </div>
 
+                <Button
+                  onClick={() => handlePurchase(pkg.tokens + pkg.bonus)}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CreditCard className="w-4 h-4 mr-2" />
+                  )}
+                  Comprar
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t pt-4">
+            <Label htmlFor="custom-amount">Valor personalizado</Label>
+            <div className="space-y-3 mt-2">
+              <Input
+                id="custom-amount"
+                type="number"
+                min="5"
+                placeholder="Quantidade de tokens (mín. 5)"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+              {amount && parseInt(amount) >= 5 && (
+                <div className="p-3 bg-raiz-primary/10 rounded-lg">
+                  <p className="text-sm font-medium text-raiz-primary">
+                    Valor total: R$ {calculatePrice(parseInt(amount))}
+                  </p>
+                  <p className="text-xs text-raiz-secondary mt-1">
+                    {amount} tokens × R$ 1,00
+                  </p>
+                </div>
+              )}
               <Button
-                onClick={() => handlePurchase(pkg.tokens + pkg.bonus)}
-                disabled={loading}
+                onClick={() => {
+                  const tokens = parseInt(amount);
+                  if (tokens >= 5 && tokens > 0) {
+                    handlePurchase(tokens);
+                  }
+                }}
+                disabled={loading || !amount || parseInt(amount) < 5}
                 className="w-full"
               >
-                <CreditCard className="w-4 h-4 mr-2" />
-                Comprar
+                {loading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CreditCard className="w-4 h-4 mr-2" />
+                )}
+                {loading ? 'Processando...' : 'Comprar'}
               </Button>
             </div>
-          ))}
-        </div>
+            <p className="text-xs text-raiz-secondary mt-2">
+              R$ 1,00 por token (mínimo: R$ 5,00 = 5 tokens)
+            </p>
+          </div>
 
-        <div className="border-t pt-4">
-          <Label htmlFor="custom-amount">Valor personalizado</Label>
-          <div className="space-y-3 mt-2">
-            <Input
-              id="custom-amount"
-              type="number"
-              min="5"
-              placeholder="Quantidade de tokens (mín. 5)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            {amount && parseInt(amount) >= 5 && (
-              <div className="p-3 bg-raiz-primary/10 rounded-lg">
-                <p className="text-sm font-medium text-raiz-primary">
-                  Valor total: R$ {calculatePrice(parseInt(amount))}
-                </p>
-                <p className="text-xs text-raiz-secondary mt-1">
-                  {amount} tokens × R$ 1,00
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-raiz-primary mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Garantia Raiz Token</p>
+                <p className="text-xs text-muted-foreground">
+                  Seus dados estão protegidos e criptografados. Processamento via Stripe, 
+                  líder global em pagamentos online. Reembolso automático para projetos não concluídos.
                 </p>
               </div>
-            )}
-            <Button
-              onClick={() => {
-                const tokens = parseInt(amount);
-                if (tokens >= 5 && tokens > 0) {
-                  handlePurchase(tokens);
-                }
-              }}
-              disabled={loading || !amount || parseInt(amount) < 5}
-              className="w-full"
-            >
-              <CreditCard className="w-4 h-4 mr-2" />
-              {loading ? 'Processando...' : 'Comprar'}
-            </Button>
-          </div>
-          <p className="text-xs text-raiz-secondary mt-2">
-            R$ 1,00 por token (mínimo: R$ 5,00 = 5 tokens)
-          </p>
-        </div>
-
-        <div className="bg-muted/50 p-4 rounded-lg">
-          <div className="flex items-start gap-3">
-            <Shield className="w-5 h-5 text-raiz-primary mt-0.5" />
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Garantia Raiz Token</p>
-              <p className="text-xs text-muted-foreground">
-                Seus dados estão protegidos e criptografados. Processamento via Pagar.me, 
-                líder em pagamentos online no Brasil. Reembolso automático para projetos não concluídos.
-              </p>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
     </div>
   );
 };
