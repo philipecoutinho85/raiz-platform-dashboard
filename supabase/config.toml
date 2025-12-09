@@ -17,3 +17,18 @@ verify_jwt = true
 
 [functions.send-withdrawal-verification]
 verify_jwt = true
+
+[functions.stripe-connect-onboard]
+verify_jwt = true
+
+[functions.stripe-check-account]
+verify_jwt = true
+
+[functions.stripe-create-payment]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.stripe-request-payout]
+verify_jwt = true

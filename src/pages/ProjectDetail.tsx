@@ -42,6 +42,7 @@ interface Project {
   can_create_new_project?: boolean;
   admin_fee_percentage?: number;
   custom_goal?: number;
+  platform_fee_percentage?: number;
 }
 
 interface Profile {
@@ -50,6 +51,8 @@ interface Profile {
   sobrenome: string;
   email: string;
   avatar_url?: string;
+  stripe_account_id?: string;
+  stripe_onboarding_complete?: boolean;
 }
 
 interface ProjectImage {
@@ -70,6 +73,7 @@ import { ProjectReport } from '@/components/ProjectReport';
 import { LoginRequiredModal } from '@/components/LoginRequiredModal';
 import RaizScore from '@/components/RaizScore';
 import { WithdrawalCorrectionAlert } from '@/components/WithdrawalCorrectionAlert';
+import { StripePaymentButton } from '@/components/StripePaymentButton';
 import ProjectUpdates from '@/components/ProjectUpdates';
 
 const ProjectDetail = () => {
@@ -116,17 +120,17 @@ const ProjectDetail = () => {
       setProject(project);
       setEditedDescription(project.description);
 
-      // Fetch project owner profile
+      // Fetch project owner profile with Stripe info
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, nome, sobrenome, email, avatar_url')
+        .select('id, nome, sobrenome, email, avatar_url, stripe_account_id, stripe_onboarding_complete')
         .eq('id', project.user_id)
         .single();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
       } else if (profile) {
-        setProfile(profile);
+        setProfile(profile as Profile);
       }
 
       // Fetch project images
@@ -589,21 +593,40 @@ const ProjectDetail = () => {
                   )}
                 </div>
 
-                {!isOwner && (
+                {!isOwner && canSupportProject() && (
+                  <div className="space-y-3">
+                    {/* Stripe Payment (Real Money) */}
+                    <StripePaymentButton
+                      projectId={project.id}
+                      projectTitle={project.title}
+                      creatorHasStripe={!!profile?.stripe_onboarding_complete}
+                    />
+                    
+                    {/* Token Support (Platform Tokens) */}
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        if (!user) {
+                          setShowLoginModal(true);
+                          return;
+                        }
+                        setIsSupportDialogOpen(true);
+                      }}
+                      className="w-full"
+                    >
+                      Apoiar com Tokens
+                    </Button>
+                  </div>
+                )}
+                
+                {!isOwner && !canSupportProject() && (
                   <Button 
-                    onClick={() => {
-                      if (!user) {
-                        setShowLoginModal(true);
-                        return;
-                      }
-                      setIsSupportDialogOpen(true);
-                    }}
-                    disabled={!canSupportProject() && !!user}
-                    className="w-full bg-raiz-primary hover:bg-raiz-primary/90 text-white font-medium py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled
+                    className="w-full opacity-50 cursor-not-allowed"
                   >
                     {isProjectExpired() ? 'Projeto Expirado' : 
                      isProjectCompleted() ? 'Meta Atingida' : 
-                     'Apoiar com Tokens'}
+                     'Apoiar'}
                   </Button>
                 )}
               </CardContent>
