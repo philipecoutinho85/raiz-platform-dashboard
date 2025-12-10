@@ -52,10 +52,37 @@ serve(async (req) => {
       .single();
 
     if (profileError) throw new Error(`Profile error: ${profileError.message}`);
-    if (!profile.stripe_account_id) throw new Error("Conta Stripe não configurada");
-    if (!profile.stripe_onboarding_complete) throw new Error("Verificação da conta não completada");
+    if (!profile.stripe_account_id) {
+      throw new Error("Para solicitar saque, finalize sua verificação. Vá ao seu perfil e clique em 'Verificar conta para receber saques'.");
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // Verify account is fully verified via Stripe API
+    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+    logStep("Account retrieved", { 
+      accountId: account.id, 
+      payoutsEnabled: account.payouts_enabled,
+      chargesEnabled: account.charges_enabled,
+      requirementsDue: account.requirements?.currently_due?.length || 0
+    });
+
+    const isVerified = account.payouts_enabled && 
+                       account.charges_enabled && 
+                       (!account.requirements?.currently_due || account.requirements.currently_due.length === 0);
+
+    if (!isVerified) {
+      // Update profile status if outdated
+      await supabase
+        .from('profiles')
+        .update({ 
+          stripe_account_status: account.payouts_enabled ? 'active' : 'incomplete',
+          stripe_onboarding_complete: isVerified
+        })
+        .eq('id', user.id);
+
+      throw new Error("Para solicitar saque, finalize sua verificação. Vá ao seu perfil e clique em 'Verificar conta para receber saques'.");
+    }
 
     // Check available balance
     const balance = await stripe.balance.retrieve({
