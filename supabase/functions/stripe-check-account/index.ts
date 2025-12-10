@@ -64,9 +64,41 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Get account details from Stripe
-    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
-    logStep("Account retrieved", { accountId: account.id, chargesEnabled: account.charges_enabled });
+    // Get account details from Stripe - handle test->live migration
+    let account;
+    try {
+      account = await stripe.accounts.retrieve(profile.stripe_account_id);
+      logStep("Account retrieved", { accountId: account.id, chargesEnabled: account.charges_enabled });
+    } catch (accountError: any) {
+      logStep("Account not accessible (possibly test account with live keys)", { 
+        error: accountError.message 
+      });
+      
+      // Clear invalid account from profile
+      await supabase
+        .from('profiles')
+        .update({ 
+          stripe_account_id: null,
+          stripe_account_status: null,
+          stripe_onboarding_complete: false
+        })
+        .eq('id', user.id);
+      
+      // Return as not connected so user can create new account
+      return new Response(
+        JSON.stringify({ 
+          connected: false,
+          verified: false,
+          status: 'not_connected',
+          balance: 0,
+          message: 'Conta anterior não acessível. Por favor, configure uma nova conta.'
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
 
     const isVerified = account.charges_enabled && account.payouts_enabled;
     let status = 'pending';
