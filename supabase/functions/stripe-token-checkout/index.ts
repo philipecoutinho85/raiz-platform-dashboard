@@ -25,24 +25,34 @@ serve(async (req) => {
     logStep("Stripe key verified");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logStep("Auth error", { error: "No authorization header" });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      logStep("Auth error", { error: "No valid authorization header" });
       throw new Error("Usuário não autenticado. Faça login novamente.");
     }
     
-    const token = authHeader.replace("Bearer ", "");
+    // Create auth client with user's JWT to validate the token
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      }
+    });
     
-    // Use service role client to verify the token
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
-      logStep("Auth error", { error: userError?.message });
+      logStep("Auth error", { error: userError?.message || "User not found" });
       throw new Error("Usuário não autenticado. Faça login novamente.");
     }
+    
+    // Create service role client for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     if (!user.email) throw new Error("Email do usuário não disponível");
     logStep("User authenticated", { userId: user.id, email: user.email });
