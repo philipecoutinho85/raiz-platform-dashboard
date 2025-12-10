@@ -124,18 +124,48 @@ serve(async (req) => {
 
       case 'account.updated': {
         const account = event.data.object as Stripe.Account;
-        logStep("Account updated", { accountId: account.id, chargesEnabled: account.charges_enabled });
+        const chargesEnabled = account.charges_enabled;
+        const payoutsEnabled = account.payouts_enabled;
+        const requirementsDue = account.requirements?.currently_due || [];
+        const requirementsPastDue = account.requirements?.past_due || [];
+        
+        logStep("Account updated", { 
+          accountId: account.id, 
+          chargesEnabled, 
+          payoutsEnabled,
+          requirementsDue: requirementsDue.length,
+          requirementsPastDue: requirementsPastDue.length
+        });
 
-        const userId = account.metadata?.user_id;
-        if (userId) {
-          const isVerified = account.charges_enabled && account.payouts_enabled;
+        // Find user by stripe_account_id
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('stripe_account_id', account.id)
+          .single();
+
+        if (profile) {
+          const isVerified = chargesEnabled && payoutsEnabled && 
+            requirementsDue.length === 0 && requirementsPastDue.length === 0;
+          
+          let status = 'pending';
+          if (isVerified) {
+            status = 'active';
+          } else if (chargesEnabled || payoutsEnabled) {
+            status = 'restricted';
+          }
+
           await supabase
             .from('profiles')
             .update({
-              stripe_account_status: isVerified ? 'active' : 'pending',
+              stripe_account_status: status,
               stripe_onboarding_complete: isVerified
             })
-            .eq('id', userId);
+            .eq('id', profile.id);
+
+          logStep("Profile updated", { userId: profile.id, status, isVerified });
+        } else {
+          logStep("No profile found for account", { accountId: account.id });
         }
         break;
       }
