@@ -11,13 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Camera, MapPin, Coins, Lock, AlertCircle, MessageCircle, Shield } from 'lucide-react';
+import { User, Camera, MapPin, Coins, Lock, AlertCircle, MessageCircle, Shield, Wallet } from 'lucide-react';
 import TokenPurchase from '@/components/TokenPurchase';
 import Footer from '@/components/Footer';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import SupportCenter from '@/components/support/SupportCenter';
 import PrivacyCenter from '@/components/profile/PrivacyCenter';
+import { StripeConnectSetup } from '@/components/StripeConnectSetup';
 
 interface ProfileFormData {
   nome: string;
@@ -254,11 +255,15 @@ const UserProfile = () => {
         </div>
 
         <Tabs defaultValue={initialTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
             <TabsTrigger value="address">Endereço</TabsTrigger>
             <TabsTrigger value="security">Segurança</TabsTrigger>
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
+            <TabsTrigger value="payouts" className="flex items-center gap-1">
+              <Wallet className="h-4 w-4" />
+              Recebimentos
+            </TabsTrigger>
             <TabsTrigger value="privacy" className="flex items-center gap-1">
               <Shield className="h-4 w-4" />
               Privacidade
@@ -567,6 +572,10 @@ const UserProfile = () => {
 
           <TabsContent value="tokens">
             <TokenPurchase />
+          </TabsContent>
+
+          <TabsContent value="payouts">
+            <StripeConnectSetup />
           </TabsContent>
 
           <TabsContent value="support">

@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Wallet, ArrowDownToLine, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Wallet, ArrowDownToLine, Clock, CheckCircle2, XCircle, AlertCircle, ShieldCheck, ShieldX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { StripeAccountStatus } from './StripeConnectSetup';
 
 interface CreatorPayoutPanelProps {
   projectId?: string;
@@ -33,14 +34,18 @@ export const CreatorPayoutPanel = ({ projectId }: CreatorPayoutPanelProps) => {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [accountStatus, setAccountStatus] = useState<StripeAccountStatus | null>(null);
+  const [checkingAccount, setCheckingAccount] = useState(true);
 
   const fetchData = async () => {
     try {
       setLoadingPayouts(true);
+      setCheckingAccount(true);
       
-      // Get balance from Stripe
+      // Get account status from Stripe (includes balance)
       const { data: accountData, error: accountError } = await supabase.functions.invoke('stripe-check-account');
       if (!accountError && accountData) {
+        setAccountStatus(accountData);
         setBalance(accountData.balance || 0);
       }
 
@@ -58,6 +63,7 @@ export const CreatorPayoutPanel = ({ projectId }: CreatorPayoutPanelProps) => {
       console.error('Error fetching data:', error);
     } finally {
       setLoadingPayouts(false);
+      setCheckingAccount(false);
     }
   };
 
@@ -66,6 +72,12 @@ export const CreatorPayoutPanel = ({ projectId }: CreatorPayoutPanelProps) => {
   }, []);
 
   const handleWithdraw = async () => {
+    // Bloquear se não verificado
+    if (!accountStatus?.verified) {
+      toast.error('Para solicitar saque, finalize sua verificação. Vá ao seu perfil e clique em "Verificar conta para receber saques".');
+      return;
+    }
+
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
       toast.error('Digite um valor válido');
@@ -118,11 +130,14 @@ export const CreatorPayoutPanel = ({ projectId }: CreatorPayoutPanelProps) => {
     }
   };
 
-  if (loadingPayouts) {
+  const isVerified = accountStatus?.verified === true;
+
+  if (loadingPayouts || checkingAccount) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Verificando status da conta...</span>
         </CardContent>
       </Card>
     );
@@ -140,6 +155,28 @@ export const CreatorPayoutPanel = ({ projectId }: CreatorPayoutPanelProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Status de Verificação */}
+        {!isVerified && (
+          <Alert variant="destructive">
+            <ShieldX className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Verificação pendente.</strong> Para solicitar saque, finalize sua verificação.{' '}
+              <a href="/perfil?tab=payouts" className="underline font-medium">
+                Vá ao seu perfil e clique em "Verificar conta para receber saques".
+              </a>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isVerified && (
+          <Alert className="border-green-500 bg-green-50 dark:bg-green-950/30">
+            <ShieldCheck className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-700 dark:text-green-400">
+              <strong>Identidade verificada.</strong> Você pode solicitar saques normalmente.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Balance */}
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-6">
           <p className="text-sm text-muted-foreground mb-1">Saldo disponível para saque</p>
@@ -147,7 +184,7 @@ export const CreatorPayoutPanel = ({ projectId }: CreatorPayoutPanelProps) => {
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mt-4" disabled={balance <= 0}>
+              <Button className="mt-4" disabled={balance <= 0 || !isVerified}>
                 <ArrowDownToLine className="mr-2 h-4 w-4" />
                 Solicitar saque
               </Button>

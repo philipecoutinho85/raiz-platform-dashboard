@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Wallet, ArrowRight, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, ExternalLink, Wallet, ArrowRight, RefreshCw, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface StripeAccountStatus {
+export interface StripeAccountStatus {
   connected: boolean;
   verified: boolean;
   status: string;
@@ -16,7 +16,12 @@ interface StripeAccountStatus {
   accountId?: string;
 }
 
-export const StripeConnectSetup = () => {
+interface StripeConnectSetupProps {
+  onStatusChange?: (status: StripeAccountStatus | null) => void;
+  compact?: boolean;
+}
+
+export const StripeConnectSetup = ({ onStatusChange, compact = false }: StripeConnectSetupProps) => {
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [accountStatus, setAccountStatus] = useState<StripeAccountStatus | null>(null);
@@ -28,8 +33,10 @@ export const StripeConnectSetup = () => {
       
       if (error) throw error;
       setAccountStatus(data);
+      onStatusChange?.(data);
     } catch (error) {
       console.error('Error checking Stripe account:', error);
+      onStatusChange?.(null);
     } finally {
       setCheckingStatus(false);
     }
@@ -41,12 +48,12 @@ export const StripeConnectSetup = () => {
     // Check for redirect params
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('stripe_success') === 'true') {
-      toast.success('Configuração da conta Stripe concluída!');
+      toast.success('Verificação de identidade concluída com sucesso!');
       checkAccountStatus();
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     } else if (urlParams.get('stripe_refresh') === 'true') {
-      toast.info('Por favor, complete a configuração da sua conta.');
+      toast.info('Por favor, complete a verificação da sua conta.');
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -64,7 +71,7 @@ export const StripeConnectSetup = () => {
       }
     } catch (error: any) {
       console.error('Error connecting Stripe:', error);
-      toast.error(error.message || 'Erro ao configurar conta Stripe');
+      toast.error(error.message || 'Erro ao configurar verificação');
     } finally {
       setLoading(false);
     }
@@ -79,15 +86,15 @@ export const StripeConnectSetup = () => {
 
   const getStatusBadge = () => {
     if (!accountStatus?.connected) {
-      return <Badge variant="outline" className="text-muted-foreground">Não conectada</Badge>;
+      return <Badge variant="outline" className="text-muted-foreground">Ainda não verificado</Badge>;
     }
     if (accountStatus.verified) {
-      return <Badge className="bg-green-500 text-white">Verificada</Badge>;
+      return <Badge className="bg-green-500 text-white"><ShieldCheck className="h-3 w-3 mr-1" />Verificado</Badge>;
     }
     if (accountStatus.status === 'incomplete') {
-      return <Badge variant="destructive">Verificação pendente</Badge>;
+      return <Badge variant="destructive">Ainda não verificado</Badge>;
     }
-    return <Badge variant="secondary">Pendente</Badge>;
+    return <Badge variant="secondary">Ainda não verificado</Badge>;
   };
 
   if (checkingStatus) {
@@ -101,17 +108,50 @@ export const StripeConnectSetup = () => {
     );
   }
 
+  if (compact) {
+    // Versão compacta para exibir em outros locais
+    if (checkingStatus) {
+      return (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">Verificando...</span>
+        </div>
+      );
+    }
+
+    if (accountStatus?.verified) {
+      return (
+        <div className="flex items-center gap-2 text-green-600">
+          <ShieldCheck className="h-4 w-4" />
+          <span className="text-sm font-medium">Verificado</span>
+        </div>
+      );
+    }
+
+    return (
+      <Alert variant="destructive" className="py-3">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription className="text-sm">
+          Para solicitar saque, finalize sua verificação.{' '}
+          <a href="/perfil?tab=payouts" className="underline font-medium">
+            Vá ao seu perfil e clique em "Verificar conta para receber saques".
+          </a>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <Card className="border-2">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Conta para Recebimentos
+              <ShieldCheck className="h-5 w-5" />
+              Verificação de Identidade
             </CardTitle>
             <CardDescription>
-              Configure sua conta Stripe para receber pagamentos dos apoiadores
+              Verifique sua identidade para receber saques dos seus projetos
             </CardDescription>
           </div>
           {getStatusBadge()}
@@ -123,11 +163,11 @@ export const StripeConnectSetup = () => {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Para receber pagamentos dos seus projetos, você precisa configurar uma conta Stripe.
-                O processo é rápido e seguro.
+                Para receber os valores arrecadados dos seus projetos, você precisa verificar sua identidade.
+                O processo é rápido, seguro e feito através da Stripe, nossa parceira de pagamentos.
               </AlertDescription>
             </Alert>
-            <Button onClick={handleConnectStripe} disabled={loading} className="w-full">
+            <Button onClick={handleConnectStripe} disabled={loading} className="w-full" size="lg">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -135,7 +175,8 @@ export const StripeConnectSetup = () => {
                 </>
               ) : (
                 <>
-                  Configurar conta para receber repasses
+                  <ShieldCheck className="mr-2 h-5 w-5" />
+                  Verificar conta para receber saques
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
@@ -143,9 +184,12 @@ export const StripeConnectSetup = () => {
           </>
         ) : accountStatus.verified ? (
           <>
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-medium">Conta verificada e pronta para receber pagamentos</span>
+            <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950/30 p-4 rounded-lg">
+              <CheckCircle2 className="h-6 w-6" />
+              <div>
+                <span className="font-semibold block">Identidade Verificada</span>
+                <span className="text-sm text-green-700 dark:text-green-400">Você pode solicitar saques dos seus projetos</span>
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4 mt-4">
@@ -156,8 +200,8 @@ export const StripeConnectSetup = () => {
                 </p>
               </div>
               <div className="bg-muted rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">Status</p>
-                <p className="text-lg font-medium text-green-600">Ativa</p>
+                <p className="text-sm text-muted-foreground">Status da conta</p>
+                <p className="text-lg font-medium text-green-600">Verificada</p>
               </div>
             </div>
 
@@ -175,15 +219,15 @@ export const StripeConnectSetup = () => {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Sua conta precisa completar a verificação para receber pagamentos.
+                <strong>Ainda não verificado.</strong> Complete a verificação de identidade para poder receber saques.
                 {accountStatus.requirements && accountStatus.requirements.length > 0 && (
                   <span className="block mt-1">
-                    Itens pendentes: {accountStatus.requirements.length}
+                    Documentos/informações pendentes: {accountStatus.requirements.length}
                   </span>
                 )}
               </AlertDescription>
             </Alert>
-            <Button onClick={handleConnectStripe} disabled={loading} className="w-full">
+            <Button onClick={handleConnectStripe} disabled={loading} className="w-full" size="lg">
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -191,6 +235,7 @@ export const StripeConnectSetup = () => {
                 </>
               ) : (
                 <>
+                  <ShieldCheck className="mr-2 h-5 w-5" />
                   Completar verificação
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </>
