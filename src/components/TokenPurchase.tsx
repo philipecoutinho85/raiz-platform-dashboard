@@ -40,6 +40,18 @@ const TokenPurchase = () => {
 
     setLoading(true);
     try {
+      // Verify session is still valid before making the call
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        toast({
+          title: 'Sessão expirada',
+          description: 'Por favor, faça login novamente para continuar.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('stripe-token-checkout', {
         body: { amount: tokens }
       });
