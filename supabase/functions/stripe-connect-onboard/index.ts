@@ -49,9 +49,25 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     let accountId = profile.stripe_account_id;
+    let needsNewAccount = !accountId;
 
-    // Create Stripe Express account if not exists
-    if (!accountId) {
+    // If account exists, verify it's accessible (handles test->live migration)
+    if (accountId) {
+      try {
+        await stripe.accounts.retrieve(accountId);
+        logStep("Existing account verified", { accountId });
+      } catch (accountError: any) {
+        logStep("Account not accessible, will create new", { 
+          oldAccountId: accountId, 
+          error: accountError.message 
+        });
+        needsNewAccount = true;
+        accountId = null;
+      }
+    }
+
+    // Create Stripe Express account if needed
+    if (needsNewAccount) {
       logStep("Creating new Stripe Express account");
       const account = await stripe.accounts.create({
         type: 'express',
@@ -76,7 +92,8 @@ serve(async (req) => {
         .from('profiles')
         .update({ 
           stripe_account_id: accountId,
-          stripe_account_status: 'pending'
+          stripe_account_status: 'pending',
+          stripe_onboarding_complete: false
         })
         .eq('id', user.id);
     }
