@@ -48,7 +48,12 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
       logStep("Auth error", { error: userError?.message || "User not found" });
-      throw new Error("Usuário não autenticado. Faça login novamente.");
+      // Check if error is related to expired token
+      const errorMessage = userError?.message?.toLowerCase() || '';
+      if (errorMessage.includes('expired') || errorMessage.includes('invalid') || errorMessage.includes('jwt')) {
+        throw new Error("TOKEN_EXPIRED:Sua sessão expirou. Por favor, faça login novamente.");
+      }
+      throw new Error("AUTH_ERROR:Usuário não autenticado. Faça login novamente.");
     }
     
     // Create service role client for database operations

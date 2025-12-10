@@ -70,9 +70,44 @@ const TokenPurchase = () => {
       }
     } catch (error: any) {
       console.error('Erro na compra:', error);
+      
+      // Parse the error message to detect specific error types
+      const errorMessage = error.message || '';
+      const errorBody = typeof error.context?.body === 'string' 
+        ? JSON.parse(error.context?.body || '{}').error 
+        : (error.context?.body?.error || errorMessage);
+      
+      // Check for token expired error
+      if (errorBody?.includes('TOKEN_EXPIRED') || errorBody?.includes('expired') || errorBody?.includes('jwt')) {
+        toast({
+          title: 'Sessão expirada',
+          description: 'Sua sessão expirou. Por favor, faça login novamente para continuar.',
+          variant: 'destructive',
+        });
+        // Optionally trigger logout
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+        return;
+      }
+      
+      // Check for auth error
+      if (errorBody?.includes('AUTH_ERROR') || errorBody?.includes('autenticado')) {
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Você precisa estar logado para comprar tokens. Redirecionando para login...',
+          variant: 'destructive',
+        });
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
+        return;
+      }
+      
+      // Generic error
       toast({
         title: 'Erro na compra',
-        description: error.message || 'Não foi possível processar a compra. Tente novamente.',
+        description: errorBody || 'Não foi possível processar a compra. Tente novamente.',
         variant: 'destructive',
       });
     } finally {
