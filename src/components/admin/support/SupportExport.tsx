@@ -66,10 +66,11 @@ const SupportExport = ({ conversations, messages, metrics }: SupportExportProps)
       const metricsSection = [
         '',
         'MÉTRICAS DE SUPORTE',
-        `Chamados Abertos,${metrics.totalOpen}`,
-        `Chamados Em Andamento,${metrics.totalInProgress}`,
-        `Chamados Respondidos,${metrics.totalResponded}`,
-        `Chamados Encerrados,${metrics.totalClosed}`,
+        `Chamados Novos,${metrics.totalNovo}`,
+        `Chamados Em Andamento,${metrics.totalEmAndamento}`,
+        `Chamados Aguardando Usuário,${metrics.totalAguardandoUsuario}`,
+        `Chamados Resolvidos,${metrics.totalResolvido}`,
+        `Chamados Fechados,${metrics.totalFechado}`,
         `Tempo Médio 1ª Resposta,${formatTime(metrics.avgFirstResponseTime)}`,
         `Tempo Médio Resolução,${formatTime(metrics.avgResolutionTime)}`,
         `Resolução 1º Contato,${metrics.firstContactResolutionRate.toFixed(1)}%`,
@@ -115,10 +116,11 @@ const SupportExport = ({ conversations, messages, metrics }: SupportExportProps)
       doc.text('Métricas Gerais', 14, 40);
 
       const metricsData = [
-        ['Chamados Abertos', metrics.totalOpen.toString()],
-        ['Chamados Em Andamento', metrics.totalInProgress.toString()],
-        ['Chamados Respondidos', metrics.totalResponded.toString()],
-        ['Chamados Encerrados', metrics.totalClosed.toString()],
+        ['Chamados Novos', metrics.totalNovo.toString()],
+        ['Chamados Em Andamento', metrics.totalEmAndamento.toString()],
+        ['Chamados Aguardando Usuário', metrics.totalAguardandoUsuario.toString()],
+        ['Chamados Resolvidos', metrics.totalResolvido.toString()],
+        ['Chamados Fechados', metrics.totalFechado.toString()],
         ['Tempo Médio 1ª Resposta', formatTime(metrics.avgFirstResponseTime)],
         ['Tempo Médio Resolução', formatTime(metrics.avgResolutionTime)],
         ['Resolução 1º Contato', `${metrics.firstContactResolutionRate.toFixed(1)}%`],

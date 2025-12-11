@@ -31,32 +31,32 @@ const SupportMetricsCards = ({ metrics, loading }: SupportMetricsCardsProps) => 
 
   const cards = [
     {
-      title: 'Chamados Abertos',
-      value: metrics.totalOpen,
+      title: 'Novos',
+      value: metrics.totalNovo,
       icon: MessageCircle,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50'
+    },
+    {
+      title: 'Em Andamento',
+      value: metrics.totalEmAndamento,
+      icon: Clock,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Em Andamento',
-      value: metrics.totalInProgress,
-      icon: Clock,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50'
+      title: 'Aguardando',
+      value: metrics.totalAguardandoUsuario,
+      icon: AlertCircle,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50'
     },
     {
-      title: 'Respondidos',
-      value: metrics.totalResponded,
+      title: 'Resolvidos',
+      value: metrics.totalResolvido,
       icon: CheckCircle,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
-    },
-    {
-      title: 'Encerrados',
-      value: metrics.totalClosed,
-      icon: AlertCircle,
-      color: 'text-gray-600',
-      bgColor: 'bg-gray-50'
     },
     {
       title: 'Tempo Médio 1ª Resposta',
