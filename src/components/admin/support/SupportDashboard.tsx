@@ -9,7 +9,8 @@ import SupportFilters from './SupportFilters';
 import SupportExport from './SupportExport';
 import SupportUserDetail from './SupportUserDetail';
 import SupportStatistics from './SupportStatistics';
-import { BarChart3, MessageCircle, Lightbulb, Users, Settings, TrendingUp } from 'lucide-react';
+import SupportNPSDashboard from './SupportNPSDashboard';
+import { BarChart3, MessageCircle, Lightbulb, Users, Settings, TrendingUp, Star } from 'lucide-react';
 
 export interface SupportConversation {
   id: string;
@@ -302,14 +303,18 @@ const SupportDashboard = () => {
       <SupportMetricsCards metrics={metrics} loading={loading} />
 
       <Tabs defaultValue="tickets" className="space-y-6">
-        <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full lg:w-auto">
+        <TabsList className="grid grid-cols-2 lg:grid-cols-7 w-full lg:w-auto">
           <TabsTrigger value="tickets" className="flex items-center gap-2">
             <MessageCircle className="h-4 w-4" />
             <span className="hidden sm:inline">Chamados</span>
           </TabsTrigger>
+          <TabsTrigger value="nps" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            <span className="hidden sm:inline">NPS</span>
+          </TabsTrigger>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Visão Geral</span>
+            <span className="hidden sm:inline">Gráficos</span>
           </TabsTrigger>
           <TabsTrigger value="statistics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
@@ -317,11 +322,11 @@ const SupportDashboard = () => {
           </TabsTrigger>
           <TabsTrigger value="insights" className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4" />
-            <span className="hidden sm:inline">Insights FAQ</span>
+            <span className="hidden sm:inline">FAQ</span>
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Por Usuário</span>
+            <span className="hidden sm:inline">Usuários</span>
           </TabsTrigger>
           <TabsTrigger value="sla" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -335,6 +340,14 @@ const SupportDashboard = () => {
             messages={messages}
             onUserClick={setSelectedUserId}
             onRefresh={fetchData}
+          />
+        </TabsContent>
+
+        <TabsContent value="nps">
+          <SupportNPSDashboard 
+            conversations={filteredConversations}
+            messages={messages}
+            metrics={metrics}
           />
         </TabsContent>
 

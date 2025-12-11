@@ -13,10 +13,12 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
+  AreaChart,
+  Area
 } from 'recharts';
 import { SupportConversation, SupportMessage } from './SupportDashboard';
-import { format, subDays, startOfDay, eachDayOfInterval, eachHourOfInterval, startOfHour, addHours } from 'date-fns';
+import { format, subDays, startOfDay, eachDayOfInterval, addHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface SupportChartsProps {
@@ -24,7 +26,24 @@ interface SupportChartsProps {
   messages: SupportMessage[];
 }
 
-const COLORS = ['hsl(125, 65%, 35%)', 'hsl(125, 45%, 55%)', 'hsl(45, 80%, 55%)', 'hsl(0, 70%, 55%)', 'hsl(220, 70%, 55%)'];
+const CATEGORY_LABELS: Record<string, string> = {
+  pagamentos: 'Pagamentos',
+  projeto: 'Projeto',
+  conta: 'Conta',
+  reembolso: 'Reembolso',
+  saque: 'Saque',
+  erro: 'Erro',
+  outro: 'Outro',
+};
+
+const CATEGORY_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#94a3b8'];
+const STATUS_COLORS = {
+  novo: '#ef4444',
+  em_andamento: '#3b82f6',
+  aguardando_usuario: '#f59e0b',
+  resolvido: '#22c55e',
+  fechado: '#6b7280'
+};
 
 const SupportCharts = ({ conversations, messages }: SupportChartsProps) => {
   // Volume by day (last 30 days)
@@ -50,15 +69,70 @@ const SupportCharts = ({ conversations, messages }: SupportChartsProps) => {
     });
   }, [conversations]);
 
-  // Status distribution
+  // Status distribution - updated to new status values
   const statusDistribution = useMemo(() => {
-    const openCount = conversations.filter(c => c.status === 'open').length;
-    const closedCount = conversations.filter(c => c.status === 'closed').length;
+    const novoCount = conversations.filter(c => c.status === 'novo').length;
+    const emAndamentoCount = conversations.filter(c => c.status === 'em_andamento').length;
+    const aguardandoCount = conversations.filter(c => c.status === 'aguardando_usuario').length;
+    const resolvidoCount = conversations.filter(c => c.status === 'resolvido').length;
+    const fechadoCount = conversations.filter(c => c.status === 'fechado').length;
 
     return [
-      { name: 'Abertos', value: openCount, color: 'hsl(125, 65%, 35%)' },
-      { name: 'Fechados', value: closedCount, color: 'hsl(220, 20%, 60%)' }
-    ];
+      { name: 'Novos', value: novoCount, color: STATUS_COLORS.novo },
+      { name: 'Em Andamento', value: emAndamentoCount, color: STATUS_COLORS.em_andamento },
+      { name: 'Aguardando', value: aguardandoCount, color: STATUS_COLORS.aguardando_usuario },
+      { name: 'Resolvidos', value: resolvidoCount, color: STATUS_COLORS.resolvido },
+      { name: 'Fechados', value: fechadoCount, color: STATUS_COLORS.fechado }
+    ].filter(s => s.value > 0);
+  }, [conversations]);
+
+  // Category distribution - use database category field
+  const categoryDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    conversations.forEach(c => {
+      const cat = c.category || 'outro';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    
+    return Object.entries(counts)
+      .map(([key, value]) => ({
+        name: CATEGORY_LABELS[key] || key,
+        value
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [conversations]);
+
+  // Response time trend (last 14 days)
+  const responseTimeTrend = useMemo(() => {
+    const last14Days = eachDayOfInterval({
+      start: subDays(new Date(), 13),
+      end: new Date()
+    });
+
+    return last14Days.map(day => {
+      const dayStart = startOfDay(day);
+      const dayEnd = startOfDay(addHours(day, 24));
+      
+      const dayConvs = conversations.filter(c => {
+        const created = new Date(c.created_at);
+        return created >= dayStart && created < dayEnd && c.first_response_at;
+      });
+
+      let avgTime = 0;
+      if (dayConvs.length > 0) {
+        const totalTime = dayConvs.reduce((sum, c) => {
+          const responseTime = new Date(c.first_response_at!).getTime() - new Date(c.created_at).getTime();
+          return sum + responseTime;
+        }, 0);
+        avgTime = Math.round(totalTime / dayConvs.length / (1000 * 60)); // in minutes
+      }
+
+      return {
+        date: format(day, 'dd/MM', { locale: ptBR }),
+        minutos: avgTime
+      };
+    });
   }, [conversations]);
 
   // Responses per week
@@ -108,46 +182,12 @@ const SupportCharts = ({ conversations, messages }: SupportChartsProps) => {
     }));
   }, [conversations]);
 
-  // Top categories (based on keywords in subject)
-  const topCategories = useMemo(() => {
-    const categories: Record<string, number> = {
-      'Pagamento': 0,
-      'Projeto': 0,
-      'Conta': 0,
-      'Token': 0,
-      'Resgate': 0,
-      'Outros': 0
-    };
-
-    conversations.forEach(conv => {
-      const subject = conv.subject.toLowerCase();
-      if (subject.includes('pagamento') || subject.includes('pagar') || subject.includes('pix')) {
-        categories['Pagamento']++;
-      } else if (subject.includes('projeto') || subject.includes('campanha')) {
-        categories['Projeto']++;
-      } else if (subject.includes('conta') || subject.includes('login') || subject.includes('senha')) {
-        categories['Conta']++;
-      } else if (subject.includes('token') || subject.includes('saldo')) {
-        categories['Token']++;
-      } else if (subject.includes('resgate') || subject.includes('saque') || subject.includes('ted')) {
-        categories['Resgate']++;
-      } else {
-        categories['Outros']++;
-      }
-    });
-
-    return Object.entries(categories)
-      .filter(([_, count]) => count > 0)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-  }, [conversations]);
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Volume by Day */}
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-base">Volume de Chamados por Dia</CardTitle>
+          <CardTitle className="text-base">Volume de Chamados por Dia (últimos 30 dias)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
@@ -168,7 +208,7 @@ const SupportCharts = ({ conversations, messages }: SupportChartsProps) => {
               />
               <Bar 
                 dataKey="chamados" 
-                fill="hsl(125, 65%, 35%)" 
+                fill="hsl(var(--primary))" 
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -182,63 +222,106 @@ const SupportCharts = ({ conversations, messages }: SupportChartsProps) => {
           <CardTitle className="text-base">Distribuição por Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={statusDistribution}
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {statusDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          {statusDistribution.length === 0 ? (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+              Nenhum chamado encontrado
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={statusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {statusDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
-      {/* Categories */}
+      {/* Category Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Categorias de Dúvidas</CardTitle>
+          <CardTitle className="text-base">Distribuição por Categoria</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {categoryDistribution.length === 0 ? (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+              Nenhum chamado encontrado
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={categoryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  {categoryDistribution.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Response Time Trend */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle className="text-base">Tempo Médio de Primeira Resposta (minutos) - últimos 14 dias</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={topCategories}
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={false}
-              >
-                {topCategories.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
+            <AreaChart data={responseTimeTrend}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip 
+                formatter={(value: number) => [`${value} min`, 'Tempo médio']}
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '8px'
                 }}
               />
-            </PieChart>
+              <Area 
+                type="monotone" 
+                dataKey="minutos" 
+                stroke="hsl(var(--primary))" 
+                fill="hsl(var(--primary) / 0.2)"
+                strokeWidth={2}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
@@ -265,14 +348,14 @@ const SupportCharts = ({ conversations, messages }: SupportChartsProps) => {
               <Line 
                 type="monotone" 
                 dataKey="admin" 
-                stroke="hsl(125, 65%, 35%)" 
+                stroke="#22c55e" 
                 strokeWidth={2}
                 name="Admin"
               />
               <Line 
                 type="monotone" 
                 dataKey="usuario" 
-                stroke="hsl(220, 70%, 55%)" 
+                stroke="#3b82f6" 
                 strokeWidth={2}
                 name="Usuário"
               />
@@ -293,7 +376,7 @@ const SupportCharts = ({ conversations, messages }: SupportChartsProps) => {
                 key={index}
                 className="aspect-square rounded flex items-center justify-center text-xs font-medium"
                 style={{
-                  backgroundColor: `hsla(125, 65%, 35%, ${0.1 + item.intensity * 0.9})`,
+                  backgroundColor: `hsla(var(--primary) / ${0.1 + item.intensity * 0.9})`,
                   color: item.intensity > 0.5 ? 'white' : 'inherit'
                 }}
                 title={`${item.hour}: ${item.chamados} chamados`}
