@@ -27,6 +27,7 @@ interface SupportTicketListProps {
   conversations: SupportConversation[];
   messages: SupportMessage[];
   onUserClick: (userId: string) => void;
+  onRefresh: () => void;
 }
 
 interface TicketWithDetails extends SupportConversation {
