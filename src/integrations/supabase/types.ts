@@ -1171,32 +1171,62 @@ export type Database = {
       }
       support_conversations: {
         Row: {
+          assigned_to: string | null
+          attachments: string[] | null
+          category: string | null
           closed_at: string | null
           closed_by: string | null
           created_at: string
+          description: string | null
+          first_response_at: string | null
           id: string
+          rated_at: string | null
+          rating: number | null
+          rating_comment: string | null
+          resolved_at: string | null
           status: string
           subject: string
+          ticket_number: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          assigned_to?: string | null
+          attachments?: string[] | null
+          category?: string | null
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string
+          description?: string | null
+          first_response_at?: string | null
           id?: string
+          rated_at?: string | null
+          rating?: number | null
+          rating_comment?: string | null
+          resolved_at?: string | null
           status?: string
           subject: string
+          ticket_number?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          assigned_to?: string | null
+          attachments?: string[] | null
+          category?: string | null
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string
+          description?: string | null
+          first_response_at?: string | null
           id?: string
+          rated_at?: string | null
+          rating?: number | null
+          rating_comment?: string | null
+          resolved_at?: string | null
           status?: string
           subject?: string
+          ticket_number?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1699,6 +1729,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_ticket_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -8,13 +8,22 @@ import SupportFAQInsights from './SupportFAQInsights';
 import SupportFilters from './SupportFilters';
 import SupportExport from './SupportExport';
 import SupportUserDetail from './SupportUserDetail';
-import { BarChart3, MessageCircle, Lightbulb, Users, Settings } from 'lucide-react';
+import SupportStatistics from './SupportStatistics';
+import { BarChart3, MessageCircle, Lightbulb, Users, Settings, TrendingUp } from 'lucide-react';
 
 export interface SupportConversation {
   id: string;
   user_id: string;
   subject: string;
   status: string;
+  category: string | null;
+  description: string | null;
+  ticket_number: string | null;
+  rating: number | null;
+  rating_comment: string | null;
+  rated_at: string | null;
+  first_response_at: string | null;
+  resolved_at: string | null;
   created_at: string;
   updated_at: string;
   closed_at: string | null;
@@ -32,20 +41,23 @@ export interface SupportMessage {
 }
 
 export interface SupportMetrics {
-  totalOpen: number;
-  totalInProgress: number;
-  totalResponded: number;
-  totalClosed: number;
+  totalNovo: number;
+  totalEmAndamento: number;
+  totalAguardandoUsuario: number;
+  totalResolvido: number;
+  totalFechado: number;
   avgFirstResponseTime: number;
   avgResolutionTime: number;
   firstContactResolutionRate: number;
+  avgRating: number;
+  totalRated: number;
   topUsers: Array<{ user_id: string; name: string; count: number }>;
   slaMetFirstResponse: number;
   slaMetResolution: number;
 }
 
 export interface FilterState {
-  status: 'all' | 'open' | 'closed' | 'in_progress';
+  status: 'all' | 'novo' | 'em_andamento' | 'aguardando_usuario' | 'resolvido' | 'fechado';
   period: 'today' | '7days' | '30days' | 'custom';
   startDate?: Date;
   endDate?: Date;
@@ -69,7 +81,6 @@ const SupportDashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch conversations
       const { data: convData, error: convError } = await supabase
         .from('support_conversations')
         .select('*')
@@ -78,7 +89,6 @@ const SupportDashboard = () => {
       if (convError) throw convError;
       setConversations(convData || []);
 
-      // Fetch all messages
       const { data: msgData, error: msgError } = await supabase
         .from('support_messages')
         .select('*')
@@ -108,23 +118,17 @@ const SupportDashboard = () => {
     };
   }, []);
 
-  // Filter conversations based on filters
   const filteredConversations = useMemo(() => {
     let filtered = [...conversations];
 
     // Status filter
     if (filters.status !== 'all') {
-      if (filters.status === 'in_progress') {
-        // In progress = open + has admin response but waiting for user
-        filtered = filtered.filter(c => {
-          const convMessages = messages.filter(m => m.conversation_id === c.id);
-          const hasAdminResponse = convMessages.some(m => m.sender_type === 'admin');
-          const lastMessage = convMessages[convMessages.length - 1];
-          return c.status === 'open' && hasAdminResponse && lastMessage?.sender_type === 'admin';
-        });
-      } else {
-        filtered = filtered.filter(c => c.status === filters.status);
-      }
+      filtered = filtered.filter(c => c.status === filters.status);
+    }
+
+    // Category filter
+    if (filters.category) {
+      filtered = filtered.filter(c => c.category === filters.category);
     }
 
     // Period filter
@@ -154,54 +158,36 @@ const SupportDashboard = () => {
       filtered = filtered.filter(c => new Date(c.created_at) <= filters.endDate!);
     }
 
-    // User filter
     if (filters.userId) {
       filtered = filtered.filter(c => c.user_id === filters.userId);
     }
 
-    // Search term
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
       filtered = filtered.filter(c => 
-        c.subject.toLowerCase().includes(term)
+        c.subject.toLowerCase().includes(term) ||
+        c.ticket_number?.toLowerCase().includes(term) ||
+        c.category?.toLowerCase().includes(term)
       );
     }
 
     return filtered;
-  }, [conversations, messages, filters]);
+  }, [conversations, filters]);
 
-  // Calculate metrics
   const metrics: SupportMetrics = useMemo(() => {
-    const openConvs = filteredConversations.filter(c => c.status === 'open');
-    const closedConvs = filteredConversations.filter(c => c.status === 'closed');
-    
-    // In progress = has admin response, waiting for user
-    const inProgressConvs = openConvs.filter(c => {
-      const convMessages = messages.filter(m => m.conversation_id === c.id);
-      const hasAdminResponse = convMessages.some(m => m.sender_type === 'admin');
-      const lastMessage = convMessages[convMessages.length - 1];
-      return hasAdminResponse && lastMessage?.sender_type === 'admin';
-    });
-
-    // Responded = user received at least one admin response
-    const respondedConvs = filteredConversations.filter(c => {
-      const convMessages = messages.filter(m => m.conversation_id === c.id);
-      return convMessages.some(m => m.sender_type === 'admin');
-    });
+    const novoConvs = filteredConversations.filter(c => c.status === 'novo');
+    const emAndamentoConvs = filteredConversations.filter(c => c.status === 'em_andamento');
+    const aguardandoConvs = filteredConversations.filter(c => c.status === 'aguardando_usuario');
+    const resolvidoConvs = filteredConversations.filter(c => c.status === 'resolvido');
+    const fechadoConvs = filteredConversations.filter(c => c.status === 'fechado');
 
     // Calculate avg first response time
     let totalFirstResponseTime = 0;
     let firstResponseCount = 0;
     
     filteredConversations.forEach(conv => {
-      const convMessages = messages.filter(m => m.conversation_id === conv.id).sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-      const firstUserMsg = convMessages.find(m => m.sender_type === 'user');
-      const firstAdminMsg = convMessages.find(m => m.sender_type === 'admin');
-      
-      if (firstUserMsg && firstAdminMsg) {
-        const responseTime = new Date(firstAdminMsg.created_at).getTime() - new Date(firstUserMsg.created_at).getTime();
+      if (conv.first_response_at) {
+        const responseTime = new Date(conv.first_response_at).getTime() - new Date(conv.created_at).getTime();
         totalFirstResponseTime += responseTime;
         firstResponseCount++;
       }
@@ -213,9 +199,10 @@ const SupportDashboard = () => {
     let totalResolutionTime = 0;
     let resolutionCount = 0;
 
-    closedConvs.forEach(conv => {
-      if (conv.closed_at) {
-        const resolutionTime = new Date(conv.closed_at).getTime() - new Date(conv.created_at).getTime();
+    [...resolvidoConvs, ...fechadoConvs].forEach(conv => {
+      const endTime = conv.resolved_at || conv.closed_at;
+      if (endTime) {
+        const resolutionTime = new Date(endTime).getTime() - new Date(conv.created_at).getTime();
         totalResolutionTime += resolutionTime;
         resolutionCount++;
       }
@@ -224,14 +211,21 @@ const SupportDashboard = () => {
     const avgResolutionTime = resolutionCount > 0 ? totalResolutionTime / resolutionCount : 0;
 
     // First contact resolution rate
-    const firstContactResolutions = closedConvs.filter(conv => {
+    const firstContactResolutions = [...resolvidoConvs, ...fechadoConvs].filter(conv => {
       const convMessages = messages.filter(m => m.conversation_id === conv.id);
       const adminMessages = convMessages.filter(m => m.sender_type === 'admin');
       return adminMessages.length === 1;
     });
 
-    const firstContactResolutionRate = closedConvs.length > 0 
-      ? (firstContactResolutions.length / closedConvs.length) * 100 
+    const totalResolved = resolvidoConvs.length + fechadoConvs.length;
+    const firstContactResolutionRate = totalResolved > 0 
+      ? (firstContactResolutions.length / totalResolved) * 100 
+      : 0;
+
+    // Average rating
+    const ratedConvs = filteredConversations.filter(c => c.rating !== null);
+    const avgRating = ratedConvs.length > 0
+      ? ratedConvs.reduce((sum, c) => sum + (c.rating || 0), 0) / ratedConvs.length
       : 0;
 
     // Top users
@@ -246,39 +240,37 @@ const SupportDashboard = () => {
       .slice(0, 10);
 
     // SLA metrics (target: 2h first response, 24h resolution)
-    const SLA_FIRST_RESPONSE = 2 * 60 * 60 * 1000; // 2 hours
-    const SLA_RESOLUTION = 24 * 60 * 60 * 1000; // 24 hours
+    const SLA_FIRST_RESPONSE = 2 * 60 * 60 * 1000;
+    const SLA_RESOLUTION = 24 * 60 * 60 * 1000;
 
     let metFirstResponseSLA = 0;
     filteredConversations.forEach(conv => {
-      const convMessages = messages.filter(m => m.conversation_id === conv.id).sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-      const firstUserMsg = convMessages.find(m => m.sender_type === 'user');
-      const firstAdminMsg = convMessages.find(m => m.sender_type === 'admin');
-      
-      if (firstUserMsg && firstAdminMsg) {
-        const responseTime = new Date(firstAdminMsg.created_at).getTime() - new Date(firstUserMsg.created_at).getTime();
+      if (conv.first_response_at) {
+        const responseTime = new Date(conv.first_response_at).getTime() - new Date(conv.created_at).getTime();
         if (responseTime <= SLA_FIRST_RESPONSE) metFirstResponseSLA++;
       }
     });
 
     let metResolutionSLA = 0;
-    closedConvs.forEach(conv => {
-      if (conv.closed_at) {
-        const resolutionTime = new Date(conv.closed_at).getTime() - new Date(conv.created_at).getTime();
+    [...resolvidoConvs, ...fechadoConvs].forEach(conv => {
+      const endTime = conv.resolved_at || conv.closed_at;
+      if (endTime) {
+        const resolutionTime = new Date(endTime).getTime() - new Date(conv.created_at).getTime();
         if (resolutionTime <= SLA_RESOLUTION) metResolutionSLA++;
       }
     });
 
     return {
-      totalOpen: openConvs.length - inProgressConvs.length,
-      totalInProgress: inProgressConvs.length,
-      totalResponded: respondedConvs.length,
-      totalClosed: closedConvs.length,
+      totalNovo: novoConvs.length,
+      totalEmAndamento: emAndamentoConvs.length,
+      totalAguardandoUsuario: aguardandoConvs.length,
+      totalResolvido: resolvidoConvs.length,
+      totalFechado: fechadoConvs.length,
       avgFirstResponseTime,
       avgResolutionTime,
       firstContactResolutionRate,
+      avgRating,
+      totalRated: ratedConvs.length,
       topUsers,
       slaMetFirstResponse: firstResponseCount > 0 ? (metFirstResponseSLA / firstResponseCount) * 100 : 100,
       slaMetResolution: resolutionCount > 0 ? (metResolutionSLA / resolutionCount) * 100 : 100
@@ -298,7 +290,6 @@ const SupportDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filters and Export */}
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <SupportFilters filters={filters} onFiltersChange={setFilters} />
         <SupportExport 
@@ -308,19 +299,21 @@ const SupportDashboard = () => {
         />
       </div>
 
-      {/* Metrics Cards */}
       <SupportMetricsCards metrics={metrics} loading={loading} />
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid grid-cols-2 lg:grid-cols-5 w-full lg:w-auto">
+      <Tabs defaultValue="tickets" className="space-y-6">
+        <TabsList className="grid grid-cols-2 lg:grid-cols-6 w-full lg:w-auto">
+          <TabsTrigger value="tickets" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">Chamados</span>
+          </TabsTrigger>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">Visão Geral</span>
           </TabsTrigger>
-          <TabsTrigger value="tickets" className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">Chamados</span>
+          <TabsTrigger value="statistics" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">Estatísticas</span>
           </TabsTrigger>
           <TabsTrigger value="insights" className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4" />
@@ -336,6 +329,15 @@ const SupportDashboard = () => {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="tickets">
+          <SupportTicketList 
+            conversations={filteredConversations}
+            messages={messages}
+            onUserClick={setSelectedUserId}
+            onRefresh={fetchData}
+          />
+        </TabsContent>
+
         <TabsContent value="overview">
           <SupportCharts 
             conversations={filteredConversations} 
@@ -343,11 +345,11 @@ const SupportDashboard = () => {
           />
         </TabsContent>
 
-        <TabsContent value="tickets">
-          <SupportTicketList 
+        <TabsContent value="statistics">
+          <SupportStatistics 
             conversations={filteredConversations}
             messages={messages}
-            onUserClick={setSelectedUserId}
+            metrics={metrics}
           />
         </TabsContent>
 
@@ -393,6 +395,8 @@ const SupportUsersList = ({
   useEffect(() => {
     const fetchUsers = async () => {
       const userIds = [...new Set(conversations.map(c => c.user_id))];
+      if (userIds.length === 0) return;
+      
       const { data } = await supabase
         .from('profiles')
         .select('id, nome, sobrenome, email')
@@ -410,15 +414,15 @@ const SupportUsersList = ({
   }, [conversations]);
 
   const userStats = useMemo(() => {
-    const stats: Record<string, { total: number; open: number; closed: number }> = {};
+    const stats: Record<string, { total: number; novo: number; resolvido: number }> = {};
     
     conversations.forEach(conv => {
       if (!stats[conv.user_id]) {
-        stats[conv.user_id] = { total: 0, open: 0, closed: 0 };
+        stats[conv.user_id] = { total: 0, novo: 0, resolvido: 0 };
       }
       stats[conv.user_id].total++;
-      if (conv.status === 'open') stats[conv.user_id].open++;
-      if (conv.status === 'closed') stats[conv.user_id].closed++;
+      if (conv.status === 'novo') stats[conv.user_id].novo++;
+      if (conv.status === 'resolvido' || conv.status === 'fechado') stats[conv.user_id].resolvido++;
     });
 
     return Object.entries(stats)
@@ -437,34 +441,40 @@ const SupportUsersList = ({
         <h3 className="font-semibold">Usuários por Volume de Chamados</h3>
       </div>
       <div className="divide-y">
-        {userStats.map((user) => (
-          <div 
-            key={user.userId}
-            onClick={() => onUserClick(user.userId)}
-            className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{user.name}</p>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="text-center">
-                  <p className="font-bold">{user.total}</p>
-                  <p className="text-muted-foreground">Total</p>
+        {userStats.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">
+            Nenhum usuário encontrado
+          </div>
+        ) : (
+          userStats.map((user) => (
+            <div 
+              key={user.userId}
+              onClick={() => onUserClick(user.userId)}
+              className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{user.name}</p>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
-                <div className="text-center">
-                  <p className="font-bold text-green-600">{user.open}</p>
-                  <p className="text-muted-foreground">Abertos</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-bold text-gray-500">{user.closed}</p>
-                  <p className="text-muted-foreground">Fechados</p>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="font-bold">{user.total}</p>
+                    <p className="text-muted-foreground">Total</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-amber-600">{user.novo}</p>
+                    <p className="text-muted-foreground">Novos</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-bold text-green-600">{user.resolvido}</p>
+                    <p className="text-muted-foreground">Resolvidos</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
@@ -480,9 +490,6 @@ const SupportSLAPanel = ({
   messages: SupportMessage[];
   metrics: SupportMetrics;
 }) => {
-  const SLA_FIRST_RESPONSE = 2 * 60 * 60 * 1000; // 2 hours
-  const SLA_RESOLUTION = 24 * 60 * 60 * 1000; // 24 hours
-
   const formatTime = (ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60));
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
@@ -493,7 +500,6 @@ const SupportSLAPanel = ({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* First Response SLA */}
         <div className="rounded-lg border bg-card p-6">
           <h3 className="font-semibold mb-4">SLA de Primeira Resposta</h3>
           <div className="space-y-4">
@@ -502,25 +508,18 @@ const SupportSLAPanel = ({
               <span className="font-medium">2 horas</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Tempo Médio Real</span>
+              <span className="text-muted-foreground">Média Atual</span>
               <span className="font-medium">{formatTime(metrics.avgFirstResponseTime)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Taxa de Cumprimento</span>
-              <span className={`font-bold ${metrics.slaMetFirstResponse >= 80 ? 'text-green-600' : metrics.slaMetFirstResponse >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <span className="text-muted-foreground">Cumprimento</span>
+              <span className={`font-bold ${metrics.slaMetFirstResponse >= 80 ? 'text-green-600' : 'text-red-600'}`}>
                 {metrics.slaMetFirstResponse.toFixed(1)}%
               </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-3">
-              <div 
-                className={`h-3 rounded-full transition-all ${metrics.slaMetFirstResponse >= 80 ? 'bg-green-500' : metrics.slaMetFirstResponse >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                style={{ width: `${Math.min(metrics.slaMetFirstResponse, 100)}%` }}
-              />
             </div>
           </div>
         </div>
 
-        {/* Resolution SLA */}
         <div className="rounded-lg border bg-card p-6">
           <h3 className="font-semibold mb-4">SLA de Resolução</h3>
           <div className="space-y-4">
@@ -529,38 +528,15 @@ const SupportSLAPanel = ({
               <span className="font-medium">24 horas</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Tempo Médio Real</span>
+              <span className="text-muted-foreground">Média Atual</span>
               <span className="font-medium">{formatTime(metrics.avgResolutionTime)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Taxa de Cumprimento</span>
-              <span className={`font-bold ${metrics.slaMetResolution >= 80 ? 'text-green-600' : metrics.slaMetResolution >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <span className="text-muted-foreground">Cumprimento</span>
+              <span className={`font-bold ${metrics.slaMetResolution >= 80 ? 'text-green-600' : 'text-red-600'}`}>
                 {metrics.slaMetResolution.toFixed(1)}%
               </span>
             </div>
-            <div className="w-full bg-muted rounded-full h-3">
-              <div 
-                className={`h-3 rounded-full transition-all ${metrics.slaMetResolution >= 80 ? 'bg-green-500' : metrics.slaMetResolution >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                style={{ width: `${Math.min(metrics.slaMetResolution, 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* First Contact Resolution */}
-      <div className="rounded-lg border bg-card p-6">
-        <h3 className="font-semibold mb-4">Resolução no Primeiro Contato</h3>
-        <div className="flex items-center gap-8">
-          <div className="text-center">
-            <p className="text-4xl font-bold text-primary">{metrics.firstContactResolutionRate.toFixed(1)}%</p>
-            <p className="text-sm text-muted-foreground mt-1">dos chamados resolvidos</p>
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-muted-foreground">
-              Este indicador mostra a porcentagem de chamados que foram resolvidos com apenas uma resposta do suporte, 
-              sem necessidade de interações adicionais.
-            </p>
           </div>
         </div>
       </div>
