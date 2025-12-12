@@ -1,12 +1,14 @@
 
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FolderPlus, Folder, User, Shield, Wallet } from 'lucide-react';
+import { Home, FolderPlus, Folder, User, Shield, Wallet, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSupportMessages } from '@/hooks/useSupportMessages';
 
 const MobileNavigation = () => {
   const location = useLocation();
   const { user, isAdmin } = useAuth();
+  const { unreadCount: supportUnreadCount } = useSupportMessages();
 
   // Don't show navigation on auth pages, home page, or if user is not authenticated
   if (['/login', '/registro', '/esqueci-senha', '/'].includes(location.pathname) || !user) {
@@ -14,10 +16,10 @@ const MobileNavigation = () => {
   }
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Home', href: '/dashboard', icon: Home },
     { name: 'Criar', href: '/criar-projeto', icon: FolderPlus },
     { name: 'Projetos', href: '/meus-projetos', icon: Folder },
-    { name: 'Carteira', href: '/carteira', icon: Wallet },
+    { name: 'Suporte', href: '/perfil?tab=support', icon: MessageCircle, badge: supportUnreadCount },
     { name: 'Perfil', href: '/perfil', icon: User },
   ];
 
@@ -35,16 +37,21 @@ const MobileNavigation = () => {
           <Link
             key={item.name}
             to={item.href}
-            className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors relative ${
-              isCurrentPath(item.href)
+            className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-lg transition-colors relative ${
+              isCurrentPath(item.href) || (item.href.includes('?') && location.pathname === item.href.split('?')[0])
                 ? 'text-raiz-primary bg-raiz-primary/10'
                 : 'text-raiz-secondary hover:text-raiz-primary'
             }`}
           >
             <item.icon className="w-5 h-5" />
-            <span className="text-xs font-medium">{item.name}</span>
+            <span className="text-[10px] font-medium">{item.name}</span>
+            {item.badge && item.badge > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 bg-orange-500 text-white text-[9px]">
+                {item.badge}
+              </Badge>
+            )}
             {item.name === 'Admin' && (
-              <Badge variant="secondary" className="absolute -top-1 -right-1 text-xs px-1">
+              <Badge variant="secondary" className="absolute -top-1 -right-1 text-[9px] px-1">
                 A
               </Badge>
             )}
