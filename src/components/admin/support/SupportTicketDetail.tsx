@@ -110,6 +110,29 @@ const SupportTicketDetail = ({
     if (data) setMessages(data);
   };
 
+  const sendRatingEmail = async () => {
+    try {
+      const { error } = await supabase.functions.invoke('send-support-rating-email', {
+        body: {
+          conversationId: ticket.id,
+          userId: ticket.user_id,
+          userEmail: userEmail,
+          userName: userName,
+          ticketNumber: ticket.ticket_number,
+          subject: ticket.subject
+        }
+      });
+
+      if (error) {
+        console.error('Error sending rating email:', error);
+      } else {
+        console.log('Rating email sent successfully');
+      }
+    } catch (err) {
+      console.error('Failed to send rating email:', err);
+    }
+  };
+
   const handleStatusChange = async (newStatus: string) => {
     setUpdatingStatus(true);
     try {
@@ -135,10 +158,20 @@ const SupportTicketDetail = ({
       if (error) throw error;
 
       setCurrentStatus(newStatus);
-      toast({
-        title: 'Status atualizado',
-        description: `Chamado marcado como "${STATUS_OPTIONS.find(s => s.value === newStatus)?.label}"`,
-      });
+
+      // Send rating email when marked as resolved
+      if (newStatus === 'resolvido' && userEmail) {
+        await sendRatingEmail();
+        toast({
+          title: 'Status atualizado',
+          description: 'Chamado resolvido e email de avaliação enviado ao usuário.',
+        });
+      } else {
+        toast({
+          title: 'Status atualizado',
+          description: `Chamado marcado como "${STATUS_OPTIONS.find(s => s.value === newStatus)?.label}"`,
+        });
+      }
     } catch (error) {
       console.error('Error updating status:', error);
       toast({

@@ -18,6 +18,7 @@ import { Star, ThumbsUp, ThumbsDown, Minus, TrendingUp, MessageSquare, Clock, Ch
 import { SupportConversation, SupportMessage, SupportMetrics } from './SupportDashboard';
 import { format, subDays, eachDayOfInterval, startOfDay, addHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import SupportAlerts from './SupportAlerts';
 
 interface SupportNPSDashboardProps {
   conversations: SupportConversation[];
@@ -351,6 +352,11 @@ const SupportNPSDashboard = ({ conversations, messages, metrics }: SupportNPSDas
           </div>
         </CardContent>
       </Card>
+
+      {/* Support Alerts */}
+      <div className="lg:col-span-2">
+        <SupportAlerts />
+      </div>
     </div>
   );
 };
