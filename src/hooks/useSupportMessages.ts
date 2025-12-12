@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRealtimeChannel } from './useRealtimeChannel';
 
 export const useSupportMessages = () => {
   const { user, isAdmin } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user) {
@@ -60,43 +60,21 @@ export const useSupportMessages = () => {
     }
   }, [user, isAdmin]);
 
+  // Initial fetch
   useEffect(() => {
-    if (!user) return;
-
     fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
-    // Cleanup existing channel before creating new one
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    // Use unique channel name per user
-    const channelName = `support-messages-${user.id}-${Date.now()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'support_messages'
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [user, isAdmin, fetchUnreadCount]);
+  // Use the singleton realtime channel hook with unique name per user
+  useRealtimeChannel({
+    channelName: `support-msgs-${user?.id || 'anonymous'}`,
+    enabled: !!user,
+    table: 'support_messages',
+    event: '*',
+    onEvent: () => {
+      fetchUnreadCount();
+    },
+  });
 
   return { unreadCount, refetch: fetchUnreadCount };
 };
