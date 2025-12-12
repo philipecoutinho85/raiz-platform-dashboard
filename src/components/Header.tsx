@@ -47,7 +47,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <img src={raizLogo} alt="Raiz Token" className="h-20 w-auto transition-transform hover:scale-105" />
+            <img src={raizLogo} alt="Raiz Token" className="h-12 md:h-20 w-auto object-contain transition-transform hover:scale-105" />
           </Link>
 
           <nav className="hidden md:flex items-center space-x-8" data-tour="header-nav">
@@ -61,6 +61,14 @@ const Header = () => {
                 </Link>
                 <Link to="/criar-projeto" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Criar Projeto
+                </Link>
+                <Link to="/perfil?tab=support" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors flex items-center gap-1">
+                  Suporte
+                  {supportUnreadCount > 0 && (
+                    <Badge className="h-5 w-5 flex items-center justify-center p-0 bg-orange-500 text-white text-xs">
+                      {supportUnreadCount}
+                    </Badge>
+                  )}
                 </Link>
               </>
             ) : (
