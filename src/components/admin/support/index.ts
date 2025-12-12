@@ -9,3 +9,4 @@ export { default as SupportExport } from './SupportExport';
 export { default as SupportUserDetail } from './SupportUserDetail';
 export { default as SupportStatistics } from './SupportStatistics';
 export { default as SupportNPSDashboard } from './SupportNPSDashboard';
+export { default as SupportAlerts } from './SupportAlerts';

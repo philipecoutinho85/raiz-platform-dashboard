@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.send-contact-email]
 verify_jwt = false
+
+[functions.send-support-rating-email]
+verify_jwt = true
+
+[functions.check-support-alerts]
+verify_jwt = false
