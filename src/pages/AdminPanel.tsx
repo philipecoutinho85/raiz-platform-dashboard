@@ -89,14 +89,14 @@ const AdminPanel = () => {
     setSelectedUser(null);
   };
 
-  const handleProjectActionWrapper = async (projectId: string, action: string, reason?: string) => {
+  const handleProjectActionWrapper = async (projectId: string, action: string, reason?: string, projectType?: 'seed' | 'regular') => {
     if (action === 'reject') {
       await handleProjectAction(projectId, action, reason);
       setIsRejectModalOpen(false);
       setRejectionReason('');
       setSelectedUser(null);
     } else {
-      await handleProjectAction(projectId, action, reason);
+      await handleProjectAction(projectId, action, reason, projectType);
     }
   };
 

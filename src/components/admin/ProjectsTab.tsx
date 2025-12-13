@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Eye, Check, X, Search, Trash2, Clock } from 'lucide-react';
+import ApproveProjectModal from './ApproveProjectModal';
 
 interface Project {
   id: string;
@@ -49,7 +50,7 @@ interface Project {
 
 interface ProjectsTabProps {
   pendingProjects: Project[];
-  onProjectAction: (projectId: string, action: string, reason?: string) => void;
+  onProjectAction: (projectId: string, action: string, reason?: string, projectType?: 'seed' | 'regular') => void;
   onRejectProject: (project: Project) => void;
   onViewProjectDetails: (project: Project) => void;
 }
@@ -63,6 +64,15 @@ const ProjectsTab = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [approveProject, setApproveProject] = useState<Project | null>(null);
+  const [isApproving, setIsApproving] = useState(false);
+
+  const handleApproveWithType = async (projectId: string, projectType: 'seed' | 'regular') => {
+    setIsApproving(true);
+    await onProjectAction(projectId, 'approve', undefined, projectType);
+    setIsApproving(false);
+    setApproveProject(null);
+  };
 
   const filteredProjects = pendingProjects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,7 +236,7 @@ const ProjectsTab = ({
                   <>
                     <Button
                       size="sm"
-                      onClick={() => onProjectAction(project.id, 'approve')}
+                      onClick={() => setApproveProject(project)}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <Check className="w-4 h-4 mr-1" />
@@ -343,6 +353,15 @@ const ProjectsTab = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de aprovação com seleção de tipo */}
+      <ApproveProjectModal
+        isOpen={!!approveProject}
+        onOpenChange={(open) => !open && setApproveProject(null)}
+        project={approveProject}
+        onApprove={handleApproveWithType}
+        isLoading={isApproving}
+      />
     </div>
   );
 };
