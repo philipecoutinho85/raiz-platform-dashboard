@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { SupportConversation, SupportMessage } from './SupportDashboard';
+import SupportTicketDetail from './SupportTicketDetail';
 import { 
   MessageCircle, 
   User, 
@@ -21,7 +22,6 @@ import {
   Calendar,
   Timer
 } from 'lucide-react';
-import SupportChat from '@/components/support/SupportChat';
 
 interface SupportTicketListProps {
   conversations: SupportConversation[];
@@ -160,12 +160,21 @@ const SupportTicketList = ({ conversations, messages, onUserClick }: SupportTick
     return { conv, events };
   }, [showTimeline, conversations, messages, users]);
 
-  if (selectedTicket) {
+  const selectedTicketData = useMemo(() => {
+    if (!selectedTicket) return null;
+    return ticketsWithDetails.find(t => t.id === selectedTicket) || null;
+  }, [selectedTicket, ticketsWithDetails]);
+
+  if (selectedTicketData) {
+    const ticketMessages = messages.filter(m => m.conversation_id === selectedTicketData.id);
     return (
-      <SupportChat
-        conversationId={selectedTicket}
+      <SupportTicketDetail
+        ticket={selectedTicketData}
+        messages={ticketMessages}
+        userName={selectedTicketData.userName || 'Usuário'}
+        userEmail={selectedTicketData.userEmail || ''}
         onBack={() => setSelectedTicket(null)}
-        isAdminView={true}
+        onUserClick={onUserClick}
       />
     );
   }
