@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRealtimeChannel } from './useRealtimeChannel';
 
 export const useSupportMessages = () => {
   const { user, isAdmin } = useAuth();
@@ -60,21 +59,14 @@ export const useSupportMessages = () => {
     }
   }, [user, isAdmin]);
 
-  // Initial fetch
+  // Initial fetch and polling every 30 seconds (avoids realtime subscription issues)
   useEffect(() => {
     fetchUnreadCount();
-  }, [fetchUnreadCount]);
 
-  // Use the singleton realtime channel hook with unique name per user
-  useRealtimeChannel({
-    channelName: `support-msgs-${user?.id || 'anonymous'}`,
-    enabled: !!user,
-    table: 'support_messages',
-    event: '*',
-    onEvent: () => {
-      fetchUnreadCount();
-    },
-  });
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   return { unreadCount, refetch: fetchUnreadCount };
 };
