@@ -14,13 +14,15 @@ interface StripePaymentButtonProps {
   projectTitle: string;
   creatorHasStripe: boolean;
   minAmount?: number;
+  isOwner?: boolean;
 }
 
 export const StripePaymentButton = ({ 
   projectId, 
   projectTitle, 
   creatorHasStripe,
-  minAmount = 5 
+  minAmount = 5,
+  isOwner = false
 }: StripePaymentButtonProps) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -60,15 +62,21 @@ export const StripePaymentButton = ({
 
   const quickAmounts = [10, 25, 50, 100];
 
-  if (!creatorHasStripe) {
+  // Only show message to the project owner
+  if (!creatorHasStripe && isOwner) {
     return (
       <Alert variant="destructive" className="mt-4">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          O criador deste projeto ainda não configurou a conta para receber pagamentos.
+          Você ainda não configurou sua conta para receber pagamentos. Configure no seu perfil.
         </AlertDescription>
       </Alert>
     );
+  }
+
+  // Don't show anything if creator hasn't set up Stripe and user is not owner
+  if (!creatorHasStripe) {
+    return null;
   }
 
   return (

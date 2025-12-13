@@ -72,15 +72,19 @@ serve(async (req) => {
       title: project.title, 
       creatorId: creatorProfile.id,
       stripeAccountId: creatorProfile.stripe_account_id,
-      platformFee: project.platform_fee_percentage
+      platformFee: project.platform_fee_percentage,
+      projectType: project.project_type
     });
 
-    // Calculate platform fee and creator amount
-    const platformFeePercent = project.platform_fee_percentage || 10;
+    // Calculate platform fee and creator amount based on project type
+    // Seed projects: 0% fee, Regular projects: 10% fee (or custom)
+    const projectType = project.project_type || 'regular';
+    const platformFeePercent = projectType === 'seed' ? 0 : (project.platform_fee_percentage || 10);
     const platformFeeCents = Math.round(amountCents * (platformFeePercent / 100));
     const creatorAmountCents = amountCents - platformFeeCents;
 
     logStep("Fee calculation", { 
+      projectType,
       platformFeePercent, 
       platformFeeCents, 
       creatorAmountCents 
@@ -123,6 +127,7 @@ serve(async (req) => {
         },
         metadata: {
           project_id: projectId,
+          project_type: projectType,
           user_id: user.id,
           creator_id: creatorProfile.id,
           platform_fee: platformFeeCents,
@@ -133,6 +138,7 @@ serve(async (req) => {
       cancel_url: `${origin}/projeto/${projectId}?payment=cancelled`,
       metadata: {
         project_id: projectId,
+        project_type: projectType,
         user_id: user.id,
         creator_id: creatorProfile.id,
       },
