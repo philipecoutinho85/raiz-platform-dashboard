@@ -51,9 +51,7 @@ interface ProjectDetailModalProps {
 const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: ProjectDetailModalProps) => {
   const { isAdmin, user } = useAuth();
   const [isEditingGoal, setIsEditingGoal] = useState(false);
-  const [isEditingFee, setIsEditingFee] = useState(false);
   const [customGoal, setCustomGoal] = useState('');
-  const [adminFee, setAdminFee] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
   const [projectType, setProjectType] = useState<'seed' | 'regular'>('regular');
@@ -82,12 +80,13 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
   useEffect(() => {
     if (project) {
       setCustomGoal(project.custom_goal?.toString() || '');
-      setAdminFee(project.admin_fee_percentage?.toString() || '10');
       setProjectType(project.project_type || 'regular');
     }
   }, [project]);
 
   const handleSaveProjectType = async (newType: 'seed' | 'regular') => {
+    if (newType === projectType) return; // Evitar chamadas desnecessárias
+    
     setIsSavingType(true);
     try {
       const platformFee = newType === 'seed' ? 0 : 10;
@@ -105,8 +104,10 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
       setProjectType(newType);
       toast.success(`Tipo de projeto atualizado para ${newType === 'seed' ? 'Projeto Semente (0%)' : 'Projeto Regular (10%)'}`);
       
-      if (onUpdate) {
-        await onUpdate();
+      // Atualizar o projeto localmente para refletir imediatamente
+      if (project) {
+        project.project_type = newType;
+        project.platform_fee_percentage = platformFee;
       }
     } catch (error) {
       console.error('Error updating project type:', error);
@@ -181,39 +182,6 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
     }
   };
 
-  const handleSaveFee = async () => {
-    setIsSaving(true);
-    try {
-      const newFeeValue = adminFee ? parseFloat(adminFee) : 10;
-      
-      const { error } = await supabase
-        .from('projects')
-        .update({ 
-          admin_fee_percentage: newFeeValue
-        })
-        .eq('id', project.id);
-
-      if (error) throw error;
-
-      toast.success('Taxa administrativa atualizada com sucesso!');
-      setIsEditingFee(false);
-      
-      // Atualizar o projeto localmente para refletir imediatamente
-      if (project) {
-        project.admin_fee_percentage = newFeeValue;
-      }
-      
-      // Chamar callback para atualizar lista no painel admin
-      if (onUpdate) {
-        await onUpdate();
-      }
-    } catch (error) {
-      console.error('Error updating admin fee:', error);
-      toast.error('Erro ao atualizar taxa administrativa');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -392,60 +360,6 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
                       )}
                     </div>
 
-                    {/* Taxa Administrativa */}
-                    <div className="bg-raiz-light p-3 rounded-lg space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-semibold text-raiz-dark">
-                          Taxa Administrativa
-                        </Label>
-                        {!isEditingFee && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setIsEditingFee(true)}
-                          >
-                            <Edit2 className="w-3 h-3 mr-1" />
-                            Editar
-                          </Button>
-                        )}
-                      </div>
-                      {isEditingFee ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            value={adminFee}
-                            onChange={(e) => setAdminFee(e.target.value)}
-                            placeholder="Taxa em %"
-                            className="flex-1"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={handleSaveFee}
-                            disabled={isSaving}
-                          >
-                            <Save className="w-3 h-3 mr-1" />
-                            Salvar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setIsEditingFee(false);
-                              setAdminFee(project?.admin_fee_percentage?.toString() || '10');
-                            }}
-                          >
-                            Cancelar
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-raiz-secondary">
-                          {project.admin_fee_percentage || 10}% sobre os recursos arrecadados
-                        </p>
-                      )}
-                    </div>
                   </div>
                   {project.deadline && (
                     <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
