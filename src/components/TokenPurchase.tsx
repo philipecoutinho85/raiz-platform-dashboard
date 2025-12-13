@@ -4,16 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Coins, CreditCard, Shield, Lock, CheckCircle2, Loader2 } from 'lucide-react';
+import { Coins, CreditCard, Shield, Lock, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import EmbeddedCheckoutComponent from './EmbeddedCheckout';
 
 const TokenPurchase = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [showCheckout, setShowCheckout] = useState(false);
 
   // Calcular valor em reais baseado na quantidade de tokens (1 token = R$ 1,00)
   const calculatePrice = (tokens: number) => {
@@ -28,7 +29,7 @@ const TokenPurchase = () => {
     { tokens: 1000, price: 1000, bonus: 0 },
   ];
 
-  const handlePurchase = async (tokens: number) => {
+  const handleSelectPackage = (tokens: number) => {
     if (!user) {
       toast({
         title: 'Erro',
@@ -37,83 +38,85 @@ const TokenPurchase = () => {
       });
       return;
     }
+    setSelectedAmount(tokens);
+    setShowCheckout(true);
+  };
 
-    setLoading(true);
-    try {
-      // Verify session is still valid before making the call
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !sessionData.session) {
-        toast({
-          title: 'Sessão expirada',
-          description: 'Por favor, faça login novamente para continuar.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('stripe-token-checkout', {
-        body: { amount: tokens }
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = data.url;
-      } else {
-        toast({
-          title: 'Atenção',
-          description: 'Não foi possível processar a compra. Entre em contato com o suporte.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error: any) {
-      console.error('Erro na compra:', error);
-      
-      // Parse the error message to detect specific error types
-      const errorMessage = error.message || '';
-      const errorBody = typeof error.context?.body === 'string' 
-        ? JSON.parse(error.context?.body || '{}').error 
-        : (error.context?.body?.error || errorMessage);
-      
-      // Check for token expired error
-      if (errorBody?.includes('TOKEN_EXPIRED') || errorBody?.includes('expired') || errorBody?.includes('jwt')) {
-        toast({
-          title: 'Sessão expirada',
-          description: 'Sua sessão expirou. Por favor, faça login novamente para continuar.',
-          variant: 'destructive',
-        });
-        // Optionally trigger logout
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
-        return;
-      }
-      
-      // Check for auth error
-      if (errorBody?.includes('AUTH_ERROR') || errorBody?.includes('autenticado')) {
-        toast({
-          title: 'Erro de autenticação',
-          description: 'Você precisa estar logado para comprar tokens. Redirecionando para login...',
-          variant: 'destructive',
-        });
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
-        return;
-      }
-      
-      // Generic error
+  const handleCustomPurchase = () => {
+    const tokens = parseInt(amount);
+    if (!user) {
       toast({
-        title: 'Erro na compra',
-        description: errorBody || 'Não foi possível processar a compra. Tente novamente.',
+        title: 'Erro',
+        description: 'Você precisa estar logado para comprar tokens.',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
+      return;
+    }
+    if (tokens >= 5) {
+      setSelectedAmount(tokens);
+      setShowCheckout(true);
     }
   };
+
+  const handleCheckoutComplete = () => {
+    toast({
+      title: 'Pagamento processado!',
+      description: 'Seus tokens serão creditados em instantes.',
+    });
+    setShowCheckout(false);
+    setSelectedAmount(null);
+    // Redirect to wallet with success
+    window.location.href = '/carteira?payment=success';
+  };
+
+  const handleCheckoutError = (error: string) => {
+    console.error('Checkout error:', error);
+    setShowCheckout(false);
+    setSelectedAmount(null);
+  };
+
+  const handleBackToPackages = () => {
+    setShowCheckout(false);
+    setSelectedAmount(null);
+  };
+
+  // Show embedded checkout when amount is selected
+  if (showCheckout && selectedAmount) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleBackToPackages}
+                className="p-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <CardTitle className="flex items-center space-x-2">
+                <Coins className="w-5 h-5" />
+                <span>Comprar {selectedAmount} Tokens - R$ {calculatePrice(selectedAmount)}</span>
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Escolha seu método de pagamento: <strong>Cartão de Crédito</strong> ou <strong>Boleto Bancário</strong>
+              </p>
+            </div>
+            <EmbeddedCheckoutComponent 
+              amount={selectedAmount}
+              onComplete={handleCheckoutComplete}
+              onError={handleCheckoutError}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -180,15 +183,10 @@ const TokenPurchase = () => {
                 </div>
 
                 <Button
-                  onClick={() => handlePurchase(pkg.tokens + pkg.bonus)}
-                  disabled={loading}
+                  onClick={() => handleSelectPackage(pkg.tokens + pkg.bonus)}
                   className="w-full"
                 >
-                  {loading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <CreditCard className="w-4 h-4 mr-2" />
-                  )}
+                  <CreditCard className="w-4 h-4 mr-2" />
                   Comprar
                 </Button>
               </div>
@@ -217,21 +215,12 @@ const TokenPurchase = () => {
                 </div>
               )}
               <Button
-                onClick={() => {
-                  const tokens = parseInt(amount);
-                  if (tokens >= 5 && tokens > 0) {
-                    handlePurchase(tokens);
-                  }
-                }}
-                disabled={loading || !amount || parseInt(amount) < 5}
+                onClick={handleCustomPurchase}
+                disabled={!amount || parseInt(amount) < 5}
                 className="w-full"
               >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <CreditCard className="w-4 h-4 mr-2" />
-                )}
-                {loading ? 'Processando...' : 'Comprar'}
+                <CreditCard className="w-4 h-4 mr-2" />
+                Comprar
               </Button>
             </div>
             <p className="text-xs text-raiz-secondary mt-2">

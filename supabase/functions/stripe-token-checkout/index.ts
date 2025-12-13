@@ -99,14 +99,23 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Found existing Stripe customer", { customerId });
+    } else {
+      // Create a new customer
+      const newCustomer = await stripe.customers.create({
+        email: user.email,
+        metadata: {
+          user_id: user.id
+        }
+      });
+      customerId = newCustomer.id;
+      logStep("Created new Stripe customer", { customerId });
     }
 
     const origin = req.headers.get("origin") || "https://raiztoken.com.br";
 
-    // Create Stripe Checkout session
+    // Create Stripe Checkout session with embedded mode (ui_mode: 'embedded')
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price_data: {
@@ -122,8 +131,8 @@ serve(async (req) => {
       ],
       mode: "payment",
       payment_method_types: ["card", "boleto"],
-      success_url: `${origin}/carteira?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/carteira?payment=cancelled`,
+      ui_mode: "embedded",
+      return_url: `${origin}/carteira?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         purchase_id: purchase.id,
         user_id: user.id,
@@ -132,20 +141,20 @@ serve(async (req) => {
       }
     });
 
-    logStep("Checkout session created", { sessionId: session.id });
+    logStep("Checkout session created (embedded mode)", { sessionId: session.id });
 
     // Update purchase with Stripe session ID
     await supabase
       .from('token_purchases')
       .update({ 
-        pagarme_transaction_id: session.id, // Reusing field for Stripe session ID
+        pagarme_transaction_id: session.id,
         status: 'pending'
       })
       .eq('id', purchase.id);
 
     return new Response(
       JSON.stringify({ 
-        url: session.url,
+        clientSecret: session.client_secret,
         sessionId: session.id,
         purchaseId: purchase.id
       }),
