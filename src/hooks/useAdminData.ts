@@ -209,18 +209,33 @@ export const useAdminData = () => {
     }
   };
 
-  const handleProjectAction = async (projectId: string, action: string, reason?: string) => {
+  const handleProjectAction = async (projectId: string, action: string, reason?: string, projectType?: 'seed' | 'regular') => {
     try {
       if (action === 'approve') {
+        // Validar que o tipo de projeto foi selecionado
+        if (!projectType) {
+          toast({
+            title: "Erro",
+            description: "É obrigatório selecionar o tipo de projeto (Semente ou Regular).",
+            variant: "destructive"
+          });
+          return;
+        }
+
         // Buscar meta do projeto antes de aprovar
         const project = allProjects.find(p => p.id === projectId);
+        
+        // Definir a taxa baseada no tipo de projeto
+        const platformFee = projectType === 'seed' ? 0 : 10;
         
         const { error } = await supabase
           .from('projects')
           .update({
             status: 'approved',
             reviewed_at: new Date().toISOString(),
-            reviewed_by: user?.id
+            reviewed_by: user?.id,
+            project_type: projectType,
+            platform_fee_percentage: platformFee
           })
           .eq('id', projectId);
 
@@ -249,7 +264,9 @@ export const useAdminData = () => {
 
         // Log da ação
         await logAdminAction('approve_project', 'project', projectId, { 
-          project_goal: project?.goal 
+          project_goal: project?.goal,
+          project_type: projectType,
+          platform_fee: platformFee
         });
 
         // Verificar se precisa de alerta de alto valor
@@ -259,7 +276,7 @@ export const useAdminData = () => {
 
         toast({
           title: "Projeto aprovado",
-          description: `O projeto foi aprovado e está disponível na plataforma.`,
+          description: `O projeto foi aprovado como ${projectType === 'seed' ? 'Projeto Semente (0% taxa)' : 'Projeto Regular (10% taxa)'} e está disponível na plataforma.`,
         });
         
       } else if (action === 'reject') {
