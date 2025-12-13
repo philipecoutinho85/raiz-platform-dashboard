@@ -46,6 +46,8 @@ interface Project {
   custom_goal?: number;
   admin_fee_percentage?: number;
   updated_at?: string;
+  project_type?: 'seed' | 'regular';
+  platform_fee_percentage?: number;
 }
 
 interface ProjectsTabProps {

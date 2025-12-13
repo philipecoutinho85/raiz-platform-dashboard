@@ -29,6 +29,8 @@ interface Project {
   admin_fee_percentage?: number;
   rejection_reason?: string;
   pending_requirements?: string;
+  project_type?: 'seed' | 'regular';
+  platform_fee_percentage?: number;
 }
 
 interface AdminUser {
@@ -123,7 +125,9 @@ export const useAdminData = () => {
               custom_goal: project.custom_goal,
               admin_fee_percentage: project.admin_fee_percentage,
               rejection_reason: project.rejection_reason,
-              pending_requirements: project.pending_requirements
+              pending_requirements: project.pending_requirements,
+              project_type: project.project_type as 'seed' | 'regular' | undefined,
+              platform_fee_percentage: project.platform_fee_percentage
             });
           }
         }
