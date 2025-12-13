@@ -33,6 +33,7 @@ interface ProjectFormData {
   estado?: string;
   meta_pixel_id?: string;
   google_tag_id?: string;
+  project_type?: 'seed' | 'regular';
 }
 
 const PROJECT_CATEGORIES = [
@@ -95,6 +96,7 @@ const CreateProject = () => {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [initialInvestment, setInitialInvestment] = useState<string>('');
+  const [projectType, setProjectType] = useState<'seed' | 'regular'>('regular');
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -246,6 +248,8 @@ const CreateProject = () => {
           meta_pixel_id: data.meta_pixel_id?.trim() || null,
           google_tag_id: data.google_tag_id?.trim() || null,
           status: 'pending',
+          project_type: isAdmin ? projectType : 'regular',
+          platform_fee_percentage: (isAdmin && projectType === 'seed') ? 0 : 10,
         })
         .select()
         .single();
@@ -509,6 +513,62 @@ const CreateProject = () => {
                     />
                   </div>
                 </div>
+
+                {/* Admin Project Type Selection */}
+                {isAdmin && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-raiz-dark font-semibold">
+                        Tipo de Projeto
+                      </Label>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <label 
+                        className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          projectType === 'seed' 
+                            ? 'border-green-500 bg-green-50' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="projectType"
+                          value="seed"
+                          checked={projectType === 'seed'}
+                          onChange={() => setProjectType('seed')}
+                          className="w-4 h-4 text-green-500"
+                        />
+                        <div>
+                          <span className="font-medium">🌱 Projeto Semente</span>
+                          <p className="text-xs text-gray-600">Taxa 0% - para projetos iniciantes</p>
+                        </div>
+                      </label>
+                      <label 
+                        className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          projectType === 'regular' 
+                            ? 'border-blue-500 bg-blue-50' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="projectType"
+                          value="regular"
+                          checked={projectType === 'regular'}
+                          onChange={() => setProjectType('regular')}
+                          className="w-4 h-4 text-blue-500"
+                        />
+                        <div>
+                          <span className="font-medium">🎯 Projeto Regular</span>
+                          <p className="text-xs text-gray-600">Taxa 10%</p>
+                        </div>
+                      </label>
+                    </div>
+                    <p className="text-xs text-amber-700">
+                      ⚠️ Apenas administradores podem selecionar o tipo de projeto
+                    </p>
+                  </div>
+                )}
 
                 {/* Admin Initial Investment */}
                 {isAdmin && (

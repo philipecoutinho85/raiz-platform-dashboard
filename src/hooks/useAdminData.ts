@@ -229,6 +229,24 @@ export const useAdminData = () => {
           throw error;
         }
 
+        // Atribuir badge "Verificado pela Raiz Token" ao projeto
+        const { data: verifiedBadge } = await supabase
+          .from('badges')
+          .select('id')
+          .eq('slug', 'verificado-raiz-token')
+          .single();
+
+        if (verifiedBadge) {
+          await supabase
+            .from('project_badges')
+            .upsert({
+              project_id: projectId,
+              badge_id: verifiedBadge.id,
+              granted_by: user?.id,
+              granted_at: new Date().toISOString()
+            }, { onConflict: 'project_id,badge_id' });
+        }
+
         // Log da ação
         await logAdminAction('approve_project', 'project', projectId, { 
           project_goal: project?.goal 

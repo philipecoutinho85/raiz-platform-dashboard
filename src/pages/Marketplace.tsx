@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Heart, Users, Clock, MapPin, Target, Flame, Trophy } from 'lucide-react';
+import { Search, Filter, Heart, Users, Clock, MapPin, Target, Flame, Trophy, Sprout } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
@@ -26,6 +26,8 @@ interface Project {
   cidade?: string;
   estado?: string;
   featured_image?: string;
+  project_type?: string;
+  platform_fee_percentage?: number;
 }
 
 const Marketplace = () => {
@@ -75,6 +77,8 @@ const Marketplace = () => {
           deadline,
           cidade,
           estado,
+          project_type,
+          platform_fee_percentage,
           project_images(image_url, is_featured)
         `)
         .eq('status', 'approved')
@@ -328,6 +332,19 @@ const Marketplace = () => {
                     </div>
                     
                     <CardHeader className="pb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {project.project_type === 'seed' ? (
+                          <Badge className="bg-green-100 text-green-700 text-xs flex items-center gap-1">
+                            <Sprout className="w-3 h-3" />
+                            Taxa 0%
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-blue-100 text-blue-700 text-xs flex items-center gap-1">
+                            <Target className="w-3 h-3" />
+                            Taxa 10%
+                          </Badge>
+                        )}
+                      </div>
                       <CardTitle className="text-raiz-dark line-clamp-2 group-hover:text-raiz-primary transition-colors duration-300">
                         {project.title}
                       </CardTitle>

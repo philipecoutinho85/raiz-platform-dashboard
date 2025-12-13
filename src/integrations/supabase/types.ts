@@ -974,6 +974,7 @@ export type Database = {
           numero: string | null
           pending_requirements: string | null
           platform_fee_percentage: number | null
+          project_type: string
           raised_amount: number
           rejection_reason: string | null
           reviewed_at: string | null
@@ -1012,6 +1013,7 @@ export type Database = {
           numero?: string | null
           pending_requirements?: string | null
           platform_fee_percentage?: number | null
+          project_type?: string
           raised_amount?: number
           rejection_reason?: string | null
           reviewed_at?: string | null
@@ -1050,6 +1052,7 @@ export type Database = {
           numero?: string | null
           pending_requirements?: string | null
           platform_fee_percentage?: number | null
+          project_type?: string
           raised_amount?: number
           rejection_reason?: string | null
           reviewed_at?: string | null

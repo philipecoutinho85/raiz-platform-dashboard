@@ -43,6 +43,7 @@ interface Project {
   admin_fee_percentage?: number;
   custom_goal?: number;
   platform_fee_percentage?: number;
+  project_type?: string;
 }
 
 interface Profile {
@@ -566,6 +567,27 @@ const ProjectDetail = () => {
                   <div className="text-sm text-raiz-secondary">
                     arrecadados de {formatTokens(getEffectiveGoal())} tokens
                   </div>
+                  
+                  {/* Mostrar valores líquidos para o criador */}
+                  {isOwner && project.raised_amount > 0 && (
+                    <div className="mt-3 p-3 bg-muted rounded-lg text-left">
+                      <p className="text-xs text-muted-foreground mb-1">Valores para você:</p>
+                      {project.project_type === 'seed' ? (
+                        <p className="text-sm font-medium text-green-600">
+                          💰 Você recebe: R$ {formatTokens(project.raised_amount)},00 (sem taxa)
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-sm">
+                            Valor total: R$ {formatTokens(project.raised_amount)},00
+                          </p>
+                          <p className="text-sm font-medium text-primary">
+                            💰 Você recebe: R$ {formatTokens(Math.round(project.raised_amount * 0.9))},00 (após taxa de 10%)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <Progress value={progressPercentage} className="h-3" />
@@ -600,6 +622,7 @@ const ProjectDetail = () => {
                       projectId={project.id}
                       projectTitle={project.title}
                       creatorHasStripe={!!profile?.stripe_onboarding_complete}
+                      isOwner={isOwner}
                     />
                     
                     {/* Token Support (Platform Tokens) */}

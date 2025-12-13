@@ -159,11 +159,17 @@ export const CreatorPayoutPanel = ({ projectId }: CreatorPayoutPanelProps) => {
         {!isVerified && (
           <Alert variant="destructive">
             <ShieldX className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Verificação pendente.</strong> Para solicitar saque, finalize sua verificação.{' '}
-              <a href="/perfil?tab=payouts" className="underline font-medium">
-                Vá ao seu perfil e clique em "Verificar conta para receber saques".
-              </a>
+            <AlertDescription className="space-y-2">
+              <p><strong>O criador precisa completar a verificação da conta Stripe antes de receber pagamentos.</strong></p>
+              <div className="text-sm mt-2 space-y-1">
+                <p className="font-medium">Como verificar sua conta:</p>
+                <ol className="list-decimal list-inside space-y-1 text-xs">
+                  <li>Acesse seu <a href="/perfil?tab=payouts" className="underline font-medium">Perfil → aba "Recebimentos"</a></li>
+                  <li>Clique no botão "Verificar conta para receber saques"</li>
+                  <li>Complete o cadastro na Stripe (documento de identidade e dados bancários)</li>
+                  <li>Após aprovação, você poderá solicitar saques normalmente</li>
+                </ol>
+              </div>
             </AlertDescription>
           </Alert>
         )}
