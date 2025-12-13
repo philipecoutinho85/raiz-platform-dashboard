@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, MapPin, Target, Users, DollarSign, Clock, Edit2, Save } from 'lucide-react';
+import { Calendar, MapPin, Target, Users, DollarSign, Clock, Edit2, Save, Sprout } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import ProjectCommunication from './ProjectCommunication';
 import ManageProjectBadges from './ManageProjectBadges';
 import { useAuth } from '@/contexts/AuthContext';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface Project {
   id: string;
@@ -36,6 +37,8 @@ interface Project {
   admin_fee_percentage?: number;
   rejection_reason?: string;
   pending_requirements?: string;
+  project_type?: 'seed' | 'regular';
+  platform_fee_percentage?: number;
 }
 
 interface ProjectDetailModalProps {
@@ -53,6 +56,8 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
   const [adminFee, setAdminFee] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [userIsAdmin, setUserIsAdmin] = useState(false);
+  const [projectType, setProjectType] = useState<'seed' | 'regular'>('regular');
+  const [isSavingType, setIsSavingType] = useState(false);
 
   // Verificar se o usuário é admin
   useEffect(() => {
@@ -78,8 +83,38 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
     if (project) {
       setCustomGoal(project.custom_goal?.toString() || '');
       setAdminFee(project.admin_fee_percentage?.toString() || '10');
+      setProjectType(project.project_type || 'regular');
     }
   }, [project]);
+
+  const handleSaveProjectType = async (newType: 'seed' | 'regular') => {
+    setIsSavingType(true);
+    try {
+      const platformFee = newType === 'seed' ? 0 : 10;
+      
+      const { error } = await supabase
+        .from('projects')
+        .update({ 
+          project_type: newType,
+          platform_fee_percentage: platformFee
+        })
+        .eq('id', project?.id);
+
+      if (error) throw error;
+
+      setProjectType(newType);
+      toast.success(`Tipo de projeto atualizado para ${newType === 'seed' ? 'Projeto Semente (0%)' : 'Projeto Regular (10%)'}`);
+      
+      if (onUpdate) {
+        await onUpdate();
+      }
+    } catch (error) {
+      console.error('Error updating project type:', error);
+      toast.error('Erro ao atualizar tipo de projeto');
+    } finally {
+      setIsSavingType(false);
+    }
+  };
 
   if (!project) return null;
 
@@ -208,11 +243,75 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
               <div>
                 <h3 className="font-semibold text-raiz-dark mb-2">Informações do Projeto</h3>
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-wrap gap-2">
                     <Badge variant="outline">{project.category}</Badge>
                     <Badge variant={project.status === 'pending' ? 'destructive' : 'default'}>
                       {project.status === 'pending' ? 'Pendente' : project.status}
                     </Badge>
+                    {project.project_type === 'seed' ? (
+                      <Badge className="bg-emerald-500 text-white">
+                        <Sprout className="w-3 h-3 mr-1" />
+                        Taxa 0%
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-blue-500 text-white">
+                        <Target className="w-3 h-3 mr-1" />
+                        Taxa 10%
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {/* Tipo de Projeto */}
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-4 rounded-lg space-y-3 border border-amber-200 dark:border-amber-800">
+                    <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Sprout className="w-4 h-4 text-amber-600" />
+                      Tipo de Projeto e Taxa
+                    </Label>
+                    <RadioGroup
+                      value={projectType}
+                      onValueChange={(value: 'seed' | 'regular') => handleSaveProjectType(value)}
+                      className="space-y-2"
+                      disabled={isSavingType}
+                    >
+                      <div className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                        projectType === 'seed' 
+                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' 
+                          : 'border-border hover:border-emerald-300'
+                      }`}>
+                        <RadioGroupItem value="seed" id="seed-detail" />
+                        <Label htmlFor="seed-detail" className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            <Sprout className="w-5 h-5 text-emerald-600" />
+                            <span className="font-semibold">Projeto Semente</span>
+                            <Badge className="bg-emerald-500 text-white text-xs">0%</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Para projetos iniciantes - sem taxa da plataforma
+                          </p>
+                        </Label>
+                      </div>
+                      
+                      <div className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                        projectType === 'regular' 
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30' 
+                          : 'border-border hover:border-blue-300'
+                      }`}>
+                        <RadioGroupItem value="regular" id="regular-detail" />
+                        <Label htmlFor="regular-detail" className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            <Target className="w-5 h-5 text-blue-600" />
+                            <span className="font-semibold">Projeto Regular</span>
+                            <Badge className="bg-blue-500 text-white text-xs">10%</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Taxa padrão da plataforma de 10%
+                          </p>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                    {isSavingType && (
+                      <p className="text-xs text-amber-600 animate-pulse">Salvando...</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2 text-sm text-raiz-secondary">
