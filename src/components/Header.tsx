@@ -11,16 +11,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
-import { LogOut, User, Settings, Shield, Coins, HelpCircle, MessageCircle } from 'lucide-react';
+import { LogOut, User, Settings, Shield, Coins, HelpCircle } from 'lucide-react';
 import raizLogo from '@/assets/raiz-logo.png';
 import NotificationBell from '@/components/NotificationBell';
-import { Badge } from '@/components/ui/badge';
-import { useSupportMessages } from '@/hooks/useSupportMessages';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
   const { tokens } = useTokens();
-  const { unreadCount: supportUnreadCount } = useSupportMessages();
   const navigate = useNavigate();
 
   const handleStartTour = () => {
@@ -62,14 +59,6 @@ const Header = () => {
                 <Link to="/criar-projeto" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Criar Projeto
                 </Link>
-                <Link to="/perfil?tab=support" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors flex items-center gap-1">
-                  Suporte
-                  {supportUnreadCount > 0 && (
-                    <Badge className="h-5 w-5 flex items-center justify-center p-0 bg-orange-500 text-white text-xs">
-                      {supportUnreadCount}
-                    </Badge>
-                  )}
-                </Link>
               </>
             ) : (
               <>
@@ -92,21 +81,6 @@ const Header = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative"
-                  onClick={() => navigate('/perfil?tab=support')}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  {supportUnreadCount > 0 && (
-                    <Badge 
-                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-orange-500"
-                    >
-                      {supportUnreadCount}
-                    </Badge>
-                  )}
-                </Button>
                 <NotificationBell />
                 <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-raiz-accent/20 to-raiz-primary/10 rounded-full border border-raiz-primary/20">
                   <Coins className="h-6 w-6 text-raiz-accent" />

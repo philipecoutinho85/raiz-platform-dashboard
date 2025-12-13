@@ -1,4 +1,4 @@
-import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings } from 'lucide-react';
+import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
@@ -33,6 +33,7 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 activeTab === "refunds" ? "Reembolsos" :
                 activeTab === "withdrawals" ? "Resgates" :
                 activeTab === "expired" ? "Proj. Expirados" :
+                activeTab === "support" ? "Suporte" :
                 activeTab === "logs" ? "Logs" :
                 activeTab === "tests" ? "Testes" :
                 "Configurações"
@@ -93,6 +94,10 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 <DropdownMenuItem onClick={() => setActiveTab("expired")} className="cursor-pointer hover:bg-primary/10">
                   <Clock className="mr-2 h-4 w-4 text-primary" />
                   Projetos Expirados
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("support")} className="cursor-pointer hover:bg-primary/10">
+                  <MessageSquare className="mr-2 h-4 w-4 text-primary" />
+                  Suporte
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab("logs")} className="cursor-pointer hover:bg-primary/10">
                   <FileText className="mr-2 h-4 w-4 text-primary" />
