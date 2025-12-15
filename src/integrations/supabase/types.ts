@@ -1304,10 +1304,13 @@ export type Database = {
         Row: {
           amount: number
           created_at: string | null
+          expires_at: string | null
           id: string
           pagarme_transaction_id: string | null
           payment_method: string
+          payment_type: string | null
           price: number
+          reminder_sent: boolean | null
           status: string
           updated_at: string | null
           user_id: string
@@ -1315,10 +1318,13 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           pagarme_transaction_id?: string | null
           payment_method: string
+          payment_type?: string | null
           price: number
+          reminder_sent?: boolean | null
           status?: string
           updated_at?: string | null
           user_id: string
@@ -1326,10 +1332,13 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string | null
+          expires_at?: string | null
           id?: string
           pagarme_transaction_id?: string | null
           payment_method?: string
+          payment_type?: string | null
           price?: number
+          reminder_sent?: boolean | null
           status?: string
           updated_at?: string | null
           user_id?: string

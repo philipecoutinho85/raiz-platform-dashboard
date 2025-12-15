@@ -145,8 +145,43 @@ serve(async (req) => {
       const session = event.data.object as Stripe.Checkout.Session;
       logStep("Processing checkout.session.completed", { 
         sessionId: session.id,
-        paymentStatus: session.payment_status 
+        paymentStatus: session.payment_status,
+        paymentMethodTypes: session.payment_method_types
       });
+
+      const metadata = session.metadata;
+      if (!metadata?.purchase_id || metadata?.type !== "token_purchase") {
+        logStep("Not a token purchase, skipping");
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // Determine payment type (card or boleto)
+      const paymentMethodTypes = session.payment_method_types || [];
+      const isBoleto = paymentMethodTypes.includes('boleto') && session.payment_status !== 'paid';
+      const paymentType = isBoleto ? 'boleto' : 'card';
+      
+      // For boleto, calculate expiration (3 days from creation)
+      let expiresAt = null;
+      if (isBoleto) {
+        const expireDate = new Date();
+        expireDate.setDate(expireDate.getDate() + 3);
+        expiresAt = expireDate.toISOString();
+      }
+
+      // Update purchase with payment type and expiration
+      await supabase
+        .from('token_purchases')
+        .update({ 
+          payment_type: paymentType,
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', metadata.purchase_id);
+
+      logStep("Updated purchase with payment info", { paymentType, expiresAt });
 
       // For card payments, payment_status is 'paid' immediately
       // For boleto/async payments, payment_status is 'unpaid' - we need to wait for async_payment_succeeded
@@ -159,7 +194,7 @@ serve(async (req) => {
         });
         // Don't credit tokens yet - wait for async_payment_succeeded event
       }
-    } 
+    }
     // Handle async payment success (boleto paid)
     else if (event.type === "checkout.session.async_payment_succeeded") {
       const session = event.data.object as Stripe.Checkout.Session;

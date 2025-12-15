@@ -4,12 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
 import { supabase } from '@/integrations/supabase/client';
-import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock, Filter, Trash2 } from 'lucide-react';
+import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock, Filter, Trash2, FileText, CreditCard, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import TokenPurchase from '@/components/TokenPurchase';
 import RefundRequest from '@/components/RefundRequest';
+import PendingPayments from '@/components/PendingPayments';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
 
@@ -27,8 +29,11 @@ interface Purchase {
   amount: number;
   price: number;
   payment_method: string;
+  payment_type: string | null;
   status: string;
   created_at: string;
+  updated_at: string;
+  expires_at: string | null;
 }
 
 interface Refund {
@@ -39,6 +44,8 @@ interface Refund {
   created_at: string;
 }
 import { formatToBrasilia } from '@/lib/dateUtils';
+import { format, isPast } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -137,6 +144,7 @@ const Wallet = () => {
       paid: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
       failed: 'bg-red-100 text-red-800',
+      expired: 'bg-gray-100 text-gray-800',
       completed: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800'
     };
@@ -145,24 +153,46 @@ const Wallet = () => {
       paid: 'Pago',
       pending: 'Pendente',
       failed: 'Falhou',
+      expired: 'Expirado',
       completed: 'Completado',
       rejected: 'Rejeitado'
     };
 
+    const icons: Record<string, React.ReactNode> = {
+      paid: <CheckCircle className="w-3 h-3" />,
+      pending: <Clock className="w-3 h-3" />,
+      failed: <XCircle className="w-3 h-3" />,
+      expired: <XCircle className="w-3 h-3" />,
+      completed: <CheckCircle className="w-3 h-3" />,
+      rejected: <XCircle className="w-3 h-3" />
+    };
+
     return (
-      <span className={`px-2 py-1 rounded-full text-xs ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800'}`}>
+        {icons[status as keyof typeof icons]}
         {labels[status as keyof typeof labels] || status}
       </span>
     );
   };
 
-  const getPaymentMethodLabel = (method: string) => {
+  const getPaymentMethodLabel = (method: string, type: string | null) => {
+    if (type === 'boleto') return 'Boleto';
+    if (type === 'card' || method === 'stripe') return 'Cartão';
+    
     const labels = {
       pix: 'PIX',
       credit_card: 'Cartão de Crédito',
-      boleto: 'Boleto'
+      boleto: 'Boleto',
+      stripe: 'Cartão'
     };
     return labels[method as keyof typeof labels] || method;
+  };
+
+  const getPaymentTypeIcon = (type: string | null) => {
+    if (type === 'boleto') {
+      return <FileText className="w-4 h-4 text-muted-foreground" />;
+    }
+    return <CreditCard className="w-4 h-4 text-muted-foreground" />;
   };
 
   // Filtrar transações
@@ -230,6 +260,11 @@ const Wallet = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Boletos Pendentes */}
+        <div className="mb-8">
+          <PendingPayments />
+        </div>
 
         <Tabs defaultValue="transactions" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
@@ -338,6 +373,7 @@ const Wallet = () => {
                       <SelectItem value="all">Todos os status</SelectItem>
                       <SelectItem value="paid">Pago</SelectItem>
                       <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="expired">Expirado</SelectItem>
                       <SelectItem value="failed">Falhou</SelectItem>
                     </SelectContent>
                   </Select>
@@ -381,14 +417,35 @@ const Wallet = () => {
                         key={purchase.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
                       >
-                        <div className="flex-1">
-                          <p className="font-medium text-raiz-dark">{purchase.amount} tokens</p>
-                          <p className="text-sm text-raiz-secondary">
-                            {getPaymentMethodLabel(purchase.payment_method)} • R$ {purchase.price.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-raiz-secondary">
-                            {formatToBrasilia(purchase.created_at)}
-                          </p>
+                        <div className="flex items-start gap-3">
+                          {getPaymentTypeIcon(purchase.payment_type)}
+                          <div className="flex-1">
+                            <p className="font-medium text-raiz-dark">{purchase.amount} tokens</p>
+                            <p className="text-sm text-raiz-secondary">
+                              {getPaymentMethodLabel(purchase.payment_method, purchase.payment_type)} • R$ {purchase.price.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-raiz-secondary">
+                              Gerado em {formatToBrasilia(purchase.created_at)}
+                            </p>
+                            {purchase.status === 'paid' && (
+                              <p className="text-xs text-green-600">
+                                Pago em {formatToBrasilia(purchase.updated_at)}
+                              </p>
+                            )}
+                            {purchase.status === 'expired' && (
+                              <p className="text-xs text-red-600">
+                                Expirado em {formatToBrasilia(purchase.updated_at)}
+                              </p>
+                            )}
+                            {purchase.status === 'pending' && purchase.expires_at && (
+                              <p className={`text-xs ${isPast(new Date(purchase.expires_at)) ? 'text-red-600' : 'text-yellow-600'}`}>
+                                {isPast(new Date(purchase.expires_at)) 
+                                  ? `Venceu em ${format(new Date(purchase.expires_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`
+                                  : `Vence em ${format(new Date(purchase.expires_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`
+                                }
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(purchase.status)}
