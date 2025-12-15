@@ -131,6 +131,11 @@ serve(async (req) => {
       ],
       mode: "payment",
       payment_method_types: ["card", "boleto"],
+      payment_method_options: {
+        boleto: {
+          expires_after_days: 3
+        }
+      },
       ui_mode: "embedded",
       return_url: `${origin}/carteira?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       metadata: {

@@ -44,3 +44,6 @@ verify_jwt = true
 
 [functions.check-support-alerts]
 verify_jwt = false
+
+[functions.check-boleto-expiration]
+verify_jwt = false
