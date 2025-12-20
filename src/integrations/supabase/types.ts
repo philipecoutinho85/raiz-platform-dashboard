@@ -979,6 +979,7 @@ export type Database = {
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          short_id: number | null
           status: string
           title: string
           updated_at: string
@@ -1018,6 +1019,7 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          short_id?: number | null
           status?: string
           title: string
           updated_at?: string
@@ -1057,6 +1059,7 @@ export type Database = {
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          short_id?: number | null
           status?: string
           title?: string
           updated_at?: string

@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Heart, Users, Clock, MapPin, Target, Flame, Trophy, Sprout } from 'lucide-react';
+import { Search, Filter, Heart, Users, Clock, MapPin, Target, Flame, Trophy, Sprout, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import Footer from '@/components/Footer';
+import CampaignIdSearch from '@/components/CampaignIdSearch';
 
 interface Project {
   id: string;
@@ -198,6 +199,15 @@ const Marketplace = () => {
           <p className="text-xl lg:text-2xl mb-8 text-white/90 max-w-3xl mx-auto">
             Explore centenas de projetos inovadores e apoie ideias que transformam o mundo
           </p>
+          
+          {/* Busca por ID em destaque */}
+          <div className="max-w-lg mx-auto bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <div className="flex items-center gap-2 mb-3 justify-center">
+              <Hash className="w-5 h-5" />
+              <span className="font-semibold">Buscar campanha por ID</span>
+            </div>
+            <CampaignIdSearch variant="full" placeholder="Digite o número da campanha (ex: 1047)" className="text-left" />
+          </div>
         </div>
       </div>
 

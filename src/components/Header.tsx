@@ -14,6 +14,7 @@ import { useTokens } from '@/hooks/useTokens';
 import { LogOut, User, Settings, Shield, Coins, HelpCircle } from 'lucide-react';
 import raizLogo from '@/assets/raiz-logo.png';
 import NotificationBell from '@/components/NotificationBell';
+import CampaignIdSearch from '@/components/CampaignIdSearch';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
@@ -47,7 +48,7 @@ const Header = () => {
             <img src={raizLogo} alt="Raiz Token" className="h-12 md:h-20 w-auto object-contain transition-transform hover:scale-105" />
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-8" data-tour="header-nav">
+          <nav className="hidden md:flex items-center space-x-6" data-tour="header-nav">
             {user ? (
               <>
                 <Link to="/dashboard" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
@@ -59,6 +60,7 @@ const Header = () => {
                 <Link to="/criar-projeto" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Criar Projeto
                 </Link>
+                <CampaignIdSearch variant="inline" placeholder="ID" />
               </>
             ) : (
               <>
@@ -74,6 +76,7 @@ const Header = () => {
                 <Link to="/contato" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Falar Conosco
                 </Link>
+                <CampaignIdSearch variant="inline" placeholder="ID" />
               </>
             )}
           </nav>

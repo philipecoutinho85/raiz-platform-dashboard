@@ -35,6 +35,7 @@ import Wallet from "./pages/Wallet";
 import CheckoutPayment from "./pages/CheckoutPayment";
 import CookiePolicy from "./pages/CookiePolicy";
 import RateSupportPage from "./pages/RateSupportPage";
+import ShortUrlRedirect from "./pages/ShortUrlRedirect";
 import CookieConsent from "./components/CookieConsent";
 
 const queryClient = new QueryClient();
@@ -140,6 +141,9 @@ const App = () => (
               <Route path="/politica-de-cookies" element={<CookiePolicy />} />
               <Route path="/contato" element={<Contact />} />
               <Route path="/avaliar-suporte" element={<RateSupportPage />} />
+              {/* Short URL routes for campaigns */}
+              <Route path="/c/:shortId" element={<ShortUrlRedirect />} />
+              <Route path="/campanha/:shortId" element={<ShortUrlRedirect />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
