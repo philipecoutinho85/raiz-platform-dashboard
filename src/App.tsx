@@ -65,14 +65,7 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
-              <Route 
-                path="/projetos" 
-                element={
-                  <ProtectedRoute>
-                    <Marketplace />
-                  </ProtectedRoute>
-                } 
-              />
+              <Route path="/projetos" element={<Marketplace />} />
               <Route 
                 path="/criar-projeto" 
                 element={
