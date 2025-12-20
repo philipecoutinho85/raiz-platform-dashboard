@@ -44,6 +44,7 @@ interface Project {
   custom_goal?: number;
   platform_fee_percentage?: number;
   project_type?: string;
+  short_id?: number;
 }
 
 interface Profile {
@@ -76,6 +77,7 @@ import RaizScore from '@/components/RaizScore';
 import { WithdrawalCorrectionAlert } from '@/components/WithdrawalCorrectionAlert';
 import { StripePaymentButton } from '@/components/StripePaymentButton';
 import ProjectUpdates from '@/components/ProjectUpdates';
+import CampaignQRShare from '@/components/CampaignQRShare';
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -713,8 +715,22 @@ const ProjectDetail = () => {
               </Card>
             )}
 
+            {/* Campaign ID & QR Code - Visible to owner */}
+            {isOwner && project.short_id && (
+              <CampaignQRShare 
+                shortId={project.short_id} 
+                projectTitle={project.title}
+              />
+            )}
 
-            {/* Withdrawal Correction Alert - apenas se o projeto for do usuário */}
+            {/* Campaign ID badge - Visible to all */}
+            {!isOwner && project.short_id && (
+              <CampaignQRShare 
+                shortId={project.short_id} 
+                projectTitle={project.title}
+                compact={true}
+              />
+            )}
             {isOwner && (
               <WithdrawalCorrectionAlert 
                 projectId={project.id} 
