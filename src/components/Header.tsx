@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,7 +13,6 @@ import { useTokens } from '@/hooks/useTokens';
 import { LogOut, User, Settings, Shield, Coins, HelpCircle } from 'lucide-react';
 import raizLogo from '@/assets/raiz-logo.png';
 import NotificationBell from '@/components/NotificationBell';
-import CampaignIdSearch from '@/components/CampaignIdSearch';
 
 const Header = () => {
   const { user, signOut, profile, isAdmin } = useAuth();
@@ -60,12 +58,14 @@ const Header = () => {
                 <Link to="/criar-projeto" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Criar Projeto
                 </Link>
-                <CampaignIdSearch variant="inline" placeholder="ID" />
               </>
             ) : (
               <>
                 <Link to="/" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Inicio
+                </Link>
+                <Link to="/projetos" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                  Projetos
                 </Link>
                 <Link to="/como-funciona" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Como Funciona
@@ -76,7 +76,6 @@ const Header = () => {
                 <Link to="/contato" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
                   Falar Conosco
                 </Link>
-                <CampaignIdSearch variant="inline" placeholder="ID" />
               </>
             )}
           </nav>

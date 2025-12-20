@@ -579,14 +579,9 @@ const ProjectDetail = () => {
                           💰 Você recebe: R$ {formatTokens(project.raised_amount)},00 (sem taxa)
                         </p>
                       ) : (
-                        <>
-                          <p className="text-sm">
-                            Valor total: R$ {formatTokens(project.raised_amount)},00
-                          </p>
-                          <p className="text-sm font-medium text-primary">
-                            💰 Você recebe: R$ {formatTokens(Math.round(project.raised_amount * 0.9))},00 (após taxa de 10%)
-                          </p>
-                        </>
+                        <p className="text-sm font-medium text-primary">
+                          💰 Você recebe: R$ {formatTokens(Math.round(project.raised_amount * 0.9))},00
+                        </p>
                       )}
                     </div>
                   )}
