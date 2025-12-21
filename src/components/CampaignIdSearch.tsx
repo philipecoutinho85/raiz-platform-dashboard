@@ -91,7 +91,7 @@ const CampaignIdSearch = ({
               placeholder={placeholder}
               value={searchId}
               onChange={(e) => setSearchId(e.target.value.replace(/\D/g, ''))}
-              className="pl-10 h-12 text-lg"
+              className="pl-10 h-12 text-lg text-foreground"
               disabled={loading}
             />
           </div>
@@ -125,7 +125,7 @@ const CampaignIdSearch = ({
           placeholder={placeholder}
           value={searchId}
           onChange={(e) => setSearchId(e.target.value.replace(/\D/g, ''))}
-          className="pl-8 w-28 h-9"
+          className="pl-8 w-28 h-9 text-foreground"
           disabled={loading}
         />
       </div>
