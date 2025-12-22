@@ -142,11 +142,12 @@ export interface LedgerSummary {
   entryCount: number;
 }
 
-export function useFinancialLedger(filters: LedgerFilters = {}) {
+export function useFinancialLedger(initialFilters: LedgerFilters = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
   const [movements, setMovements] = useState<LedgerMovement[]>([]);
   const [projectSummaries, setProjectSummaries] = useState<ProjectFinancialSummary[]>([]);
@@ -163,6 +164,9 @@ export function useFinancialLedger(filters: LedgerFilters = {}) {
     totalTransferred: 0,
     entryCount: 0
   });
+
+  // Memoize filters to prevent unnecessary re-renders
+  const filters = initialFilters;
 
   const fetchLedgerEntries = useCallback(async () => {
     try {
@@ -444,11 +448,20 @@ export function useFinancialLedger(filters: LedgerFilters = {}) {
     }
   }, [fetchLedgerEntries, fetchMovements, fetchProjectSummaries, fetchStripeFeeConfigs, fetchReconciliations]);
 
+  // Initial load - only run once when user is available
   useEffect(() => {
-    if (user) {
+    if (user && !hasInitialized) {
+      setHasInitialized(true);
       refreshAll();
     }
-  }, [user, refreshAll]);
+  }, [user, hasInitialized, refreshAll]);
+
+  // Re-fetch when filters change (after initial load)
+  useEffect(() => {
+    if (hasInitialized && user) {
+      fetchLedgerEntries();
+    }
+  }, [filters.status, filters.paymentMethod, filters.startDate, filters.endDate, filters.showDeleted]);
 
   return {
     loading,
