@@ -17,6 +17,7 @@ import { ProfitCalculator } from './dashboard/ProfitCalculator';
 import { FinancialTables } from './dashboard/FinancialTables';
 import { PeriodComparisonCharts } from './dashboard/PeriodComparisonCharts';
 import { FinancialAlerts } from './FinancialAlerts';
+import { LedgerTab } from './ledger/LedgerTab';
 import { generateFinancialReportPDF } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { 
@@ -29,7 +30,8 @@ import {
   Table,
   FileDown,
   Bell,
-  GitCompare
+  GitCompare,
+  BookOpen
 } from 'lucide-react';
 
 export const FinancialDashboard = () => {
@@ -102,10 +104,14 @@ export const FinancialDashboard = () => {
 
       {/* Main Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-9 h-auto gap-2">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-10 h-auto gap-2">
           <TabsTrigger value="overview" className="flex items-center gap-2 py-3">
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:inline">Visão Geral</span>
+          </TabsTrigger>
+          <TabsTrigger value="ledger" className="flex items-center gap-2 py-3">
+            <BookOpen className="h-4 w-4" />
+            <span className="hidden sm:inline">Ledger</span>
           </TabsTrigger>
           <TabsTrigger value="charts" className="flex items-center gap-2 py-3">
             <TrendingUp className="h-4 w-4" />
@@ -144,6 +150,10 @@ export const FinancialDashboard = () => {
         <TabsContent value="overview" className="space-y-6">
           <FinancialOverview filters={filters} />
           <YearlyGrowth filters={filters} />
+        </TabsContent>
+
+        <TabsContent value="ledger" className="space-y-6">
+          <LedgerTab />
         </TabsContent>
 
         <TabsContent value="charts" className="space-y-6">
