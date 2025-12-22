@@ -15,6 +15,10 @@ import { useFinancialLedger } from '@/hooks/useFinancialLedger';
 import { LedgerSummaryCards } from './LedgerSummaryCards';
 import { LedgerEntriesTable } from './LedgerEntriesTable';
 import { ProjectFinancialTable } from './ProjectFinancialTable';
+import { ProjectInvestorsTable } from './ProjectInvestorsTable';
+import { TokenTrackingPanel } from './TokenTrackingPanel';
+import { RefundsDisputesPanel } from './RefundsDisputesPanel';
+import { WithdrawalTrackingPanel } from './WithdrawalTrackingPanel';
 import { StripeFeeConfigTable } from './StripeFeeConfigTable';
 import { BankReconciliationPanel } from './BankReconciliationPanel';
 import { TransferReceiptsPanel } from './TransferReceiptsPanel';
@@ -27,7 +31,11 @@ import {
   CreditCard, 
   FileCheck,
   Clock,
-  Unlock
+  Unlock,
+  Users,
+  Coins,
+  RotateCcw,
+  Banknote
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
