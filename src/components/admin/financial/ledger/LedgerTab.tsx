@@ -159,14 +159,14 @@ export function LedgerTab() {
             <div>
               <Label>Status</Label>
               <Select
-                value={filters.status}
-                onValueChange={(value) => setFilters({ ...filters, status: value })}
+                value={filters.status || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, status: value === 'all' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="grace_period">Em Carência</SelectItem>
                   <SelectItem value="released">Liberado</SelectItem>
                   <SelectItem value="withdrawal_pending">Saque Solicitado</SelectItem>
@@ -179,14 +179,14 @@ export function LedgerTab() {
             <div>
               <Label>Método de Pagamento</Label>
               <Select
-                value={filters.paymentMethod}
-                onValueChange={(value) => setFilters({ ...filters, paymentMethod: value })}
+                value={filters.paymentMethod || 'all'}
+                onValueChange={(value) => setFilters({ ...filters, paymentMethod: value === 'all' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="card_national">Cartão Nacional</SelectItem>
                   <SelectItem value="card_international">Cartão Internacional</SelectItem>
                   <SelectItem value="boleto">Boleto</SelectItem>
