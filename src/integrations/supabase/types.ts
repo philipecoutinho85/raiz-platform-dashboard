@@ -224,6 +224,63 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_reconciliation: {
+        Row: {
+          bank_data: Json | null
+          bank_received_amount: number | null
+          bank_transaction_count: number | null
+          created_at: string
+          divergence_amount: number | null
+          divergence_reason: string | null
+          id: string
+          reconciliation_date: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          stripe_data: Json | null
+          stripe_expected_amount: number
+          stripe_transaction_count: number
+          updated_at: string
+        }
+        Insert: {
+          bank_data?: Json | null
+          bank_received_amount?: number | null
+          bank_transaction_count?: number | null
+          created_at?: string
+          divergence_amount?: number | null
+          divergence_reason?: string | null
+          id?: string
+          reconciliation_date: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          stripe_data?: Json | null
+          stripe_expected_amount: number
+          stripe_transaction_count: number
+          updated_at?: string
+        }
+        Update: {
+          bank_data?: Json | null
+          bank_received_amount?: number | null
+          bank_transaction_count?: number | null
+          created_at?: string
+          divergence_amount?: number | null
+          divergence_reason?: string | null
+          id?: string
+          reconciliation_date?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          stripe_data?: Json | null
+          stripe_expected_amount?: number
+          stripe_transaction_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creator_payouts: {
         Row: {
           amount: number
@@ -259,6 +316,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "creator_payouts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "creator_payouts_project_id_fkey"
             columns: ["project_id"]
@@ -406,6 +470,129 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_ledger: {
+        Row: {
+          contribution_id: string | null
+          created_at: string
+          creator_id: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          financial_status: string
+          grace_period_ends_at: string | null
+          gross_amount: number
+          id: string
+          is_deleted: boolean | null
+          net_amount_creator: number
+          net_amount_platform: number
+          payment_method: string
+          platform_fee_amount: number
+          platform_fee_percentage: number
+          project_id: string | null
+          released_at: string | null
+          stripe_fee_fixed: number
+          stripe_fee_percentage: number
+          stripe_fee_total: number
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          supporter_id: string
+          token_amount: number
+          withdrawal_id: string | null
+        }
+        Insert: {
+          contribution_id?: string | null
+          created_at?: string
+          creator_id: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          financial_status?: string
+          grace_period_ends_at?: string | null
+          gross_amount: number
+          id?: string
+          is_deleted?: boolean | null
+          net_amount_creator: number
+          net_amount_platform: number
+          payment_method: string
+          platform_fee_amount: number
+          platform_fee_percentage: number
+          project_id?: string | null
+          released_at?: string | null
+          stripe_fee_fixed?: number
+          stripe_fee_percentage?: number
+          stripe_fee_total: number
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          supporter_id: string
+          token_amount: number
+          withdrawal_id?: string | null
+        }
+        Update: {
+          contribution_id?: string | null
+          created_at?: string
+          creator_id?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          financial_status?: string
+          grace_period_ends_at?: string | null
+          gross_amount?: number
+          id?: string
+          is_deleted?: boolean | null
+          net_amount_creator?: number
+          net_amount_platform?: number
+          payment_method?: string
+          platform_fee_amount?: number
+          platform_fee_percentage?: number
+          project_id?: string | null
+          released_at?: string | null
+          stripe_fee_fixed?: number
+          stripe_fee_percentage?: number
+          stripe_fee_total?: number
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          supporter_id?: string
+          token_amount?: number
+          withdrawal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_ledger_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "project_contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "admin_withdrawals_with_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_settings: {
         Row: {
           id: string
@@ -450,6 +637,101 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      ledger_audit_log: {
+        Row: {
+          action: string
+          id: string
+          ip_address: string | null
+          ledger_id: string
+          new_data: Json | null
+          performed_at: string
+          performed_by: string
+          previous_data: Json | null
+          reason: string
+          two_factor_verified: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          ip_address?: string | null
+          ledger_id: string
+          new_data?: Json | null
+          performed_at?: string
+          performed_by: string
+          previous_data?: Json | null
+          reason: string
+          two_factor_verified?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          ip_address?: string | null
+          ledger_id?: string
+          new_data?: Json | null
+          performed_at?: string
+          performed_by?: string
+          previous_data?: Json | null
+          reason?: string
+          two_factor_verified?: boolean
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      ledger_movements: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          description: string | null
+          from_entity: string | null
+          id: string
+          ledger_id: string | null
+          metadata: Json | null
+          movement_type: string
+          reference_id: string | null
+          reference_type: string | null
+          to_entity: string | null
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          description?: string | null
+          from_entity?: string | null
+          id?: string
+          ledger_id?: string | null
+          metadata?: Json | null
+          movement_type: string
+          reference_id?: string | null
+          reference_type?: string | null
+          to_entity?: string | null
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          description?: string | null
+          from_entity?: string | null
+          id?: string
+          ledger_id?: string | null
+          metadata?: Json | null
+          movement_type?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          to_entity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_movements_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "financial_ledger"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       moderator_permissions: {
         Row: {
@@ -620,6 +902,13 @@ export type Database = {
             foreignKeyName: "project_badges_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "project_badges_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -686,6 +975,13 @@ export type Database = {
             foreignKeyName: "project_comments_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -717,6 +1013,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_contributions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "project_contributions_project_id_fkey"
             columns: ["project_id"]
@@ -756,6 +1059,13 @@ export type Database = {
             foreignKeyName: "project_gallery_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "project_gallery_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -784,6 +1094,13 @@ export type Database = {
           project_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_images_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "project_images_project_id_fkey"
             columns: ["project_id"]
@@ -831,6 +1148,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "project_reports_project_id_fkey"
             columns: ["project_id"]
@@ -936,6 +1260,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "project_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "project_updates_project_id_fkey"
             columns: ["project_id"]
@@ -1120,10 +1451,56 @@ export type Database = {
             foreignKeyName: "refunds_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "refunds_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
+      }
+      stripe_fee_config: {
+        Row: {
+          additional_percentage: number | null
+          description: string | null
+          disabled_reason: string | null
+          fixed_fee: number
+          id: string
+          is_enabled: boolean
+          payment_method: string
+          percentage_fee: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          additional_percentage?: number | null
+          description?: string | null
+          disabled_reason?: string | null
+          fixed_fee: number
+          id?: string
+          is_enabled?: boolean
+          payment_method: string
+          percentage_fee: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          additional_percentage?: number | null
+          description?: string | null
+          disabled_reason?: string | null
+          fixed_fee?: number
+          id?: string
+          is_enabled?: boolean
+          payment_method?: string
+          percentage_fee?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       stripe_payments: {
         Row: {
@@ -1166,6 +1543,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "stripe_payments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
           {
             foreignKeyName: "stripe_payments_project_id_fkey"
             columns: ["project_id"]
@@ -1380,6 +1764,79 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      transfer_receipts: {
+        Row: {
+          account_info: string | null
+          bank_name: string | null
+          id: string
+          ledger_id: string | null
+          notes: string | null
+          receipt_filename: string | null
+          receipt_url: string
+          transfer_amount: number
+          transfer_date: string
+          uploaded_at: string
+          uploaded_by: string
+          validated_at: string | null
+          validated_by: string | null
+          withdrawal_id: string
+        }
+        Insert: {
+          account_info?: string | null
+          bank_name?: string | null
+          id?: string
+          ledger_id?: string | null
+          notes?: string | null
+          receipt_filename?: string | null
+          receipt_url: string
+          transfer_amount: number
+          transfer_date: string
+          uploaded_at?: string
+          uploaded_by: string
+          validated_at?: string | null
+          validated_by?: string | null
+          withdrawal_id: string
+        }
+        Update: {
+          account_info?: string | null
+          bank_name?: string | null
+          id?: string
+          ledger_id?: string | null
+          notes?: string | null
+          receipt_filename?: string | null
+          receipt_url?: string
+          transfer_amount?: number
+          transfer_date?: string
+          uploaded_at?: string
+          uploaded_by?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          withdrawal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfer_receipts_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "financial_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfer_receipts_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "admin_withdrawals_with_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfer_receipts_withdrawal_id_fkey"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_badges: {
         Row: {
@@ -1674,6 +2131,13 @@ export type Database = {
             foreignKeyName: "withdrawals_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "withdrawals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -1720,14 +2184,55 @@ export type Database = {
             foreignKeyName: "withdrawals_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "withdrawals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
       }
+      project_financial_summary: {
+        Row: {
+          amount_in_grace: number | null
+          amount_pending_transfer: number | null
+          amount_released: number | null
+          amount_transferred: number | null
+          creator_id: string | null
+          creator_name: string | null
+          goal: number | null
+          goal_reached: boolean | null
+          in_grace_period: number | null
+          next_release_date: string | null
+          project_id: string | null
+          project_title: string | null
+          raised_amount: number | null
+          released: number | null
+          total_gross: number | null
+          total_net_creator: number | null
+          total_platform_fees: number | null
+          total_stripe_fees: number | null
+          transfer_completed: number | null
+          withdrawal_pending: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_raizscore_level: { Args: { p_points: number }; Returns: number }
+      calculate_stripe_fee: {
+        Args: { p_amount: number; p_payment_method: string }
+        Returns: {
+          fee_fixed: number
+          fee_percentage: number
+          fee_total: number
+          net_amount: number
+        }[]
+      }
       count_unread_withdrawal_messages: {
         Args: { p_recipient_type: string; p_withdrawal_id: string }
         Returns: number
@@ -1741,6 +2246,21 @@ export type Database = {
           p_related_type?: string
           p_severity?: string
           p_title: string
+        }
+        Returns: string
+      }
+      create_ledger_entry: {
+        Args: {
+          p_contribution_id: string
+          p_creator_id: string
+          p_gross_amount: number
+          p_payment_method: string
+          p_platform_fee_percentage: number
+          p_project_id: string
+          p_stripe_payment_intent_id?: string
+          p_stripe_session_id?: string
+          p_supporter_id: string
+          p_token_amount: number
         }
         Returns: string
       }
@@ -1777,6 +2297,15 @@ export type Database = {
       recalculate_user_raizscore: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      release_grace_period_funds: { Args: never; Returns: number }
+      soft_delete_ledger_entry: {
+        Args: {
+          p_ledger_id: string
+          p_reason: string
+          p_two_factor_verified?: boolean
+        }
+        Returns: boolean
       }
       validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
