@@ -238,10 +238,26 @@ export function LedgerTab() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="entries" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="flex flex-wrap gap-1">
           <TabsTrigger value="entries" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            Registros ({ledgerEntries.length})
+            Registros
+          </TabsTrigger>
+          <TabsTrigger value="investors" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Investidores
+          </TabsTrigger>
+          <TabsTrigger value="tokens" className="flex items-center gap-2">
+            <Coins className="h-4 w-4" />
+            Tokens
+          </TabsTrigger>
+          <TabsTrigger value="withdrawals" className="flex items-center gap-2">
+            <Banknote className="h-4 w-4" />
+            Saques
+          </TabsTrigger>
+          <TabsTrigger value="refunds" className="flex items-center gap-2">
+            <RotateCcw className="h-4 w-4" />
+            Estornos
           </TabsTrigger>
           <TabsTrigger value="projects" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
@@ -249,7 +265,7 @@ export function LedgerTab() {
           </TabsTrigger>
           <TabsTrigger value="fees" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
-            Taxas Stripe
+            Taxas
           </TabsTrigger>
           <TabsTrigger value="reconciliation" className="flex items-center gap-2">
             <FileCheck className="h-4 w-4" />
@@ -270,6 +286,22 @@ export function LedgerTab() {
               <LedgerEntriesTable entries={ledgerEntries} loading={loading} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="investors">
+          <ProjectInvestorsTable />
+        </TabsContent>
+
+        <TabsContent value="tokens">
+          <TokenTrackingPanel />
+        </TabsContent>
+
+        <TabsContent value="withdrawals">
+          <WithdrawalTrackingPanel />
+        </TabsContent>
+
+        <TabsContent value="refunds">
+          <RefundsDisputesPanel />
         </TabsContent>
 
         <TabsContent value="projects">
