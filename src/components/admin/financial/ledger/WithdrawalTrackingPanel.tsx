@@ -76,6 +76,11 @@ interface Withdrawal {
   user_email?: string;
   reviewer_name?: string;
   has_receipt?: boolean;
+  // Financial breakdown
+  total_gross?: number;
+  total_stripe_fees?: number;
+  total_platform_fees?: number;
+  total_net_creator?: number;
 }
 
 interface TransferReceipt {
@@ -149,6 +154,38 @@ export function WithdrawalTrackingPanel() {
 
       if (projectsError) throw projectsError;
 
+      // Fetch financial data aggregated by project
+      const { data: financialData, error: financialError } = await supabase
+        .from('financial_ledger')
+        .select('project_id, gross_amount, stripe_fee_total, platform_fee_amount, net_amount_creator')
+        .eq('is_deleted', false);
+
+      if (financialError) throw financialError;
+
+      // Aggregate financial data by project
+      const financialByProject = new Map<string, {
+        total_gross: number;
+        total_stripe_fees: number;
+        total_platform_fees: number;
+        total_net_creator: number;
+      }>();
+
+      (financialData || []).forEach(entry => {
+        if (!entry.project_id) return;
+        const existing = financialByProject.get(entry.project_id) || {
+          total_gross: 0,
+          total_stripe_fees: 0,
+          total_platform_fees: 0,
+          total_net_creator: 0
+        };
+        financialByProject.set(entry.project_id, {
+          total_gross: existing.total_gross + Number(entry.gross_amount || 0),
+          total_stripe_fees: existing.total_stripe_fees + Number(entry.stripe_fee_total || 0),
+          total_platform_fees: existing.total_platform_fees + Number(entry.platform_fee_amount || 0),
+          total_net_creator: existing.total_net_creator + Number(entry.net_amount_creator || 0)
+        });
+      });
+
       // Create lookup maps
       const profilesMap = new Map(profiles?.map(p => [p.id, p]));
       const projectsMap = new Map(projects?.map(p => [p.id, p.title]));
@@ -161,6 +198,7 @@ export function WithdrawalTrackingPanel() {
         const bankAccount = typeof w.bank_account === 'object' && w.bank_account !== null 
           ? w.bank_account as Withdrawal['bank_account']
           : {};
+        const projectFinancials = w.project_id ? financialByProject.get(w.project_id) : null;
 
         return {
           ...w,
@@ -169,7 +207,11 @@ export function WithdrawalTrackingPanel() {
           user_name: userProfile ? `${userProfile.nome} ${userProfile.sobrenome}` : 'Usuário desconhecido',
           user_email: userProfile?.email || '',
           reviewer_name: reviewerProfile ? `${reviewerProfile.nome} ${reviewerProfile.sobrenome}` : null,
-          has_receipt: receiptsSet.has(w.id)
+          has_receipt: receiptsSet.has(w.id),
+          total_gross: projectFinancials?.total_gross || 0,
+          total_stripe_fees: projectFinancials?.total_stripe_fees || 0,
+          total_platform_fees: projectFinancials?.total_platform_fees || 0,
+          total_net_creator: projectFinancials?.total_net_creator || 0
         };
       });
 
@@ -476,7 +518,7 @@ export function WithdrawalTrackingPanel() {
                           <TableRow>
                             <TableHead>Projeto</TableHead>
                             <TableHead>Criador</TableHead>
-                            <TableHead className="text-right">Valor Líquido</TableHead>
+                            <TableHead className="text-right">Detalhamento Financeiro</TableHead>
                             <TableHead>Dados Bancários</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Data</TableHead>
@@ -496,8 +538,21 @@ export function WithdrawalTrackingPanel() {
                                   <p className="text-xs text-muted-foreground">{withdrawal.user_email}</p>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-right font-bold text-green-600">
-                                {formatCurrency(withdrawal.net_amount)}
+                              <TableCell className="text-right">
+                                <div className="space-y-1">
+                                  <div className="text-xs text-muted-foreground">
+                                    Bruto: {formatCurrency(withdrawal.total_gross || withdrawal.requested_amount)}
+                                  </div>
+                                  <div className="text-xs text-red-500">
+                                    Stripe: -{formatCurrency(withdrawal.total_stripe_fees || 0)}
+                                  </div>
+                                  <div className="text-xs text-orange-500">
+                                    Admin: -{formatCurrency(withdrawal.admin_fee)}
+                                  </div>
+                                  <div className="font-bold text-green-600 border-t pt-1">
+                                    {formatCurrency(withdrawal.net_amount)}
+                                  </div>
+                                </div>
                               </TableCell>
                               <TableCell className="text-sm">
                                 <div className="flex items-center gap-1">
@@ -562,28 +617,56 @@ export function WithdrawalTrackingPanel() {
           </DialogHeader>
           <div className="space-y-4">
             {selectedWithdrawal && (
-              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                <p className="text-sm">
-                  <strong>Projeto:</strong> {selectedWithdrawal.project_title}
-                </p>
-                <p className="text-sm">
-                  <strong>Beneficiário:</strong> {selectedWithdrawal.bank_account?.holder_name}
-                </p>
-                <p className="text-sm">
-                  <strong>CPF:</strong> {selectedWithdrawal.bank_account?.document}
-                </p>
-                <p className="text-sm">
-                  <strong>Banco:</strong> {selectedWithdrawal.bank_account?.bank_code} - {selectedWithdrawal.bank_account?.bank}
-                </p>
-                <p className="text-sm">
-                  <strong>Agência:</strong> {selectedWithdrawal.bank_account?.agency}
-                </p>
-                <p className="text-sm">
-                  <strong>Conta:</strong> {selectedWithdrawal.bank_account?.account}-{selectedWithdrawal.bank_account?.account_check_digit}
-                </p>
-                <p className="text-sm font-bold text-green-600">
-                  <strong>Valor a Transferir:</strong> {formatCurrency(selectedWithdrawal.net_amount)}
-                </p>
+              <div className="space-y-3">
+                {/* Dados do Beneficiário */}
+                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                  <h4 className="font-medium text-sm">Dados do Beneficiário</h4>
+                  <p className="text-sm">
+                    <strong>Projeto:</strong> {selectedWithdrawal.project_title}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Beneficiário:</strong> {selectedWithdrawal.bank_account?.holder_name}
+                  </p>
+                  <p className="text-sm">
+                    <strong>CPF:</strong> {selectedWithdrawal.bank_account?.document}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Banco:</strong> {selectedWithdrawal.bank_account?.bank_code} - {selectedWithdrawal.bank_account?.bank}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Agência:</strong> {selectedWithdrawal.bank_account?.agency}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Conta:</strong> {selectedWithdrawal.bank_account?.account}-{selectedWithdrawal.bank_account?.account_check_digit}
+                  </p>
+                </div>
+
+                {/* Detalhamento das Taxas */}
+                <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+                  <h4 className="font-medium text-sm text-blue-800">Detalhamento das Taxas</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Valor Bruto:</span>
+                      <span className="font-medium">{formatCurrency(selectedWithdrawal.total_gross || selectedWithdrawal.requested_amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-red-600">
+                      <span>Taxa Stripe:</span>
+                      <span>-{formatCurrency(selectedWithdrawal.total_stripe_fees || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-orange-600">
+                      <span>Taxa Admin (10%):</span>
+                      <span>-{formatCurrency(selectedWithdrawal.admin_fee)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Valor Final */}
+                <div className="bg-green-100 p-4 rounded-lg border-2 border-green-500">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-green-800">VALOR A DEPOSITAR:</span>
+                    <span className="text-2xl font-bold text-green-700">{formatCurrency(selectedWithdrawal.net_amount)}</span>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -668,24 +751,56 @@ export function WithdrawalTrackingPanel() {
                 </div>
               </div>
 
-              {/* Values */}
-              <div className="grid grid-cols-3 gap-4">
+              {/* Financial Breakdown */}
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Detalhamento Financeiro
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="text-sm text-muted-foreground">Valor Bruto Arrecadado</span>
+                    <span className="font-medium">{formatCurrency(selectedWithdrawal.total_gross || selectedWithdrawal.requested_amount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b text-red-600">
+                    <span className="text-sm">Taxa Stripe (processamento)</span>
+                    <span className="font-medium">-{formatCurrency(selectedWithdrawal.total_stripe_fees || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b text-orange-600">
+                    <span className="text-sm">Taxa Administrativa (10%)</span>
+                    <span className="font-medium">-{formatCurrency(selectedWithdrawal.admin_fee)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 bg-green-50 rounded px-2 mt-2">
+                    <span className="font-bold text-green-800">VALOR A DEPOSITAR</span>
+                    <span className="text-xl font-bold text-green-600">{formatCurrency(selectedWithdrawal.net_amount)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-4 gap-3">
                 <Card>
-                  <CardContent className="p-4 text-center">
-                    <p className="text-sm text-muted-foreground">Valor Solicitado</p>
-                    <p className="text-xl font-bold">{formatCurrency(selectedWithdrawal.requested_amount)}</p>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Bruto</p>
+                    <p className="text-sm font-bold">{formatCurrency(selectedWithdrawal.total_gross || selectedWithdrawal.requested_amount)}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4 text-center">
-                    <p className="text-sm text-muted-foreground">Taxa Admin</p>
-                    <p className="text-xl font-bold text-red-600">-{formatCurrency(selectedWithdrawal.admin_fee)}</p>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Stripe</p>
+                    <p className="text-sm font-bold text-red-600">-{formatCurrency(selectedWithdrawal.total_stripe_fees || 0)}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-4 text-center bg-green-50">
-                    <p className="text-sm text-muted-foreground">Valor Líquido</p>
-                    <p className="text-xl font-bold text-green-600">{formatCurrency(selectedWithdrawal.net_amount)}</p>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Admin</p>
+                    <p className="text-sm font-bold text-orange-600">-{formatCurrency(selectedWithdrawal.admin_fee)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-green-50">
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Líquido</p>
+                    <p className="text-sm font-bold text-green-600">{formatCurrency(selectedWithdrawal.net_amount)}</p>
                   </CardContent>
                 </Card>
               </div>
