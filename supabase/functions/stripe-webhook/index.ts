@@ -12,6 +12,50 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
+// Função para calcular taxas do Stripe com base no método de pagamento
+interface FeeConfig {
+  percentage_fee: number;
+  fixed_fee: number;
+  additional_percentage: number;
+}
+
+const calculateStripeFees = (
+  grossAmount: number, 
+  paymentMethod: string,
+  feeConfigs: FeeConfig[]
+): { stripeFeePercentage: number; stripeFeeFixed: number; stripeFeeTotal: number } => {
+  // Mapear método do Stripe para nosso padrão
+  let configMethod = 'card_national'; // default
+  
+  if (paymentMethod === 'boleto') {
+    configMethod = 'boleto';
+  } else if (paymentMethod === 'pix') {
+    configMethod = 'pix';
+  } else if (paymentMethod === 'card') {
+    // Para cartões, assumimos nacional por padrão
+    // Em produção, verificar se é internacional pelo país do cartão
+    configMethod = 'card_national';
+  }
+
+  // Buscar configuração (fallback para cartão nacional)
+  const config = feeConfigs.find(c => c.payment_method === configMethod) || {
+    percentage_fee: 0.0399,
+    fixed_fee: 0.39,
+    additional_percentage: 0
+  };
+
+  const totalPercentage = Number(config.percentage_fee) + Number(config.additional_percentage || 0);
+  const stripeFeePercentage = totalPercentage;
+  const stripeFeeFixed = Number(config.fixed_fee);
+  const stripeFeeTotal = (grossAmount * totalPercentage) + stripeFeeFixed;
+
+  return {
+    stripeFeePercentage,
+    stripeFeeFixed,
+    stripeFeeTotal: Math.round(stripeFeeTotal * 100) / 100 // Arredondar para 2 casas
+  };
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -54,6 +98,13 @@ serve(async (req) => {
           const userId = metadata.user_id;
 
           if (projectId && userId) {
+            // Get payment details from stripe_payments
+            const { data: paymentRecord } = await supabase
+              .from('stripe_payments')
+              .select('id, amount, platform_fee, creator_amount')
+              .eq('stripe_session_id', session.id)
+              .single();
+
             // Update stripe_payments record
             await supabase
               .from('stripe_payments')
@@ -64,31 +115,116 @@ serve(async (req) => {
               })
               .eq('stripe_session_id', session.id);
 
-            // Get payment details
-            const { data: payment } = await supabase
-              .from('stripe_payments')
-              .select('amount')
-              .eq('stripe_session_id', session.id)
-              .single();
+            const amountCents = session.amount_total || 0;
+            const grossAmount = amountCents / 100; // Converter centavos para reais
+            const amountTokens = Math.floor(grossAmount);
 
-            const amountTokens = Math.floor((payment?.amount || 0) / 100);
+            // Buscar configurações de taxa do Stripe
+            const { data: feeConfigs } = await supabase
+              .from('stripe_fee_config')
+              .select('payment_method, percentage_fee, fixed_fee, additional_percentage')
+              .eq('is_enabled', true);
 
-            // Create contribution record
-            await supabase.from('project_contributions').insert({
-              user_id: userId,
-              project_id: projectId,
-              amount: amountTokens,
-              status: 'completed'
-            });
+            // Determinar método de pagamento
+            let paymentMethod = 'card';
+            if (session.payment_method_types?.includes('boleto')) {
+              paymentMethod = 'boleto';
+            } else if (session.payment_method_types?.includes('pix')) {
+              paymentMethod = 'pix';
+            }
 
-            // Update project stats
+            // Calcular taxas do Stripe
+            const { stripeFeePercentage, stripeFeeFixed, stripeFeeTotal } = 
+              calculateStripeFees(grossAmount, paymentMethod, feeConfigs || []);
+
+            // Buscar projeto para obter taxa da plataforma e ID do criador
             const { data: project } = await supabase
               .from('projects')
-              .select('raised_amount, backers_count, user_id, title')
+              .select('raised_amount, backers_count, user_id, title, platform_fee_percentage')
               .eq('id', projectId)
               .single();
 
             if (project) {
+              // Calcular taxas da plataforma
+              const platformFeePercentage = Number(project.platform_fee_percentage || 10) / 100;
+              const platformFeeAmount = grossAmount * platformFeePercentage;
+              
+              // Calcular valores líquidos
+              const netAmountCreator = grossAmount - stripeFeeTotal - platformFeeAmount;
+              const netAmountPlatform = platformFeeAmount;
+
+              // Calcular período de carência (7 dias após o pagamento)
+              const gracePeriodEndsAt = new Date();
+              gracePeriodEndsAt.setDate(gracePeriodEndsAt.getDate() + 7);
+
+              // Criar contribution record
+              const { data: contribution } = await supabase
+                .from('project_contributions')
+                .insert({
+                  user_id: userId,
+                  project_id: projectId,
+                  amount: amountTokens,
+                  status: 'completed'
+                })
+                .select('id')
+                .single();
+
+              // Registrar no financial_ledger com todos os detalhes
+              const { error: ledgerError } = await supabase
+                .from('financial_ledger')
+                .insert({
+                  project_id: projectId,
+                  contribution_id: contribution?.id,
+                  supporter_id: userId,
+                  creator_id: project.user_id,
+                  gross_amount: grossAmount,
+                  token_amount: amountTokens,
+                  payment_method: paymentMethod === 'card' ? 'card_national' : paymentMethod,
+                  stripe_fee_percentage: stripeFeePercentage,
+                  stripe_fee_fixed: stripeFeeFixed,
+                  stripe_fee_total: stripeFeeTotal,
+                  platform_fee_percentage: platformFeePercentage,
+                  platform_fee_amount: platformFeeAmount,
+                  net_amount_creator: netAmountCreator,
+                  net_amount_platform: netAmountPlatform,
+                  financial_status: 'grace_period',
+                  grace_period_ends_at: gracePeriodEndsAt.toISOString(),
+                  stripe_session_id: session.id,
+                  stripe_payment_intent_id: session.payment_intent as string
+                });
+
+              if (ledgerError) {
+                logStep("Error creating ledger entry", { error: ledgerError.message });
+              } else {
+                logStep("Ledger entry created", { 
+                  grossAmount, 
+                  stripeFeeTotal, 
+                  platformFeeAmount, 
+                  netAmountCreator 
+                });
+              }
+
+              // Criar movimentação no ledger
+              await supabase
+                .from('ledger_movements')
+                .insert({
+                  movement_type: 'payment_received',
+                  amount: grossAmount,
+                  from_entity: 'stripe',
+                  to_entity: 'platform',
+                  description: `Pagamento recebido - Projeto: ${project.title}`,
+                  reference_type: 'contribution',
+                  reference_id: contribution?.id,
+                  metadata: {
+                    project_id: projectId,
+                    supporter_id: userId,
+                    payment_method: paymentMethod,
+                    stripe_fees: stripeFeeTotal,
+                    platform_fee: platformFeeAmount
+                  }
+                });
+
+              // Update project stats
               await supabase
                 .from('projects')
                 .update({
@@ -114,9 +250,16 @@ serve(async (req) => {
                 message: `Sua contribuição de R$ ${amountTokens} foi confirmada para o projeto "${project.title}"`,
                 related_id: projectId
               });
-            }
 
-            logStep("Payment processed", { projectId, userId, amount: amountTokens });
+              logStep("Payment processed", { 
+                projectId, 
+                userId, 
+                grossAmount,
+                stripeFees: stripeFeeTotal,
+                platformFee: platformFeeAmount,
+                netCreator: netAmountCreator
+              });
+            }
           }
         }
         break;
