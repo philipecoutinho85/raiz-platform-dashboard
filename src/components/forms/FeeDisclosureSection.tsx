@@ -173,16 +173,27 @@ export function FeeDisclosureSection({ goal = 10000, projectType = 'regular' }: 
           </div>
         </div>
 
+        {/* Prazo de Recebimento */}
+        <Alert className="border-emerald-300 bg-emerald-50">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <AlertTitle className="text-emerald-800">Prazo de Recebimento</AlertTitle>
+          <AlertDescription className="text-emerald-700 text-sm">
+            <strong>Após o encerramento do projeto e a aprovação da prestação de contas, 
+            o valor líquido será repassado ao autor em até 30 dias corridos.</strong>
+          </AlertDescription>
+        </Alert>
+
         {/* Importante */}
         <Alert className="border-green-200 bg-green-50">
           <Info className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800">Como funciona o repasse</AlertTitle>
+          <AlertTitle className="text-green-800">Como funciona o processo</AlertTitle>
           <AlertDescription className="text-green-700 text-sm">
             <ul className="list-disc list-inside space-y-1 mt-1">
               <li><strong>Período de carência:</strong> 30 dias após cada contribuição para garantir segurança contra estornos</li>
-              <li><strong>Boleto:</strong> Valores disponíveis na conta da plataforma em 2 dias úteis</li>
-              <li><strong>Cartão:</strong> Valores disponíveis na conta da plataforma em 20 dias</li>
-              <li><strong>Saque:</strong> Após liberação, você pode solicitar o saque a qualquer momento</li>
+              <li><strong>Encerramento:</strong> Projeto encerra ao atingir a meta ou no prazo final</li>
+              <li><strong>Prestação de contas:</strong> Obrigatória para liberação dos valores</li>
+              <li><strong>Aprovação:</strong> Administração analisa e aprova a prestação de contas</li>
+              <li><strong>Repasse:</strong> Até 30 dias corridos após aprovação da prestação de contas</li>
             </ul>
           </AlertDescription>
         </Alert>

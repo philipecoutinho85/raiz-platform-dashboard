@@ -49,7 +49,19 @@ const FAQ = () => {
     },
     {
       question: "Quais são as taxas para resgate de valores?",
-      answer: "Para criadores que atingiram a meta e desejam resgatar os valores arrecadados, é cobrada uma taxa de processamento pela Stripe. Esta taxa varia de acordo com o método de pagamento utilizado e é automaticamente calculada no momento do resgate."
+      answer: "A plataforma cobra uma taxa administrativa de 10% sobre o valor líquido (após desconto das taxas da operadora de pagamento). As taxas da Stripe são: 3,99% + R$0,39 por transação para cartão nacional; 3,99% + R$0,39 + 2% adicional para cartão internacional; e R$3,45 por boleto pago. Por exemplo, para um apoio de R$100 via cartão nacional, você recebe aproximadamente R$82,10."
+    },
+    {
+      question: "Qual o prazo para receber os valores arrecadados?",
+      answer: "Após o encerramento do projeto e a aprovação da prestação de contas pela administração, o valor líquido será repassado ao autor em até 30 dias corridos. É obrigatório apresentar a prestação de contas mostrando como os recursos foram utilizados."
+    },
+    {
+      question: "O que é a prestação de contas?",
+      answer: "A prestação de contas é um relatório obrigatório que o criador deve apresentar após o projeto atingir sua meta, demonstrando como os recursos foram utilizados. Ela é fundamental para garantir a transparência e só após sua aprovação pela administração os valores são liberados para repasse. Importante: você só poderá criar um novo projeto após a aprovação da prestação de contas do projeto anterior."
+    },
+    {
+      question: "Como são calculadas as taxas sobre meu projeto?",
+      answer: "Primeiro são descontadas as taxas da operadora de pagamento (Stripe) sobre o valor bruto de cada contribuição. Depois, sobre o valor líquido restante, é aplicada a taxa administrativa da plataforma de 10%. O valor final é o que você receberá após aprovação da prestação de contas."
     }
   ];
 
