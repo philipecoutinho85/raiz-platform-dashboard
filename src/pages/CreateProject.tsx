@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Upload, X, Plus, Coins, Info } from 'lucide-react';
+import FeeDisclosureSection from '@/components/forms/FeeDisclosureSection';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -473,6 +474,11 @@ const CreateProject = () => {
 
               {/* Financial Information */}
               <div className="space-y-6">
+                {/* Fee Disclosure Section */}
+                <FeeDisclosureSection 
+                  projectType={isAdmin ? projectType : 'regular'} 
+                />
+                
                 <TokenSimulator />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
