@@ -81,6 +81,11 @@ interface Withdrawal {
   total_stripe_fees?: number;
   total_platform_fees?: number;
   total_net_creator?: number;
+  // Financial breakdown by payment method
+  boleto_gross?: number;
+  boleto_stripe_fees?: number;
+  card_gross?: number;
+  card_stripe_fees?: number;
 }
 
 interface TransferReceipt {
@@ -154,10 +159,10 @@ export function WithdrawalTrackingPanel() {
 
       if (projectsError) throw projectsError;
 
-      // Fetch financial data aggregated by project
+      // Fetch financial data aggregated by project with payment method
       const { data: financialData, error: financialError } = await supabase
         .from('financial_ledger')
-        .select('project_id, gross_amount, stripe_fee_total, platform_fee_amount, net_amount_creator')
+        .select('project_id, gross_amount, stripe_fee_total, platform_fee_amount, net_amount_creator, payment_method')
         .eq('is_deleted', false);
 
       if (financialError) throw financialError;
@@ -168,6 +173,10 @@ export function WithdrawalTrackingPanel() {
         total_stripe_fees: number;
         total_platform_fees: number;
         total_net_creator: number;
+        boleto_gross: number;
+        boleto_stripe_fees: number;
+        card_gross: number;
+        card_stripe_fees: number;
       }>();
 
       (financialData || []).forEach(entry => {
@@ -176,13 +185,24 @@ export function WithdrawalTrackingPanel() {
           total_gross: 0,
           total_stripe_fees: 0,
           total_platform_fees: 0,
-          total_net_creator: 0
+          total_net_creator: 0,
+          boleto_gross: 0,
+          boleto_stripe_fees: 0,
+          card_gross: 0,
+          card_stripe_fees: 0
         };
+        
+        const isBoleto = entry.payment_method === 'boleto';
+        
         financialByProject.set(entry.project_id, {
           total_gross: existing.total_gross + Number(entry.gross_amount || 0),
           total_stripe_fees: existing.total_stripe_fees + Number(entry.stripe_fee_total || 0),
           total_platform_fees: existing.total_platform_fees + Number(entry.platform_fee_amount || 0),
-          total_net_creator: existing.total_net_creator + Number(entry.net_amount_creator || 0)
+          total_net_creator: existing.total_net_creator + Number(entry.net_amount_creator || 0),
+          boleto_gross: existing.boleto_gross + (isBoleto ? Number(entry.gross_amount || 0) : 0),
+          boleto_stripe_fees: existing.boleto_stripe_fees + (isBoleto ? Number(entry.stripe_fee_total || 0) : 0),
+          card_gross: existing.card_gross + (!isBoleto ? Number(entry.gross_amount || 0) : 0),
+          card_stripe_fees: existing.card_stripe_fees + (!isBoleto ? Number(entry.stripe_fee_total || 0) : 0)
         });
       });
 
@@ -211,7 +231,11 @@ export function WithdrawalTrackingPanel() {
           total_gross: projectFinancials?.total_gross || 0,
           total_stripe_fees: projectFinancials?.total_stripe_fees || 0,
           total_platform_fees: projectFinancials?.total_platform_fees || 0,
-          total_net_creator: projectFinancials?.total_net_creator || 0
+          total_net_creator: projectFinancials?.total_net_creator || 0,
+          boleto_gross: projectFinancials?.boleto_gross || 0,
+          boleto_stripe_fees: projectFinancials?.boleto_stripe_fees || 0,
+          card_gross: projectFinancials?.card_gross || 0,
+          card_stripe_fees: projectFinancials?.card_stripe_fees || 0
         };
       });
 

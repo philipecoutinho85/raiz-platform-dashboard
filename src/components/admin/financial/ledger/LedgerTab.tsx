@@ -22,6 +22,7 @@ import { WithdrawalTrackingPanel } from './WithdrawalTrackingPanel';
 import { StripeFeeConfigTable } from './StripeFeeConfigTable';
 import { BankReconciliationPanel } from './BankReconciliationPanel';
 import { TransferReceiptsPanel } from './TransferReceiptsPanel';
+import { CashFlowForecastPanel } from './CashFlowForecastPanel';
 import { 
   RefreshCw, 
   Download, 
@@ -35,7 +36,8 @@ import {
   Users,
   Coins,
   RotateCcw,
-  Banknote
+  Banknote,
+  TrendingUp
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -237,8 +239,12 @@ export function LedgerTab() {
       </Card>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="entries" className="space-y-4">
+      <Tabs defaultValue="cashflow" className="space-y-4">
         <TabsList className="flex flex-wrap gap-1">
+          <TabsTrigger value="cashflow" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Fluxo de Caixa
+          </TabsTrigger>
           <TabsTrigger value="entries" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
             Registros
@@ -276,6 +282,10 @@ export function LedgerTab() {
             Comprovantes
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="cashflow">
+          <CashFlowForecastPanel />
+        </TabsContent>
 
         <TabsContent value="entries">
           <Card>
