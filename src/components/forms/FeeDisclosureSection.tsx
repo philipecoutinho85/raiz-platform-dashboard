@@ -95,22 +95,18 @@ export function FeeDisclosureSection({ goal = 10000, projectType = 'regular' }: 
             <div className="p-3 bg-gray-50 rounded-lg">
               <p className="font-medium text-gray-700">💳 Cartão Nacional</p>
               <p className="text-gray-600">3,99% + R$ 0,39 por transação</p>
-              <p className="text-xs text-gray-500 mt-1">Repasse em: 20 dias</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-lg">
               <p className="font-medium text-gray-700">🌍 Cartão Internacional</p>
               <p className="text-gray-600">3,99% + R$ 0,39 + 2% adicional</p>
-              <p className="text-xs text-gray-500 mt-1">Repasse em: 20 dias</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-lg">
               <p className="font-medium text-gray-700">📄 Boleto Bancário</p>
               <p className="text-gray-600">R$ 3,45 por boleto pago</p>
-              <p className="text-xs text-gray-500 mt-1">Repasse em: 2 dias úteis</p>
             </div>
             <div className="p-3 bg-green-50 rounded-lg border border-green-200">
               <p className="font-medium text-green-700">✅ Transferência para Criador</p>
               <p className="text-green-600">Sem taxa adicional</p>
-              <p className="text-xs text-green-500 mt-1">Após período de carência</p>
             </div>
           </div>
         </div>

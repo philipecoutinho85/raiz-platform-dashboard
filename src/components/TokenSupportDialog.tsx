@@ -1,12 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTokens } from '@/hooks/useTokens';
-import { AlertCircle, Coins, Target } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, Coins, Target, ShoppingCart } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface TokenSupportDialogProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface TokenSupportDialogProps {
 }
 
 const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, projectGoal, projectRaisedAmount, onSuccess }: TokenSupportDialogProps) => {
+  const navigate = useNavigate();
   const { tokens, supportProject } = useTokens();
   const [supportType, setSupportType] = useState<'all' | 'custom'>('custom');
   const [amount, setAmount] = useState('');
@@ -58,6 +60,19 @@ const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, projectG
     setSupportType('custom');
   };
 
+  const handleBuyTokens = () => {
+    // Store project info in sessionStorage to return after purchase
+    sessionStorage.setItem('returnToProject', JSON.stringify({
+      projectId,
+      projectTitle,
+      intendedAmount: amount || ''
+    }));
+    handleClose();
+    navigate('/carteira?tab=buy');
+  };
+
+  const insufficientBalance = tokens === 0 || (supportType === 'custom' && parseInt(amount) > tokens);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
@@ -90,8 +105,8 @@ const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, projectG
 
           <RadioGroup value={supportType} onValueChange={(value) => setSupportType(value as 'all' | 'custom')}>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="all" id="all" />
-              <Label htmlFor="all" className="cursor-pointer">
+              <RadioGroupItem value="all" id="all" disabled={tokens === 0} />
+              <Label htmlFor="all" className={`cursor-pointer ${tokens === 0 ? 'text-muted-foreground' : ''}`}>
                 {tokensNeeded > 0 && tokens >= tokensNeeded 
                   ? `Completar a meta (${tokensNeeded} tokens)`
                   : `Usar todos os meus tokens (${tokens} tokens)`
@@ -124,11 +139,15 @@ const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, projectG
             </div>
           )}
 
-          {tokens === 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Você não possui tokens. Compre tokens para apoiar projetos.
+          {/* Insufficient Balance Warning */}
+          {insufficientBalance && (
+            <Alert className="border-amber-300 bg-amber-50">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-800">Saldo Insuficiente</AlertTitle>
+              <AlertDescription className="text-amber-700 text-sm">
+                {tokens === 0 
+                  ? 'Você não possui tokens. Adquira tokens para apoiar projetos.'
+                  : 'Você não tem tokens suficientes para este apoio. Adquira mais tokens.'}
               </AlertDescription>
             </Alert>
           )}
@@ -137,17 +156,28 @@ const TokenSupportDialog = ({ isOpen, onClose, projectId, projectTitle, projectG
             <Button variant="outline" onClick={handleClose} className="flex-1">
               Cancelar
             </Button>
-            <Button
-              onClick={handleSupport}
-              disabled={
-                loading ||
-                tokens === 0 ||
-                (supportType === 'custom' && (!amount || parseInt(amount) <= 0 || parseInt(amount) > tokens))
-              }
-              className="flex-1 bg-raiz-primary hover:bg-raiz-primary/90"
-            >
-              {loading ? 'Processando...' : 'Apoiar'}
-            </Button>
+            
+            {insufficientBalance ? (
+              <Button
+                onClick={handleBuyTokens}
+                className="flex-1 bg-raiz-gold hover:bg-raiz-gold/90 text-black"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Adquirir Tokens
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSupport}
+                disabled={
+                  loading ||
+                  tokens === 0 ||
+                  (supportType === 'custom' && (!amount || parseInt(amount) <= 0 || parseInt(amount) > tokens))
+                }
+                className="flex-1 bg-raiz-primary hover:bg-raiz-primary/90"
+              >
+                {loading ? 'Processando...' : 'Apoiar'}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

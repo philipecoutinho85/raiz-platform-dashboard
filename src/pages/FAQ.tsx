@@ -8,6 +8,14 @@ import Footer from '@/components/Footer';
 const FAQ = () => {
   const faqs = [
     {
+      question: "Como posso apoiar um projeto?",
+      answer: "O apoio aos projetos é realizado exclusivamente por meio de tokens. Caso não haja saldo suficiente, você poderá adquirir tokens antes de concluir o apoio. Após a compra, você será redirecionado automaticamente para finalizar seu apoio ao projeto."
+    },
+    {
+      question: "Posso apoiar diretamente com PIX ou cartão?",
+      answer: "Não. O apoio aos projetos é feito apenas com tokens. Os métodos de pagamento (cartão de crédito e boleto) são utilizados apenas para a compra de tokens. A opção de pagamento via PIX estará disponível em breve."
+    },
+    {
       question: "O que é um token?",
       answer: "Um token é uma unidade digital simbólica dentro da nossa plataforma. Cada token equivale a R$ 1,00 e representa seu apoio a um projeto. Os tokens são uma forma moderna e transparente de registrar suas contribuições para causas sociais importantes."
     },
@@ -33,7 +41,7 @@ const FAQ = () => {
     },
     {
       question: "Os criadores de projeto são verificados?",
-      answer: "Sim, todos os criadores passam por um processo de verificação que inclui validação de identidade, análise do projeto proposto e verificação de documentos. Isso garante a seriedade e viabilidade dos projetos na plataforma."
+      answer: "Sim, todos os criadores passam por um processo de verificação que inclui validação de identidade, análise do projeto proposto e verificação de documentos. A criação de projetos só é liberada após a verificação de identidade (KYC) ser concluída."
     },
     {
       question: "Posso acompanhar o progresso dos projetos que apoiei?",
@@ -48,8 +56,8 @@ const FAQ = () => {
       answer: "Enquanto o projeto estiver ativo e não tiver atingido a meta, você pode solicitar reembolso a qualquer momento. Após a meta ser atingida, o apoio é confirmado e os recursos são liberados para o criador."
     },
     {
-      question: "Quais são as taxas para resgate de valores?",
-      answer: "A plataforma cobra uma taxa administrativa de 10% sobre o valor líquido (após desconto das taxas da operadora de pagamento). As taxas da Stripe são: 3,99% + R$0,39 por transação para cartão nacional; 3,99% + R$0,39 + 2% adicional para cartão internacional; e R$3,45 por boleto pago. Por exemplo, para um apoio de R$100 via cartão nacional, você recebe aproximadamente R$82,10."
+      question: "Quais são as taxas para criadores de projetos?",
+      answer: "A plataforma cobra uma taxa administrativa de 10% sobre o valor líquido (após desconto das taxas da operadora de pagamento). As taxas da Stripe são: 3,99% + R$0,39 por transação para cartão nacional; 3,99% + R$0,39 + 2% adicional para cartão internacional; e R$3,45 por boleto pago. Por exemplo, para um apoio de R$100 via cartão nacional, o criador recebe aproximadamente R$86,06."
     },
     {
       question: "Qual o prazo para receber os valores arrecadados?",
@@ -57,11 +65,11 @@ const FAQ = () => {
     },
     {
       question: "O que é a prestação de contas?",
-      answer: "A prestação de contas é um relatório obrigatório que o criador deve apresentar após o projeto atingir sua meta, demonstrando como os recursos foram utilizados. Ela é fundamental para garantir a transparência e só após sua aprovação pela administração os valores são liberados para repasse. Importante: você só poderá criar um novo projeto após a aprovação da prestação de contas do projeto anterior."
+      answer: "A prestação de contas é um relatório obrigatório que o criador deve apresentar após o projeto atingir sua meta ou ser encerrado, demonstrando como os recursos foram utilizados. Ela é fundamental para garantir a transparência e só após sua aprovação pela administração os valores são liberados para repasse. Importante: você só poderá criar um novo projeto após a aprovação da prestação de contas do projeto anterior."
     },
     {
       question: "Como são calculadas as taxas sobre meu projeto?",
-      answer: "Primeiro são descontadas as taxas da operadora de pagamento (Stripe) sobre o valor bruto de cada contribuição. Depois, sobre o valor líquido restante, é aplicada a taxa administrativa da plataforma de 10%. O valor final é o que você receberá após aprovação da prestação de contas."
+      answer: "Primeiro são descontadas as taxas da operadora de pagamento (Stripe) sobre o valor bruto de cada contribuição. Depois, sobre o valor líquido restante, é aplicada a taxa administrativa da plataforma de 10%. O valor final é o que você receberá em até 30 dias corridos após aprovação da prestação de contas."
     }
   ];
 
