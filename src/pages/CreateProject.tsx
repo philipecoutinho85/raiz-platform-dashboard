@@ -8,8 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Upload, X, Plus, Coins, Info } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Upload, X, Plus, Coins, Info, AlertTriangle, ShieldAlert, FileCheck } from 'lucide-react';
 import FeeDisclosureSection from '@/components/forms/FeeDisclosureSection';
+import { PlatformRulesModal, CONSENT_VERSION, CONSENT_TEXT } from '@/components/forms/PlatformRulesModal';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -98,6 +101,12 @@ const CreateProject = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [initialInvestment, setInitialInvestment] = useState<string>('');
   const [projectType, setProjectType] = useState<'seed' | 'regular'>('regular');
+  const [rulesAccepted, setRulesAccepted] = useState(false);
+  
+  // Validation states
+  const [isIdentityVerified, setIsIdentityVerified] = useState<boolean | null>(null);
+  const [pendingAccountability, setPendingAccountability] = useState<{ projectId: string; projectTitle: string } | null>(null);
+  const [checkingEligibility, setCheckingEligibility] = useState(true);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -111,6 +120,55 @@ const CreateProject = () => {
       setIsAdmin(!!data);
     };
     checkAdminStatus();
+  }, [user]);
+
+  // Check eligibility for creating projects
+  useEffect(() => {
+    const checkEligibility = async () => {
+      if (!user) {
+        setCheckingEligibility(false);
+        return;
+      }
+
+      try {
+        // Check if identity is verified (using stripe_onboarding_complete as KYC proxy)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('stripe_onboarding_complete, is_identity_verified')
+          .eq('id', user.id)
+          .single();
+        
+        // For now, we'll consider stripe_onboarding_complete or is_identity_verified as KYC
+        setIsIdentityVerified(profile?.stripe_onboarding_complete || profile?.is_identity_verified || false);
+
+        // Check for projects with pending accountability (100% funded but not approved)
+        const { data: pendingProjects } = await supabase
+          .from('projects')
+          .select('id, title, goal, raised_amount, custom_goal, accountability_approved')
+          .eq('user_id', user.id)
+          .eq('status', 'approved')
+          .or('accountability_approved.is.null,accountability_approved.eq.false');
+
+        // Find projects that reached 100% but don't have approved accountability
+        const projectWithPendingAccountability = pendingProjects?.find(p => {
+          const effectiveGoal = p.custom_goal || p.goal;
+          return p.raised_amount >= effectiveGoal && !p.accountability_approved;
+        });
+
+        if (projectWithPendingAccountability) {
+          setPendingAccountability({
+            projectId: projectWithPendingAccountability.id,
+            projectTitle: projectWithPendingAccountability.title
+          });
+        }
+      } catch (error) {
+        console.error('Error checking eligibility:', error);
+      } finally {
+        setCheckingEligibility(false);
+      }
+    };
+
+    checkEligibility();
   }, [user]);
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<ProjectFormData>();
@@ -202,6 +260,16 @@ const CreateProject = () => {
     try {
       setLoading(true);
 
+      // Validate rules acceptance
+      if (!rulesAccepted && !isAdmin) {
+        toast({
+          title: 'Erro',
+          description: 'Você precisa aceitar as regras da plataforma para criar um projeto.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       if (!featuredImageUrl) {
         toast({
           title: 'Erro',
@@ -256,6 +324,17 @@ const CreateProject = () => {
         .single();
 
       if (error) throw error;
+
+      // Record consent for non-admin users
+      if (!isAdmin && project) {
+        await supabase.from('creator_consent_records').insert({
+          user_id: user?.id,
+          project_id: project.id,
+          consent_version: CONSENT_VERSION,
+          consent_text: CONSENT_TEXT,
+          user_agent: navigator.userAgent
+        });
+      }
 
       // Upload featured image metadata
       await supabase
@@ -378,6 +457,21 @@ const CreateProject = () => {
     }
   };
 
+  // Check if user can create projects
+  const canCreateProject = isAdmin || (isIdentityVerified && !pendingAccountability);
+
+  if (checkingEligibility) {
+    return (
+      <div className="min-h-screen bg-raiz-light py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-raiz-primary"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-raiz-light py-8">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -388,7 +482,52 @@ const CreateProject = () => {
           </p>
         </div>
 
-        <Card>
+        {/* KYC Verification Required */}
+        {!isAdmin && isIdentityVerified === false && (
+          <Alert className="mb-6 border-red-300 bg-red-50">
+            <ShieldAlert className="h-5 w-5 text-red-600" />
+            <AlertTitle className="text-red-800">Verificação de Identidade Necessária</AlertTitle>
+            <AlertDescription className="text-red-700">
+              <p className="mb-3">
+                Para criar projetos na plataforma, você precisa completar a verificação de identidade (KYC).
+                Isso garante a segurança e confiabilidade de todos os projetos.
+              </p>
+              <Button 
+                onClick={() => navigate('/perfil')}
+                variant="outline" 
+                className="border-red-300 text-red-700 hover:bg-red-100"
+              >
+                Completar Verificação
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Pending Accountability Required */}
+        {!isAdmin && pendingAccountability && (
+          <Alert className="mb-6 border-amber-300 bg-amber-50">
+            <FileCheck className="h-5 w-5 text-amber-600" />
+            <AlertTitle className="text-amber-800">Prestação de Contas Pendente</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              <p className="mb-3">
+                Você possui um projeto que atingiu 100% da meta e precisa de prestação de contas aprovada 
+                antes de criar um novo projeto.
+              </p>
+              <p className="font-medium mb-3">
+                Projeto: "{pendingAccountability.projectTitle}"
+              </p>
+              <Button 
+                onClick={() => navigate(`/projeto/${pendingAccountability.projectId}`)}
+                variant="outline" 
+                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+              >
+                Ir para Prestação de Contas
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Card className={!canCreateProject ? 'opacity-60 pointer-events-none' : ''}>
           <CardHeader>
             <CardTitle>Informações do Projeto</CardTitle>
           </CardHeader>
@@ -858,11 +997,36 @@ const CreateProject = () => {
               {/* LGPD Data Protection Notice */}
               <CreatorDataProtectionNotice />
 
+              {/* Rules Consent */}
+              {!isAdmin && (
+                <div className="space-y-4 border border-amber-200 bg-amber-50 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <PlatformRulesModal />
+                  </div>
+                  
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="rules-consent"
+                      checked={rulesAccepted}
+                      onCheckedChange={(checked) => setRulesAccepted(checked === true)}
+                      className="mt-1"
+                    />
+                    <Label htmlFor="rules-consent" className="text-sm cursor-pointer leading-relaxed">
+                      Declaro que li, entendi e estou ciente de todas as regras, taxas, prazos e do 
+                      funcionamento do apoio por tokens da plataforma.
+                    </Label>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end space-x-4">
                 <Button type="button" variant="outline" onClick={() => navigate('/meus-projetos')}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  disabled={loading || (!isAdmin && !rulesAccepted) || !canCreateProject}
+                >
                   {loading ? 'Criando...' : 'Criar Projeto'}
                 </Button>
               </div>

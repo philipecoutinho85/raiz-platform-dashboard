@@ -156,7 +156,10 @@ const TokenPurchase = () => {
           <Alert className="bg-raiz-primary/5 border-raiz-primary/20">
             <Coins className="h-4 w-4" />
             <AlertDescription>
-              Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 1,00. Valor mínimo de compra: R$ 5,00 (5 tokens).
+              <p>Use tokens para apoiar projetos na comunidade Raiz. Cada token vale R$ 1,00. Valor mínimo de compra: R$ 5,00 (5 tokens).</p>
+              <p className="mt-2 font-medium text-amber-700">
+                💡 A opção de pagamento via PIX estará disponível em breve.
+              </p>
             </AlertDescription>
           </Alert>
 

@@ -371,18 +371,16 @@ export const ProjectWithdrawal = ({
                 <p><strong>Taxa administrativa ({adminFee}%):</strong> R$ {feeAmount.toFixed(2)}</p>
                 <p><strong>Taxa de saque (TED):</strong> R$ 3,67</p>
                 <p className="text-lg font-bold"><strong>Valor líquido a receber:</strong> R$ {(netAmount - 3.67).toFixed(2)}</p>
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>Prazo de recebimento:</strong> Até 30 dias corridos após aprovação da prestação de contas.
+                  </p>
+                </div>
               </div>
             </AlertDescription>
           </Alert>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-          <Alert className="mb-6 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-amber-900 dark:text-amber-100">
-              <strong>⏱️ Prazo de processamento:</strong> A análise e liberação do resgate será realizada em até 7 dias úteis após a aprovação.
-            </AlertDescription>
-          </Alert>
-
           <div className="space-y-2">
             <Label htmlFor="cpf">CPF do Titular *</Label>
             <Input

@@ -281,6 +281,57 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_consent_records: {
+        Row: {
+          accepted_at: string
+          consent_text: string
+          consent_version: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          project_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          consent_text: string
+          consent_version?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          project_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          consent_text?: string
+          consent_version?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          project_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_consent_records_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project_financial_summary"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "creator_consent_records_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_payouts: {
         Row: {
           amount: number
@@ -812,6 +863,7 @@ export type Database = {
           estado: string | null
           has_completed_tour: boolean | null
           id: string
+          is_identity_verified: boolean | null
           nome: string
           numero: string | null
           sobrenome: string
@@ -835,6 +887,7 @@ export type Database = {
           estado?: string | null
           has_completed_tour?: boolean | null
           id: string
+          is_identity_verified?: boolean | null
           nome: string
           numero?: string | null
           sobrenome: string
@@ -858,6 +911,7 @@ export type Database = {
           estado?: string | null
           has_completed_tour?: boolean | null
           id?: string
+          is_identity_verified?: boolean | null
           nome?: string
           numero?: string | null
           sobrenome?: string
