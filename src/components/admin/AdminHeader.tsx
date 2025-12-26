@@ -27,6 +27,7 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 activeTab === "users" ? "Usuários" :
                 activeTab === "badges" ? "Badges" :
                 activeTab === "reports" ? "Denúncias" :
+                activeTab === "consents" ? "Aceites" :
                 activeTab === "finance" ? "Financeiro" :
                 activeTab === "tokens" ? "Tokens" :
                 activeTab === "transactions" ? "Transações" :
@@ -64,6 +65,10 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 <DropdownMenuItem onClick={() => setActiveTab("reports")} className="cursor-pointer hover:bg-primary/10">
                   <AlertTriangle className="mr-2 h-4 w-4 text-primary" />
                   Denúncias
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("consents")} className="cursor-pointer hover:bg-primary/10">
+                  <FileText className="mr-2 h-4 w-4 text-primary" />
+                  Aceites de Regras
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator />
