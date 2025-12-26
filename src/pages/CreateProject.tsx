@@ -1004,35 +1004,46 @@ const CreateProject = () => {
 
               {/* Rules Consent */}
               {!isAdmin && (
-                <div className="space-y-4 border border-amber-200 bg-amber-50 rounded-lg p-4">
+                <div className={`space-y-4 rounded-lg p-4 ${rulesAccepted ? 'border border-green-300 bg-green-50' : 'border-2 border-red-400 bg-red-50'}`}>
                   <div className="flex items-center gap-2">
-                    <FileCheck className="h-5 w-5 text-amber-600" />
-                    <span className="font-semibold text-amber-900">Aceite Obrigatório</span>
+                    <FileCheck className={`h-5 w-5 ${rulesAccepted ? 'text-green-600' : 'text-red-600'}`} />
+                    <span className={`font-semibold ${rulesAccepted ? 'text-green-900' : 'text-red-900'}`}>
+                      ⚠️ Aceite Obrigatório para Criar Projeto
+                    </span>
                   </div>
                   
-                  <p className="text-sm text-amber-800">
-                    Antes de criar seu projeto, você deve ler e aceitar as regras da plataforma:
+                  <p className={`text-sm ${rulesAccepted ? 'text-green-800' : 'text-red-800'}`}>
+                    {rulesAccepted 
+                      ? '✓ Você aceitou as regras da plataforma.' 
+                      : 'Antes de criar seu projeto, você DEVE ler e aceitar as regras da plataforma:'}
                   </p>
                   
                   <PlatformRulesModal />
                   
-                  <div className="flex items-start space-x-3 pt-2 border-t border-amber-200">
+                  <div className={`flex items-start space-x-3 pt-2 border-t ${rulesAccepted ? 'border-green-200' : 'border-red-200'}`}>
                     <Checkbox
                       id="rules-consent"
                       checked={rulesAccepted}
                       onCheckedChange={(checked) => setRulesAccepted(checked === true)}
-                      className="mt-1"
+                      className="mt-1 h-5 w-5"
+                      required
                     />
-                    <Label htmlFor="rules-consent" className="text-sm cursor-pointer leading-relaxed font-medium text-amber-900">
+                    <Label 
+                      htmlFor="rules-consent" 
+                      className={`text-sm cursor-pointer leading-relaxed font-medium ${rulesAccepted ? 'text-green-900' : 'text-red-900'}`}
+                    >
                       Declaro que li, entendi e estou ciente de todas as regras, taxas, prazos e do 
-                      funcionamento do apoio por tokens da plataforma.
+                      funcionamento do apoio por tokens da plataforma Raiz Token.
                     </Label>
                   </div>
                   
                   {!rulesAccepted && (
-                    <p className="text-xs text-red-600">
-                      * Você precisa aceitar as regras para criar o projeto
-                    </p>
+                    <Alert variant="destructive" className="mt-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="font-medium">
+                        Você precisa aceitar as regras acima para criar o projeto. O botão "Criar Projeto" está desabilitado até você marcar o checkbox.
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
               )}
