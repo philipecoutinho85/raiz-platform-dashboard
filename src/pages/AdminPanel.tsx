@@ -18,6 +18,7 @@ import AdminTestPanel from '@/components/admin/AdminTestPanel';
 import { WithdrawalsTab } from '@/components/admin/WithdrawalsTab';
 import { ReportsManagement } from '@/components/admin/ReportsManagement';
 import SupportTab from '@/components/admin/SupportTab';
+import ConsentRecordsTab from '@/components/admin/ConsentRecordsTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -134,6 +135,7 @@ const AdminPanel = () => {
                   <SelectItem value="users">👥 Usuários</SelectItem>
                   <SelectItem value="badges">🏆 Badges</SelectItem>
                   <SelectItem value="reports">⚠️ Denúncias</SelectItem>
+                  <SelectItem value="consents">✅ Aceites</SelectItem>
                   <SelectItem value="finance">💰 Financeiro</SelectItem>
                   <SelectItem value="tokens">🪙 Tokens</SelectItem>
                   <SelectItem value="transactions">💸 Transações</SelectItem>
@@ -173,6 +175,10 @@ const AdminPanel = () => {
 
           <TabsContent value="reports">
             <ReportsManagement />
+          </TabsContent>
+
+          <TabsContent value="consents">
+            <ConsentRecordsTab />
           </TabsContent>
 
           <TabsContent value="finance">
