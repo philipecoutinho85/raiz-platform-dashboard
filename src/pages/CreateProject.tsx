@@ -11,7 +11,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Upload, X, Plus, Coins, Info, AlertTriangle, ShieldAlert, FileCheck } from 'lucide-react';
-import FeeDisclosureSection from '@/components/forms/FeeDisclosureSection';
 import { PlatformRulesModal, CONSENT_VERSION, CONSENT_TEXT } from '@/components/forms/PlatformRulesModal';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -613,10 +612,16 @@ const CreateProject = () => {
 
               {/* Financial Information */}
               <div className="space-y-6">
-                {/* Fee Disclosure Section */}
-                <FeeDisclosureSection 
-                  projectType={isAdmin ? projectType : 'regular'} 
-                />
+                {/* Link to Rules Modal */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-amber-900">Taxas e Regras da Plataforma</h4>
+                      <p className="text-sm text-amber-700">Clique no link abaixo para entender as taxas, prazos e regras</p>
+                    </div>
+                    <PlatformRulesModal />
+                  </div>
+                </div>
                 
                 <TokenSimulator />
                 
@@ -1000,22 +1005,35 @@ const CreateProject = () => {
               {/* Rules Consent */}
               {!isAdmin && (
                 <div className="space-y-4 border border-amber-200 bg-amber-50 rounded-lg p-4">
-                  <div className="flex items-start gap-2">
-                    <PlatformRulesModal />
+                  <div className="flex items-center gap-2">
+                    <FileCheck className="h-5 w-5 text-amber-600" />
+                    <span className="font-semibold text-amber-900">Aceite Obrigatório</span>
                   </div>
                   
-                  <div className="flex items-start space-x-3">
+                  <p className="text-sm text-amber-800">
+                    Antes de criar seu projeto, você deve ler e aceitar as regras da plataforma:
+                  </p>
+                  
+                  <PlatformRulesModal />
+                  
+                  <div className="flex items-start space-x-3 pt-2 border-t border-amber-200">
                     <Checkbox
                       id="rules-consent"
                       checked={rulesAccepted}
                       onCheckedChange={(checked) => setRulesAccepted(checked === true)}
                       className="mt-1"
                     />
-                    <Label htmlFor="rules-consent" className="text-sm cursor-pointer leading-relaxed">
+                    <Label htmlFor="rules-consent" className="text-sm cursor-pointer leading-relaxed font-medium text-amber-900">
                       Declaro que li, entendi e estou ciente de todas as regras, taxas, prazos e do 
                       funcionamento do apoio por tokens da plataforma.
                     </Label>
                   </div>
+                  
+                  {!rulesAccepted && (
+                    <p className="text-xs text-red-600">
+                      * Você precisa aceitar as regras para criar o projeto
+                    </p>
+                  )}
                 </div>
               )}
 
