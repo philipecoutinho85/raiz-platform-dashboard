@@ -26,19 +26,14 @@ const Footer = () => {
     fetchSocialLinks();
   }, []);
 
-  // Verifica se é um link interno (começa com /)
-  const isInternalLink = (href: string) => {
-    return href.startsWith('/');
-  };
-
-  // Não permite links externos - apenas exibe texto
+  // Render social icon with external link support
   const renderSocialIcon = (platform: 'linkedin' | 'instagram') => {
     const url = socialLinks[platform];
     const Icon = platform === 'linkedin' ? Linkedin : Instagram;
     const label = platform === 'linkedin' ? 'LinkedIn' : 'Instagram';
     
-    // Se não houver URL ou for link externo, apenas mostra o ícone sem ação
-    if (!url || !isInternalLink(url)) {
+    // Se não houver URL, mostra ícone desabilitado
+    if (!url) {
       return (
         <span 
           className="text-raiz-light/50 p-3 bg-raiz-light/10 rounded-lg flex items-center justify-center cursor-not-allowed"
@@ -50,14 +45,17 @@ const Footer = () => {
       );
     }
 
+    // External links use <a> tag with target="_blank"
     return (
-      <Link 
-        to={url}
+      <a 
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
         className="text-raiz-light hover:text-raiz-gold transition-colors p-3 bg-raiz-light/10 rounded-lg hover:bg-raiz-light/20 flex items-center justify-center"
         aria-label={label}
       >
         <Icon className="w-6 h-6" />
-      </Link>
+      </a>
     );
   };
 
@@ -109,9 +107,6 @@ const Footer = () => {
               {renderSocialIcon('linkedin')}
               {renderSocialIcon('instagram')}
             </div>
-            <p className="text-xs text-raiz-light/50 mt-2">
-              Apenas links internos são permitidos por segurança.
-            </p>
           </div>
         </div>
         

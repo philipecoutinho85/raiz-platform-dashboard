@@ -1,4 +1,4 @@
-import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare } from 'lucide-react';
+import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
@@ -35,6 +35,7 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 activeTab === "withdrawals" ? "Resgates" :
                 activeTab === "expired" ? "Proj. Expirados" :
                 activeTab === "support" ? "Suporte" :
+                activeTab === "rejections" ? "Msg. Rejeições" :
                 activeTab === "logs" ? "Logs" :
                 activeTab === "tests" ? "Testes" :
                 "Configurações"
@@ -103,6 +104,10 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 <DropdownMenuItem onClick={() => setActiveTab("support")} className="cursor-pointer hover:bg-primary/10">
                   <MessageSquare className="mr-2 h-4 w-4 text-primary" />
                   Suporte
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("rejections")} className="cursor-pointer hover:bg-primary/10">
+                  <Mail className="mr-2 h-4 w-4 text-primary" />
+                  Msg. Rejeições
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab("logs")} className="cursor-pointer hover:bg-primary/10">
                   <FileText className="mr-2 h-4 w-4 text-primary" />

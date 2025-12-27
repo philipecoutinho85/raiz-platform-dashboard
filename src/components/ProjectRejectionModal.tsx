@@ -52,7 +52,8 @@ const ProjectRejectionModal = ({
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Using any to bypass type checking until types are regenerated
+      const { data, error } = await (supabase as any)
         .from('project_rejection_messages')
         .select('*')
         .eq('project_id', projectId)
@@ -72,7 +73,7 @@ const ProjectRejectionModal = ({
 
     setSending(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('project_rejection_messages')
         .insert({
           project_id: projectId,
@@ -165,12 +166,12 @@ const ProjectRejectionModal = ({
                       <div
                         className={`max-w-[80%] rounded-lg p-3 ${
                           msg.sender_type === 'user'
-                            ? 'bg-raiz-primary text-white'
+                            ? 'bg-primary text-primary-foreground'
                             : 'bg-muted'
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                        <p className={`text-xs mt-1 ${msg.sender_type === 'user' ? 'text-white/70' : 'text-muted-foreground'}`}>
+                        <p className={`text-xs mt-1 ${msg.sender_type === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                           {format(new Date(msg.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                         </p>
                       </div>

@@ -578,6 +578,10 @@ const UserProfile = () => {
             <StripeConnectSetup />
           </TabsContent>
 
+          <TabsContent value="privacy">
+            <PrivacyCenter />
+          </TabsContent>
+
           <TabsContent value="support">
             <Card>
               <CardHeader>

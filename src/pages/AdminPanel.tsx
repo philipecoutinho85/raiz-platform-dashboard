@@ -19,6 +19,7 @@ import { WithdrawalsTab } from '@/components/admin/WithdrawalsTab';
 import { ReportsManagement } from '@/components/admin/ReportsManagement';
 import SupportTab from '@/components/admin/SupportTab';
 import ConsentRecordsTab from '@/components/admin/ConsentRecordsTab';
+import ProjectRejectionMessagesTab from '@/components/admin/ProjectRejectionMessagesTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -143,6 +144,7 @@ const AdminPanel = () => {
                   <SelectItem value="withdrawals">💵 Resgates</SelectItem>
                   <SelectItem value="expired">⏱️ Proj. Expirados</SelectItem>
                   <SelectItem value="support">💬 Suporte</SelectItem>
+                  <SelectItem value="rejections">📧 Msg. Rejeições</SelectItem>
                   <SelectItem value="logs">📋 Logs</SelectItem>
                   <SelectItem value="tests">🧪 Testes</SelectItem>
                   <SelectItem value="settings">⚙️ Configurações</SelectItem>
@@ -207,6 +209,10 @@ const AdminPanel = () => {
 
           <TabsContent value="support">
             <SupportTab />
+          </TabsContent>
+
+          <TabsContent value="rejections">
+            <ProjectRejectionMessagesTab />
           </TabsContent>
 
           <TabsContent value="logs">
