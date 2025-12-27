@@ -10,9 +10,10 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users, MessageCircle } from 'lucide-react';
 import Footer from '@/components/Footer';
 import ProjectAdminMessages from '@/components/ProjectAdminMessages';
+import ProjectRejectionModal from '@/components/ProjectRejectionModal';
 import { StripeConnectSetup } from '@/components/StripeConnectSetup';
 import { CreatorPayoutPanel } from '@/components/CreatorPayoutPanel';
 
@@ -40,6 +41,8 @@ const MyProjects = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
+  const [selectedRejectedProject, setSelectedRejectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -312,6 +315,20 @@ const MyProjects = () => {
                             Editar
                           </Button>
                         )}
+
+                        {project.status === 'rejected' && project.rejection_reason && (
+                          <Button 
+                            variant="outline" 
+                            className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50"
+                            onClick={() => {
+                              setSelectedRejectedProject(project);
+                              setRejectionModalOpen(true);
+                            }}
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Conversar
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -321,6 +338,22 @@ const MyProjects = () => {
           </div>
         )}
       </div>
+
+      {/* Rejection Modal */}
+      {selectedRejectedProject && (
+        <ProjectRejectionModal
+          isOpen={rejectionModalOpen}
+          onClose={() => {
+            setRejectionModalOpen(false);
+            setSelectedRejectedProject(null);
+          }}
+          projectId={selectedRejectedProject.id}
+          projectTitle={selectedRejectedProject.title}
+          rejectionReason={selectedRejectedProject.rejection_reason || ''}
+          pendingRequirements={selectedRejectedProject.pending_requirements}
+        />
+      )}
+
       <Footer />
     </div>
   );

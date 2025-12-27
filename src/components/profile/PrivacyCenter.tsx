@@ -330,12 +330,20 @@ const PrivacyCenter = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            Central de Privacidade
+            Privacidade
           </CardTitle>
-          <CardDescription>
-            Gerencie seus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD)
-          </CardDescription>
         </CardHeader>
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          <p>
+            A Raiz Token respeita sua privacidade e trata seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
+          </p>
+          <p>
+            Coletamos apenas as informações necessárias para a criação da sua conta, operação da plataforma e processamento de pagamentos. Não solicitamos nem armazenamos documentos de identidade, imagens, selfies ou dados biométricos.
+          </p>
+          <p>
+            Você pode, a qualquer momento, solicitar a exclusão do seu perfil. Após a solicitação, seus dados pessoais serão excluídos ou anonimizados, exceto aqueles que a Raiz Token é legalmente obrigada a manter para fins fiscais, regulatórios e de prevenção à fraude.
+          </p>
+        </CardContent>
       </Card>
 
       {/* Aviso de exclusão pendente */}
@@ -479,24 +487,19 @@ const PrivacyCenter = () => {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2 text-destructive">
             <Trash2 className="w-5 h-5" />
-            Solicitar Exclusão de Conta
+            Solicitar exclusão do meu perfil
           </CardTitle>
-          <CardDescription>
-            Anonimize permanentemente seus dados pessoais
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert>
-            <AlertDescription>
-              <strong>Importante:</strong> Ao solicitar a exclusão:
-              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                <li>Seus dados serão anonimizados em até 90 dias</li>
-                <li>Dados necessários para obrigações legais podem ser retidos</li>
-                <li>Você pode cancelar a solicitação a qualquer momento antes da exclusão</li>
-                <li>Esta ação é irreversível após processada</li>
-              </ul>
+            <AlertDescription className="text-sm">
+              <strong>Esta ação é irreversível.</strong> Algumas informações poderão ser mantidas de forma segura e restrita para cumprimento de obrigações legais.
             </AlertDescription>
           </Alert>
+
+          <p className="text-sm text-muted-foreground">
+            Ao solicitar a exclusão, seus dados serão anonimizados em até 90 dias. Você pode cancelar a solicitação a qualquer momento antes do processamento.
+          </p>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>

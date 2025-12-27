@@ -9,7 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AnalyticsScripts from "./components/AnalyticsScripts";
 import GoogleAnalyticsLoader from "./components/GoogleAnalyticsLoader";
 import Header from "./components/Header";
-import MobileNavigation from "./components/MobileNavigation";
+import MobileBottomNav from "./components/MobileBottomNav";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
@@ -141,7 +141,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
-          <MobileNavigation />
+          <MobileBottomNav />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
