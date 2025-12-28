@@ -20,6 +20,7 @@ import { ReportsManagement } from '@/components/admin/ReportsManagement';
 import SupportTab from '@/components/admin/SupportTab';
 import ConsentRecordsTab from '@/components/admin/ConsentRecordsTab';
 import ProjectRejectionMessagesTab from '@/components/admin/ProjectRejectionMessagesTab';
+import TopSupportersTab from '@/components/admin/TopSupportersTab';
 import UserDetailModal from '@/components/admin/UserDetailModal';
 import EditUserModal from '@/components/admin/EditUserModal';
 import RejectProjectModal from '@/components/admin/RejectProjectModal';
@@ -137,6 +138,7 @@ const AdminPanel = () => {
                   <SelectItem value="badges">🏆 Badges</SelectItem>
                   <SelectItem value="reports">⚠️ Denúncias</SelectItem>
                   <SelectItem value="consents">✅ Aceites</SelectItem>
+                  <SelectItem value="top-supporters">❤️ Top Apoiadores</SelectItem>
                   <SelectItem value="finance">💰 Financeiro</SelectItem>
                   <SelectItem value="tokens">🪙 Tokens</SelectItem>
                   <SelectItem value="transactions">💸 Transações</SelectItem>
@@ -181,6 +183,10 @@ const AdminPanel = () => {
 
           <TabsContent value="consents">
             <ConsentRecordsTab />
+          </TabsContent>
+
+          <TabsContent value="top-supporters">
+            <TopSupportersTab />
           </TabsContent>
 
           <TabsContent value="finance">

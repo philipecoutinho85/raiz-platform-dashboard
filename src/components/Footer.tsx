@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Linkedin, Instagram } from 'lucide-react';
+import { Linkedin, Instagram, Twitter } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import raizLogo from '@/assets/raiz-logo-light.png';
@@ -7,7 +7,8 @@ import raizLogo from '@/assets/raiz-logo-light.png';
 const Footer = () => {
   const [socialLinks, setSocialLinks] = useState({
     linkedin: '',
-    instagram: ''
+    instagram: '',
+    twitter: ''
   });
 
   useEffect(() => {
@@ -27,10 +28,10 @@ const Footer = () => {
   }, []);
 
   // Render social icon with external link support
-  const renderSocialIcon = (platform: 'linkedin' | 'instagram') => {
+  const renderSocialIcon = (platform: 'linkedin' | 'instagram' | 'twitter') => {
     const url = socialLinks[platform];
-    const Icon = platform === 'linkedin' ? Linkedin : Instagram;
-    const label = platform === 'linkedin' ? 'LinkedIn' : 'Instagram';
+    const Icon = platform === 'linkedin' ? Linkedin : platform === 'instagram' ? Instagram : Twitter;
+    const label = platform === 'linkedin' ? 'LinkedIn' : platform === 'instagram' ? 'Instagram' : 'Twitter';
     
     // Se não houver URL, mostra ícone desabilitado
     if (!url) {
@@ -106,6 +107,7 @@ const Footer = () => {
             <div className="flex gap-3">
               {renderSocialIcon('linkedin')}
               {renderSocialIcon('instagram')}
+              {renderSocialIcon('twitter')}
             </div>
           </div>
         </div>
