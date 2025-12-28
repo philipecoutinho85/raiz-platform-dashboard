@@ -66,7 +66,7 @@ const SocialLinksSettings = ({ settings, onUpdate }: SocialLinksSettingsProps) =
           <div className="space-y-2">
             <Label htmlFor="twitter" className="flex items-center gap-2">
               <Twitter className="w-4 h-4" />
-              Twitter
+              Twitter / X
             </Label>
             <Input
               id="twitter"

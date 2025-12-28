@@ -1,6 +1,7 @@
-import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail } from 'lucide-react';
+import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail, Heart } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import AdminSearchCommand from './AdminSearchCommand';
 
 interface AdminHeaderProps {
   activeTab: string;
@@ -21,6 +22,8 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
           </div>
           
           <div className="hidden md:flex items-center gap-4">
+            <AdminSearchCommand setActiveTab={setActiveTab} />
+            
             <div className="text-sm text-muted-foreground">
               Aba: <span className="font-semibold text-primary">{
                 activeTab === "projects" ? "Projetos" :
@@ -28,6 +31,7 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 activeTab === "badges" ? "Badges" :
                 activeTab === "reports" ? "Denúncias" :
                 activeTab === "consents" ? "Aceites" :
+                activeTab === "top-supporters" ? "Top Apoiadores" :
                 activeTab === "finance" ? "Financeiro" :
                 activeTab === "tokens" ? "Tokens" :
                 activeTab === "transactions" ? "Transações" :
@@ -70,6 +74,10 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 <DropdownMenuItem onClick={() => setActiveTab("consents")} className="cursor-pointer hover:bg-primary/10">
                   <FileText className="mr-2 h-4 w-4 text-primary" />
                   Aceites de Regras
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("top-supporters")} className="cursor-pointer hover:bg-primary/10">
+                  <Heart className="mr-2 h-4 w-4 text-pink-500" />
+                  Top Apoiadores
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator />
