@@ -114,7 +114,7 @@ const Footer = () => {
         
         <div className="border-t border-raiz-accent/20 mt-6 md:mt-12 pt-4 md:pt-8 text-center">
           <p className="text-raiz-light/60 text-xs md:text-sm">
-            © 2025 Plataforma Raiz Token. Todos os direitos reservados.
+            © 2026 Plataforma Raiz Token. Todos os direitos reservados.
           </p>
         </div>
       </div>
