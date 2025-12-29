@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
@@ -11,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { User, Camera, MapPin, Coins, Lock, AlertCircle, MessageCircle, Shield, Wallet } from 'lucide-react';
+import { User, Camera, MapPin, Coins, Lock, AlertCircle, MessageCircle, Shield, Wallet, ChevronDown } from 'lucide-react';
 import TokenPurchase from '@/components/TokenPurchase';
 import Footer from '@/components/Footer';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
@@ -19,6 +18,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import SupportCenter from '@/components/support/SupportCenter';
 import PrivacyCenter from '@/components/profile/PrivacyCenter';
 import { StripeConnectSetup } from '@/components/StripeConnectSetup';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ProfileFormData {
   nome: string;
@@ -36,6 +43,16 @@ interface ProfileFormData {
   cep: string;
 }
 
+const profileTabs = [
+  { value: 'personal', label: 'Dados Pessoais', icon: User },
+  { value: 'address', label: 'Endereço', icon: MapPin },
+  { value: 'security', label: 'Segurança', icon: Lock },
+  { value: 'tokens', label: 'Tokens', icon: Coins },
+  { value: 'payouts', label: 'Recebimentos', icon: Wallet },
+  { value: 'privacy', label: 'Privacidade', icon: Shield },
+  { value: 'support', label: 'Suporte', icon: MessageCircle },
+];
+
 const UserProfile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -49,8 +66,10 @@ const UserProfile = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isCpfLocked, setIsCpfLocked] = useState(false);
+  const isMobile = useIsMobile();
   
   const initialTab = searchParams.get('tab') || 'personal';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileFormData>();
 
@@ -254,25 +273,52 @@ const UserProfile = () => {
           </p>
         </div>
 
-        <Tabs defaultValue={initialTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
-            <TabsTrigger value="address">Endereço</TabsTrigger>
-            <TabsTrigger value="security">Segurança</TabsTrigger>
-            <TabsTrigger value="tokens">Tokens</TabsTrigger>
-            <TabsTrigger value="payouts" className="flex items-center gap-1">
-              <Wallet className="h-4 w-4" />
-              Recebimentos
-            </TabsTrigger>
-            <TabsTrigger value="privacy" className="flex items-center gap-1">
-              <Shield className="h-4 w-4" />
-              Privacidade
-            </TabsTrigger>
-            <TabsTrigger value="support" className="flex items-center gap-1">
-              <MessageCircle className="h-4 w-4" />
-              Suporte
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {/* Mobile: Dropdown Menu */}
+          {isMobile ? (
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full bg-background">
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const currentTab = profileTabs.find(t => t.value === activeTab);
+                    const Icon = currentTab?.icon || User;
+                    return (
+                      <>
+                        <Icon className="h-4 w-4" />
+                        <SelectValue>{currentTab?.label}</SelectValue>
+                      </>
+                    );
+                  })()}
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                {profileTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <SelectItem key={tab.value} value={tab.value}>
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          ) : (
+            /* Desktop: Regular Tabs */
+            <TabsList className="grid w-full grid-cols-7">
+              {profileTabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <TabsTrigger key={tab.value} value={tab.value} className="flex items-center gap-1">
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden lg:inline">{tab.label}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          )}
 
           <TabsContent value="personal">
             <Card>
