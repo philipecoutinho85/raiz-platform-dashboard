@@ -137,14 +137,25 @@ const ProjectRejectionModal = ({
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
           {/* Reason for rejection */}
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="whitespace-pre-wrap">
-              <strong>Motivo da rejeição:</strong>
-              <br />
-              {rejectionReason}
-            </AlertDescription>
-          </Alert>
+          {rejectionReason ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="whitespace-pre-wrap">
+                <strong>Motivo da rejeição:</strong>
+                <br />
+                {rejectionReason}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert className="border-muted">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Projeto rejeitado</strong>
+                <br />
+                O administrador não especificou um motivo. Use o chat abaixo para solicitar esclarecimentos.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {pendingRequirements && (
             <Alert className="border-orange-500 bg-orange-50">

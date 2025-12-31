@@ -316,7 +316,7 @@ const MyProjects = () => {
                           </Button>
                         )}
 
-                        {project.status === 'rejected' && project.rejection_reason && (
+                        {project.status === 'rejected' && (
                           <Button 
                             variant="outline" 
                             className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50"
@@ -326,7 +326,7 @@ const MyProjects = () => {
                             }}
                           >
                             <MessageCircle className="w-4 h-4 mr-2" />
-                            Conversar
+                            {project.rejection_reason ? 'Ver Motivo / Conversar' : 'Conversar com Admin'}
                           </Button>
                         )}
                       </div>
