@@ -6,8 +6,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MessageCircle, Send, Loader2, Search, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { MessageCircle, Send, Loader2, Search, Eye, XCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,8 @@ interface RejectionConversation {
   last_message_at: string;
   unread_count: number;
   status: string;
+  chat_active: boolean;
+  chat_closed_at: string | null;
 }
 
 interface Message {
@@ -41,6 +44,7 @@ const ProjectRejectionMessagesTab = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -51,7 +55,6 @@ const ProjectRejectionMessagesTab = () => {
   const loadConversations = async () => {
     setLoading(true);
     try {
-      // Get all rejected projects with messages
       const { data: projects, error } = await supabase
         .from('projects')
         .select(`
@@ -59,6 +62,8 @@ const ProjectRejectionMessagesTab = () => {
           title,
           status,
           rejection_reason,
+          rejection_chat_active,
+          rejection_chat_closed_at,
           user_id,
           profiles:user_id (nome, sobrenome, email)
         `)
@@ -67,7 +72,6 @@ const ProjectRejectionMessagesTab = () => {
 
       if (error) throw error;
 
-      // Get message counts using any to bypass type checking
       const projectIds = projects?.map(p => p.id) || [];
       
       const { data: messageCounts } = await (supabase as any)
@@ -89,6 +93,8 @@ const ProjectRejectionMessagesTab = () => {
           last_message_at: projectMessages[0]?.created_at || '',
           unread_count: projectMessages.length,
           status: p.status,
+          chat_active: p.rejection_chat_active !== false,
+          chat_closed_at: p.rejection_chat_closed_at,
         };
       });
 
@@ -156,6 +162,84 @@ const ProjectRejectionMessagesTab = () => {
     }
   };
 
+  const closeConversation = async () => {
+    if (!selectedProject || !user) return;
+
+    setClosing(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          rejection_chat_active: false,
+          rejection_chat_closed_at: new Date().toISOString(),
+          rejection_chat_closed_by: user.id,
+        })
+        .eq('id', selectedProject.project_id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Atendimento encerrado',
+        description: 'O autor não poderá mais enviar mensagens nesta conversa.',
+      });
+
+      setSelectedProject({
+        ...selectedProject,
+        chat_active: false,
+        chat_closed_at: new Date().toISOString(),
+      });
+
+      loadConversations();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível encerrar o atendimento.',
+        variant: 'destructive',
+      });
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const reopenConversation = async () => {
+    if (!selectedProject || !user) return;
+
+    setClosing(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          rejection_chat_active: true,
+          rejection_chat_closed_at: null,
+          rejection_chat_closed_by: null,
+        })
+        .eq('id', selectedProject.project_id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Atendimento reaberto',
+        description: 'O autor pode enviar mensagens novamente.',
+      });
+
+      setSelectedProject({
+        ...selectedProject,
+        chat_active: true,
+        chat_closed_at: null,
+      });
+
+      loadConversations();
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível reabrir o atendimento.',
+        variant: 'destructive',
+      });
+    } finally {
+      setClosing(false);
+    }
+  };
+
   const filteredConversations = conversations.filter(c =>
     c.project_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.author_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -202,6 +286,7 @@ const ProjectRejectionMessagesTab = () => {
                   <TableHead>Projeto</TableHead>
                   <TableHead>Autor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Chat</TableHead>
                   <TableHead>Última Mensagem</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -219,6 +304,11 @@ const ProjectRejectionMessagesTab = () => {
                     <TableCell>
                       <Badge variant={conv.status === 'rejected' ? 'destructive' : 'secondary'}>
                         {conv.status === 'rejected' ? 'Rejeitado' : 'Pendente'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={conv.chat_active ? 'default' : 'outline'}>
+                        {conv.chat_active ? 'Ativo' : 'Encerrado'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -244,8 +334,11 @@ const ProjectRejectionMessagesTab = () => {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>
-              Conversa: {selectedProject?.project_title}
+            <DialogTitle className="flex items-center justify-between">
+              <span>Conversa: {selectedProject?.project_title}</span>
+              {selectedProject && !selectedProject.chat_active && (
+                <Badge variant="outline" className="ml-2">Encerrado</Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
 
@@ -288,22 +381,64 @@ const ProjectRejectionMessagesTab = () => {
               )}
             </ScrollArea>
 
-            <div className="flex gap-2">
-              <Textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Responder ao autor..."
-                className="min-h-[80px] resize-none"
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={!newMessage.trim() || sending}
-                className="self-end"
-              >
-                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </Button>
-            </div>
+            {selectedProject?.chat_active ? (
+              <div className="flex gap-2">
+                <Textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Responder ao autor..."
+                  className="min-h-[80px] resize-none"
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim() || sending}
+                  className="self-end"
+                >
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground text-sm py-2 bg-muted rounded-lg">
+                Este atendimento foi encerrado
+                {selectedProject?.chat_closed_at && (
+                  <span className="block text-xs mt-1">
+                    em {format(new Date(selectedProject.chat_closed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
+          <DialogFooter className="border-t pt-4">
+            {selectedProject?.chat_active ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={closing}>
+                    {closing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
+                    Encerrar Atendimento
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Encerrar atendimento?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Ao encerrar o atendimento, o autor do projeto não poderá mais enviar mensagens nesta conversa. 
+                      Você poderá reabrir o atendimento posteriormente se necessário.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={closeConversation}>Encerrar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Button variant="outline" onClick={reopenConversation} disabled={closing}>
+                {closing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                Reabrir Atendimento
+              </Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

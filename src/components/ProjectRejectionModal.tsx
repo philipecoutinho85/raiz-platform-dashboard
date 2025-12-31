@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Send, MessageCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Send, MessageCircle, Loader2, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,8 @@ interface ProjectRejectionModalProps {
   projectTitle: string;
   rejectionReason: string;
   pendingRequirements?: string | null;
+  chatActive?: boolean;
+  chatClosedAt?: string | null;
 }
 
 interface Message {
@@ -35,6 +37,8 @@ const ProjectRejectionModal = ({
   projectTitle,
   rejectionReason,
   pendingRequirements,
+  chatActive = true,
+  chatClosedAt,
 }: ProjectRejectionModalProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -42,17 +46,34 @@ const ProjectRejectionModal = ({
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [isChatActive, setIsChatActive] = useState(chatActive);
 
   useEffect(() => {
     if (isOpen && projectId) {
       loadMessages();
+      checkChatStatus();
     }
   }, [isOpen, projectId]);
+
+  const checkChatStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('rejection_chat_active')
+        .eq('id', projectId)
+        .single();
+
+      if (!error && data) {
+        setIsChatActive(data.rejection_chat_active !== false);
+      }
+    } catch (error) {
+      console.error('Error checking chat status:', error);
+    }
+  };
 
   const loadMessages = async () => {
     setLoading(true);
     try {
-      // Using any to bypass type checking until types are regenerated
       const { data, error } = await (supabase as any)
         .from('project_rejection_messages')
         .select('*')
@@ -69,7 +90,7 @@ const ProjectRejectionModal = ({
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || !isChatActive) return;
 
     setSending(true);
     try {
@@ -136,6 +157,21 @@ const ProjectRejectionModal = ({
             </Alert>
           )}
 
+          {/* Chat closed notice */}
+          {!isChatActive && (
+            <Alert className="border-muted bg-muted/50">
+              <Lock className="h-4 w-4" />
+              <AlertDescription>
+                Este atendimento foi encerrado pelo administrador.
+                {chatClosedAt && (
+                  <span className="block text-sm text-muted-foreground mt-1">
+                    Encerrado em: {format(new Date(chatClosedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Messages section */}
           <div className="flex-1 border rounded-lg overflow-hidden flex flex-col">
             <div className="bg-muted p-3 border-b">
@@ -181,23 +217,30 @@ const ProjectRejectionModal = ({
               )}
             </ScrollArea>
 
-            <div className="p-3 border-t">
-              <div className="flex gap-2">
-                <Textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Digite sua dúvida ou questionamento..."
-                  className="min-h-[80px] resize-none"
-                />
-                <Button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim() || sending}
-                  className="self-end"
-                >
-                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </Button>
+            {isChatActive ? (
+              <div className="p-3 border-t">
+                <div className="flex gap-2">
+                  <Textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Digite sua dúvida ou questionamento..."
+                    className="min-h-[80px] resize-none"
+                  />
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || sending}
+                    className="self-end"
+                  >
+                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-3 border-t bg-muted/50 text-center text-muted-foreground text-sm">
+                <Lock className="w-4 h-4 inline mr-2" />
+                Atendimento encerrado - não é possível enviar novas mensagens
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

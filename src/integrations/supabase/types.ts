@@ -1406,6 +1406,9 @@ export type Database = {
           platform_fee_percentage: number | null
           project_type: string
           raised_amount: number
+          rejection_chat_active: boolean | null
+          rejection_chat_closed_at: string | null
+          rejection_chat_closed_by: string | null
           rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -1446,6 +1449,9 @@ export type Database = {
           platform_fee_percentage?: number | null
           project_type?: string
           raised_amount?: number
+          rejection_chat_active?: boolean | null
+          rejection_chat_closed_at?: string | null
+          rejection_chat_closed_by?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1486,6 +1492,9 @@ export type Database = {
           platform_fee_percentage?: number | null
           project_type?: string
           raised_amount?: number
+          rejection_chat_active?: boolean | null
+          rejection_chat_closed_at?: string | null
+          rejection_chat_closed_by?: string | null
           rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
