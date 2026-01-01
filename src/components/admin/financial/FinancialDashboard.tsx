@@ -18,6 +18,7 @@ import { FinancialTables } from './dashboard/FinancialTables';
 import { PeriodComparisonCharts } from './dashboard/PeriodComparisonCharts';
 import { FinancialAlerts } from './FinancialAlerts';
 import { LedgerTab } from './ledger/LedgerTab';
+import { ResetFinancialData } from './ResetFinancialData';
 import { generateFinancialReportPDF } from '@/lib/pdfExport';
 import { toast } from 'sonner';
 import { 
@@ -190,6 +191,7 @@ export const FinancialDashboard = () => {
 
         <TabsContent value="alerts" className="space-y-6">
           <FinancialAlerts />
+          <ResetFinancialData />
         </TabsContent>
 
         <TabsContent value="tables" className="space-y-6">
