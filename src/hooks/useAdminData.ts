@@ -299,7 +299,8 @@ export const useAdminData = () => {
             status: 'rejected',
             reviewed_at: new Date().toISOString(),
             reviewed_by: user?.id,
-            admin_notes: reason
+            rejection_reason: reason,
+            rejection_chat_active: true
           })
           .eq('id', projectId);
 
