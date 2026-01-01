@@ -64,7 +64,8 @@ const CampaignQRShare = ({ shortId, projectTitle, compact = false }: CampaignQRS
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const svgData = new XMLSerializer().serializeToString(svg);
-    const img = new Image();
+    const qrImg = new Image();
+    const logoImg = new Image();
 
     // Set canvas size with padding
     const size = 300;
@@ -72,38 +73,59 @@ const CampaignQRShare = ({ shortId, projectTitle, compact = false }: CampaignQRS
     canvas.width = size + padding * 2;
     canvas.height = size + padding * 2 + 60; // Extra space for text
 
-    img.onload = () => {
-      if (!ctx) return;
+    // Load logo first, then QR code
+    logoImg.crossOrigin = 'anonymous';
+    logoImg.onload = () => {
+      qrImg.onload = () => {
+        if (!ctx) return;
 
-      // White background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // White background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw QR code
-      ctx.drawImage(img, padding, padding, size, size);
+        // Draw QR code
+        ctx.drawImage(qrImg, padding, padding, size, size);
 
-      // Add text below QR
-      ctx.fillStyle = '#1a1a1a';
-      ctx.font = 'bold 16px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`Campanha #${shortId}`, canvas.width / 2, size + padding + 30);
-      ctx.font = '12px Inter, sans-serif';
-      ctx.fillStyle = '#666666';
-      ctx.fillText('Raiz Token', canvas.width / 2, size + padding + 50);
+        // Draw logo in center of QR code
+        const logoSize = 50;
+        const logoX = padding + (size - logoSize) / 2;
+        const logoY = padding + (size - logoSize) / 2;
+        
+        // White background behind logo for better visibility
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2 + 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw the logo
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
 
-      // Download
-      const link = document.createElement('a');
-      link.download = `campanha-${shortId}-qrcode.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+        // Add text below QR
+        ctx.fillStyle = '#1a1a1a';
+        ctx.font = 'bold 16px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Campanha #${shortId}`, canvas.width / 2, size + padding + 30);
+        ctx.font = '12px Inter, sans-serif';
+        ctx.fillStyle = '#666666';
+        ctx.fillText('Raiz Token', canvas.width / 2, size + padding + 50);
 
-      toast({
-        title: "QR Code baixado!",
-        description: "A imagem do QR Code foi salva."
-      });
+        // Download
+        const link = document.createElement('a');
+        link.download = `campanha-${shortId}-qrcode.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        toast({
+          title: "QR Code baixado!",
+          description: "A imagem do QR Code foi salva."
+        });
+      };
+
+      qrImg.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     };
 
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    // Load the favicon/logo
+    logoImg.src = '/favicon.png';
   };
 
   const handleShare = async () => {
