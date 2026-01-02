@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,15 +8,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAdminSecurity } from '@/hooks/useAdminSecurity';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Trash2, Shield, Lock, Loader2 } from 'lucide-react';
 
 export const ResetFinancialData = () => {
   const { user } = useAuth();
-  const { adminType, logAdminAction } = useAdminSecurity();
   const { toast } = useToast();
   
+  const [adminType, setAdminType] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [password, setPassword] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
@@ -35,6 +35,62 @@ export const ResetFinancialData = () => {
     projectStats: true,
     financialAlerts: true,
   });
+
+  // Verificar tipo de admin
+  useEffect(() => {
+    const checkAdminType = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('admin_type')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+
+        setAdminType(data?.admin_type || null);
+      } catch (error) {
+        console.error('Erro ao verificar tipo de admin:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminType();
+  }, [user]);
+
+  // Log de ação administrativa
+  const logAdminAction = async (
+    action: string,
+    targetType: string,
+    targetId?: string,
+    details?: any
+  ) => {
+    if (!user) return;
+
+    try {
+      await supabase.rpc('log_admin_action', {
+        p_admin_id: user.id,
+        p_action: action,
+        p_target_type: targetType,
+        p_target_id: targetId || null,
+        p_details: details ? JSON.stringify(details) : null,
+        p_ip_address: null,
+        p_user_agent: navigator.userAgent
+      });
+    } catch (error) {
+      console.error('Erro ao registrar log administrativo:', error);
+    }
+  };
+
+  // Carregando
+  if (loading) {
+    return null;
+  }
 
   // Apenas admin master pode ver este componente
   if (adminType !== 'master') {

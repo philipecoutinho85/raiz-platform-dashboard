@@ -21,7 +21,6 @@ interface DashboardStats {
   totalProjects: number;
   pendingProjects: number;
   approvedProjects: number;
-  totalGoal: number;
   totalRaised: number;
 }
 
@@ -33,7 +32,6 @@ export const useDashboardData = () => {
     totalProjects: 0,
     pendingProjects: 0,
     approvedProjects: 0,
-    totalGoal: 0,
     totalRaised: 0
   });
   const [loading, setLoading] = useState(true);
@@ -63,18 +61,16 @@ export const useDashboardData = () => {
 
       setProjects(projects || []);
 
-      // Calculate stats
+      // Calculate stats - only raised_amount from approved projects
       const totalProjects = projects?.length || 0;
       const pendingProjects = projects?.filter(p => p.status === 'pending').length || 0;
       const approvedProjects = projects?.filter(p => p.status === 'approved').length || 0;
-      const totalGoal = projects?.reduce((sum, p) => sum + (p.goal || 0), 0) || 0;
-      const totalRaised = projects?.reduce((sum, p) => sum + (p.raised_amount || 0), 0) || 0;
+      const totalRaised = projects?.filter(p => p.status === 'approved').reduce((sum, p) => sum + (p.raised_amount || 0), 0) || 0;
 
       setStats({
         totalProjects,
         pendingProjects,
         approvedProjects,
-        totalGoal,
         totalRaised
       });
 
