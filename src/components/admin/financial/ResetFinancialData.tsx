@@ -45,14 +45,18 @@ export const ResetFinancialData = () => {
       }
 
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('user_roles')
           .select('admin_type')
           .eq('user_id', user.id)
           .eq('role', 'admin')
-          .single();
+          .maybeSingle();
 
-        setAdminType(data?.admin_type || null);
+        console.log('ResetFinancialData - admin check:', { data, error, userId: user.id });
+        
+        if (data?.admin_type) {
+          setAdminType(data.admin_type);
+        }
       } catch (error) {
         console.error('Erro ao verificar tipo de admin:', error);
       } finally {
