@@ -142,6 +142,11 @@ export const ResetFinancialData = () => {
       }
 
       if (resetOptions.withdrawals) {
+        // Primeiro deletar withdrawal_messages (FK constraint)
+        const { error: msgError } = await supabase.from('withdrawal_messages').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (msgError) errors.push(`withdrawal_messages: ${msgError.message}`);
+        else resetResults.push('withdrawal_messages');
+        
         const { error } = await supabase.from('withdrawals').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         if (error) errors.push(`withdrawals: ${error.message}`);
         else resetResults.push('withdrawals');
