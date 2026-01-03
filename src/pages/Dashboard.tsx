@@ -8,7 +8,7 @@ import PlatformTour from '@/components/PlatformTour';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
-  const { projects, stats, loading } = useDashboardData();
+  const { projects, stats, loading, refetch } = useDashboardData();
   const { profile, user } = useAuth();
   const [runTour, setRunTour] = useState(false);
 
@@ -70,7 +70,7 @@ const Dashboard = () => {
 
         {/* Recent Projects */}
         <div data-tour="recent-projects">
-          <RecentProjects projects={projects} />
+          <RecentProjects projects={projects} onRefresh={refetch} />
         </div>
       </div>
       <Footer />

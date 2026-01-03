@@ -1,11 +1,25 @@
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Eye, Folder, Users } from 'lucide-react';
+import { Eye, Folder, Users, Trash2 } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Project {
   id: string;
@@ -23,15 +37,65 @@ interface Project {
 
 interface RecentProjectsProps {
   projects: Project[];
+  onRefresh?: () => void;
 }
 
-const RecentProjects = ({ projects }: RecentProjectsProps) => {
+const RecentProjects = ({ projects, onRefresh }: RecentProjectsProps) => {
+  const { toast } = useToast();
+  const [cleaningProjects, setCleaningProjects] = useState(false);
+
+  // Projetos inativos: rejeitados, cancelados, ou aprovados que atingiram 100% da meta
+  const getInactiveProjects = () => {
+    return projects.filter(project => {
+      if (project.status === 'rejected') return true;
+      if (project.status === 'cancelled') return true;
+      const effectiveGoal = project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+      if (project.status === 'approved' && project.raised_amount >= effectiveGoal) return true;
+      return false;
+    });
+  };
+
+  const handleCleanInactiveProjects = async () => {
+    const inactiveProjects = getInactiveProjects();
+    if (inactiveProjects.length === 0) return;
+
+    setCleaningProjects(true);
+    try {
+      const projectIds = inactiveProjects.map(p => p.id);
+      
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .in('id', projectIds);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Projetos removidos',
+        description: `${inactiveProjects.length} projeto(s) removido(s) com sucesso.`,
+      });
+
+      onRefresh?.();
+    } catch (error: any) {
+      console.error('Erro ao limpar projetos:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível remover os projetos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCleaningProjects(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
         return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
       case 'rejected':
         return <Badge variant="destructive">Rejeitado</Badge>;
+      case 'cancelled':
+        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Cancelado</Badge>;
       default:
         return <Badge variant="secondary">Pendente</Badge>;
     }
@@ -53,6 +117,8 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
     return project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
   };
 
+  const inactiveCount = getInactiveProjects().length;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -62,12 +128,48 @@ const RecentProjects = ({ projects }: RecentProjectsProps) => {
             Seus projetos criados
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link to="/projetos" className="flex items-center space-x-2">
-            <Eye className="w-4 h-4" />
-            <span>Ver Todos</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {inactiveCount > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="border-red-300 text-red-600 hover:bg-red-50">
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Limpar ({inactiveCount})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Limpar projetos inativos?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>Esta ação irá remover permanentemente {inactiveCount} projeto(s):</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>Projetos rejeitados</li>
+                      <li>Projetos cancelados</li>
+                      <li>Projetos concluídos (que atingiram a meta)</li>
+                    </ul>
+                    <p className="font-semibold text-destructive">Esta ação não pode ser desfeita.</p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleCleanInactiveProjects}
+                    disabled={cleaningProjects}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {cleaningProjects ? 'Removendo...' : 'Confirmar'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/projetos" className="flex items-center space-x-2">
+              <Eye className="w-4 h-4" />
+              <span>Ver Todos</span>
+            </Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {projects.length === 0 ? (
