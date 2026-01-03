@@ -10,12 +10,23 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users, MessageCircle } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users, MessageCircle, Trash2 } from 'lucide-react';
 import Footer from '@/components/Footer';
 import ProjectAdminMessages from '@/components/ProjectAdminMessages';
 import ProjectRejectionModal from '@/components/ProjectRejectionModal';
 import { StripeConnectSetup } from '@/components/StripeConnectSetup';
 import { CreatorPayoutPanel } from '@/components/CreatorPayoutPanel';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Project {
   id: string;
@@ -43,6 +54,7 @@ const MyProjects = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [selectedRejectedProject, setSelectedRejectedProject] = useState<Project | null>(null);
+  const [cleaningProjects, setCleaningProjects] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -107,6 +119,52 @@ const MyProjects = () => {
     setFilteredProjects(filtered);
   };
 
+  // Projetos inativos: rejeitados, cancelados, ou aprovados que não atingiram meta
+  const getInactiveProjects = () => {
+    return projects.filter(project => {
+      // Rejeitados
+      if (project.status === 'rejected') return true;
+      // Cancelados
+      if (project.status === 'cancelled') return true;
+      // Aprovados que atingiram 100% da meta (concluídos)
+      if (project.status === 'approved' && project.raised_amount >= project.goal) return true;
+      return false;
+    });
+  };
+
+  const handleCleanInactiveProjects = async () => {
+    const inactiveProjects = getInactiveProjects();
+    if (inactiveProjects.length === 0) return;
+
+    setCleaningProjects(true);
+    try {
+      const projectIds = inactiveProjects.map(p => p.id);
+      
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .in('id', projectIds);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Projetos removidos',
+        description: `${inactiveProjects.length} projeto(s) removido(s) com sucesso.`,
+      });
+
+      fetchProjects();
+    } catch (error: any) {
+      console.error('Erro ao limpar projetos:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível remover os projetos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCleaningProjects(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: { variant: 'secondary' as const, label: 'Aguardando Aprovação', color: 'text-yellow-600' },
@@ -153,12 +211,49 @@ const MyProjects = () => {
             </p>
           </div>
           
-          <Link to="/criar-projeto">
-            <Button className="w-full lg:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Projeto
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3">
+            {getInactiveProjects().length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Limpar Inativos ({getInactiveProjects().length})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Limpar projetos inativos?</AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <p>Esta ação irá remover permanentemente {getInactiveProjects().length} projeto(s):</p>
+                      <ul className="list-disc list-inside text-sm space-y-1">
+                        <li>Projetos rejeitados</li>
+                        <li>Projetos cancelados</li>
+                        <li>Projetos concluídos (que atingiram a meta)</li>
+                      </ul>
+                      <p className="font-semibold text-destructive">Esta ação não pode ser desfeita.</p>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleCleanInactiveProjects}
+                      disabled={cleaningProjects}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      {cleaningProjects ? 'Removendo...' : 'Confirmar Remoção'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            
+            <Link to="/criar-projeto">
+              <Button className="w-full lg:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Projeto
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stripe Connect Setup */}
