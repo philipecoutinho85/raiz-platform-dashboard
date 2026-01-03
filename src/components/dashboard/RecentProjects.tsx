@@ -44,14 +44,27 @@ const RecentProjects = ({ projects, onRefresh }: RecentProjectsProps) => {
   const { toast } = useToast();
   const [cleaningProjects, setCleaningProjects] = useState(false);
 
-  // Projetos inativos: rejeitados, cancelados, ou aprovados que atingiram 100% da meta
+  // Projetos inativos: rejeitados, cancelados, ou que não atingiram a meta (expirados)
   const getInactiveProjects = () => {
     return projects.filter(project => {
       if (project.status === 'rejected') return true;
       if (project.status === 'cancelled') return true;
+      // Projetos expirados que não atingiram a meta
       const effectiveGoal = project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
-      if (project.status === 'approved' && project.raised_amount >= effectiveGoal) return true;
+      if (project.deadline) {
+        const isExpired = new Date(project.deadline) < new Date();
+        if (isExpired && project.raised_amount < effectiveGoal) return true;
+      }
       return false;
+    });
+  };
+
+  // Projetos concluídos: atingiram 100% da meta
+  const getCompletedProjects = () => {
+    return projects.filter(project => {
+      if (project.status !== 'approved') return false;
+      const effectiveGoal = project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal;
+      return project.raised_amount >= effectiveGoal;
     });
   };
 
@@ -72,12 +85,45 @@ const RecentProjects = ({ projects, onRefresh }: RecentProjectsProps) => {
 
       toast({
         title: 'Projetos removidos',
-        description: `${inactiveProjects.length} projeto(s) removido(s) com sucesso.`,
+        description: `${inactiveProjects.length} projeto(s) inativo(s) removido(s).`,
       });
 
       onRefresh?.();
     } catch (error: any) {
       console.error('Erro ao limpar projetos:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível remover os projetos.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCleaningProjects(false);
+    }
+  };
+
+  const handleCleanCompletedProjects = async () => {
+    const completedProjects = getCompletedProjects();
+    if (completedProjects.length === 0) return;
+
+    setCleaningProjects(true);
+    try {
+      const projectIds = completedProjects.map(p => p.id);
+      
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .in('id', projectIds);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Projetos removidos',
+        description: `${completedProjects.length} projeto(s) concluído(s) removido(s).`,
+      });
+
+      onRefresh?.();
+    } catch (error: any) {
+      console.error('Erro ao limpar projetos concluídos:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível remover os projetos.',
@@ -118,6 +164,7 @@ const RecentProjects = ({ projects, onRefresh }: RecentProjectsProps) => {
   };
 
   const inactiveCount = getInactiveProjects().length;
+  const completedCount = getCompletedProjects().length;
 
   return (
     <Card>
@@ -129,12 +176,42 @@ const RecentProjects = ({ projects, onRefresh }: RecentProjectsProps) => {
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
+          {completedCount > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="border-green-300 text-green-600 hover:bg-green-50">
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Concluídos ({completedCount})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remover projetos concluídos?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>Você tem {completedCount} projeto(s) que atingiram 100% da meta.</p>
+                    <p>Esta ação irá remover permanentemente esses projetos do seu histórico.</p>
+                    <p className="font-semibold text-destructive">Esta ação não pode ser desfeita. Tem certeza?</p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleCleanCompletedProjects}
+                    disabled={cleaningProjects}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {cleaningProjects ? 'Removendo...' : 'Sim, remover'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           {inactiveCount > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="border-red-300 text-red-600 hover:bg-red-50">
                   <Trash2 className="w-4 h-4 mr-1" />
-                  Limpar ({inactiveCount})
+                  Inativos ({inactiveCount})
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -145,7 +222,7 @@ const RecentProjects = ({ projects, onRefresh }: RecentProjectsProps) => {
                     <ul className="list-disc list-inside text-sm space-y-1">
                       <li>Projetos rejeitados</li>
                       <li>Projetos cancelados</li>
-                      <li>Projetos concluídos (que atingiram a meta)</li>
+                      <li>Projetos que não atingiram a meta</li>
                     </ul>
                     <p className="font-semibold text-destructive">Esta ação não pode ser desfeita.</p>
                   </AlertDialogDescription>
