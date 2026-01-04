@@ -19,6 +19,8 @@ import ProjectDetail from "./pages/ProjectDetail";
 import UserProfile from "./pages/UserProfile";
 import PublicProfile from "./pages/PublicProfile";
 import AdminPanel from "./pages/AdminPanel";
+import AdminBlog from "./pages/AdminBlog";
+import AdminBlogEditor from "./pages/AdminBlogEditor";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -103,6 +105,22 @@ const App = () => (
                 element={
                   <ProtectedRoute requireAdmin={true}>
                     <AdminPanel />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/blog" 
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AdminBlog />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/blog/:id" 
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AdminBlogEditor />
                   </ProtectedRoute>
                 } 
               />
