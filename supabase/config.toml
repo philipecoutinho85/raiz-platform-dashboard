@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.sync-mailgun]
 verify_jwt = true
+
+[functions.verify-token-payment]
+verify_jwt = true
