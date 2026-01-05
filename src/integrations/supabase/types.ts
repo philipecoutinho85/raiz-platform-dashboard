@@ -1057,6 +1057,48 @@ export type Database = {
           },
         ]
       }
+      mailgun_sync_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          email: string
+          error_message: string | null
+          full_name: string | null
+          id: string
+          list_id: string
+          mailgun_response: Json | null
+          status: string
+          user_id: string | null
+          user_type: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          email: string
+          error_message?: string | null
+          full_name?: string | null
+          id?: string
+          list_id: string
+          mailgun_response?: Json | null
+          status: string
+          user_id?: string | null
+          user_type?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          email?: string
+          error_message?: string | null
+          full_name?: string | null
+          id?: string
+          list_id?: string
+          mailgun_response?: Json | null
+          status?: string
+          user_id?: string | null
+          user_type?: string | null
+        }
+        Relationships: []
+      }
       moderator_permissions: {
         Row: {
           can_manage_users: boolean | null
@@ -1137,6 +1179,8 @@ export type Database = {
           has_completed_tour: boolean | null
           id: string
           is_identity_verified: boolean | null
+          mailgun_list_ids: string[] | null
+          mailgun_synced: boolean | null
           nome: string
           numero: string | null
           sobrenome: string
@@ -1144,6 +1188,7 @@ export type Database = {
           stripe_account_status: string | null
           stripe_onboarding_complete: boolean | null
           updated_at: string
+          user_type: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1161,6 +1206,8 @@ export type Database = {
           has_completed_tour?: boolean | null
           id: string
           is_identity_verified?: boolean | null
+          mailgun_list_ids?: string[] | null
+          mailgun_synced?: boolean | null
           nome: string
           numero?: string | null
           sobrenome: string
@@ -1168,6 +1215,7 @@ export type Database = {
           stripe_account_status?: string | null
           stripe_onboarding_complete?: boolean | null
           updated_at?: string
+          user_type?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1185,6 +1233,8 @@ export type Database = {
           has_completed_tour?: boolean | null
           id?: string
           is_identity_verified?: boolean | null
+          mailgun_list_ids?: string[] | null
+          mailgun_synced?: boolean | null
           nome?: string
           numero?: string | null
           sobrenome?: string
@@ -1192,6 +1242,7 @@ export type Database = {
           stripe_account_status?: string | null
           stripe_onboarding_complete?: boolean | null
           updated_at?: string
+          user_type?: string | null
         }
         Relationships: []
       }
@@ -2613,6 +2664,15 @@ export type Database = {
           fee_total: number
           net_amount: number
         }[]
+      }
+      call_mailgun_sync: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_user_id: string
+          p_user_type: string
+        }
+        Returns: undefined
       }
       count_unread_withdrawal_messages: {
         Args: { p_recipient_type: string; p_withdrawal_id: string }

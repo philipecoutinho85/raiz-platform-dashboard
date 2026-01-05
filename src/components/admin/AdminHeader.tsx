@@ -1,4 +1,5 @@
-import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail, Heart } from 'lucide-react';
+import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail, Heart, PenTool } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import AdminSearchCommand from './AdminSearchCommand';
@@ -9,6 +10,8 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
+  const navigate = useNavigate();
+  
   return (
     <div className="bg-white border-b border-raiz-accent/20 py-6">
       <div className="container mx-auto px-4">
@@ -128,6 +131,13 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 <DropdownMenuItem onClick={() => setActiveTab("settings")} className="cursor-pointer hover:bg-primary/10">
                   <Settings className="mr-2 h-4 w-4 text-primary" />
                   Configurações
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-primary">📝 Conteúdo</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate("/admin/blog")} className="cursor-pointer hover:bg-primary/10">
+                  <PenTool className="mr-2 h-4 w-4 text-primary" />
+                  Gerenciar Blog
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
