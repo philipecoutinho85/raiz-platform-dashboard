@@ -121,11 +121,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
+  const syncWithMailgun = async (userId: string, email: string, fullName: string, userType: 'autor' | 'apoiador' | 'ambos') => {
+    try {
+      console.log('Syncing user with Mailgun:', { userId, email, userType });
+      
+      const { data, error } = await supabase.functions.invoke('sync-mailgun', {
+        body: {
+          userId,
+          email,
+          fullName,
+          userType,
+        },
+      });
+      
+      if (error) {
+        console.warn('Mailgun sync failed (non-blocking):', error);
+        return { success: false, error };
+      }
+      
+      console.log('Mailgun sync successful:', data);
+      return { success: true, data };
+    } catch (error) {
+      console.warn('Mailgun sync error (non-blocking):', error);
+      return { success: false, error };
+    }
+  };
+
   const signUp = async (email: string, password: string, userData: any) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -134,7 +160,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      if (!error) {
+      if (!error && data?.user) {
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Verifique seu e-mail para confirmar sua conta.",
+        });
+        
+        // Sync with Mailgun in background (non-blocking)
+        const fullName = `${userData.nome || ''} ${userData.sobrenome || ''}`.trim() || 'Usuário Raiz Token';
+        
+        // Don't await - let it run in background
+        syncWithMailgun(data.user.id, email, fullName, 'apoiador')
+          .then((result) => {
+            if (result.success) {
+              console.log('User synced with Mailgun newsletter');
+            }
+          })
+          .catch((err) => {
+            console.warn('Background Mailgun sync failed:', err);
+          });
+      } else if (!error) {
         toast({
           title: "Conta criada com sucesso!",
           description: "Verifique seu e-mail para confirmar sua conta.",
