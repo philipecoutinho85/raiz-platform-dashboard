@@ -49,16 +49,71 @@ import { ptBR } from 'date-fns/locale';
 
 const Wallet = () => {
   const { user } = useAuth();
-  const { tokens, loading: tokensLoading } = useTokens();
+  const { tokens, loading: tokensLoading, fetchTokens } = useTokens();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [loading, setLoading] = useState(true);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   
   // Filtros
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterDate, setFilterDate] = useState<string>('');
+
+  // Verify pending payments with Stripe
+  const verifyPendingPayments = async () => {
+    if (!user) return;
+    
+    try {
+      // Get pending purchases
+      const { data: pendingPurchases } = await supabase
+        .from('token_purchases')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .not('pagarme_transaction_id', 'is', null);
+
+      if (!pendingPurchases || pendingPurchases.length === 0) {
+        return;
+      }
+
+      console.log(`Verifying ${pendingPurchases.length} pending payments...`);
+      setVerifyingPayment(true);
+
+      let anyUpdated = false;
+
+      for (const purchase of pendingPurchases) {
+        try {
+          const { data, error } = await supabase.functions.invoke('verify-token-payment', {
+            body: { purchaseId: purchase.id }
+          });
+
+          if (error) {
+            console.warn('Error verifying payment:', error);
+            continue;
+          }
+
+          if (data?.status === 'paid' && !data?.alreadyProcessed) {
+            anyUpdated = true;
+            toast.success(`Pagamento confirmado! ${purchase.amount} tokens creditados.`);
+          }
+        } catch (err) {
+          console.warn('Error verifying purchase:', purchase.id, err);
+        }
+      }
+
+      if (anyUpdated) {
+        // Refresh all data
+        await fetchWalletData();
+        await fetchTokens();
+      }
+    } catch (error) {
+      console.error('Error verifying pending payments:', error);
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
 
   const handleClearPurchaseHistory = async () => {
     if (!user) return;
@@ -85,6 +140,38 @@ const Wallet = () => {
   useEffect(() => {
     if (user) {
       fetchWalletData();
+      // Verify pending payments when page loads
+      verifyPendingPayments();
+    }
+  }, [user]);
+
+  // Check for payment success from URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const payment = urlParams.get('payment');
+    const sessionId = urlParams.get('session_id');
+
+    if (payment === 'success' && sessionId && user) {
+      // Verify this specific payment
+      supabase.functions.invoke('verify-token-payment', {
+        body: { sessionId }
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error('Error verifying payment:', error);
+          return;
+        }
+        
+        if (data?.status === 'paid' && !data?.alreadyProcessed) {
+          toast.success('Pagamento confirmado! Seus tokens foram creditados.');
+          fetchWalletData();
+          fetchTokens();
+        } else if (data?.status === 'pending') {
+          toast.info('Pagamento pendente. Aguardando confirmação do boleto.');
+        }
+
+        // Remove URL params
+        window.history.replaceState({}, '', window.location.pathname);
+      });
     }
   }, [user]);
 
@@ -253,10 +340,27 @@ const Wallet = () => {
                   1 token = R$ 1,00 | Total: R$ {tokens.toFixed(2)}
                 </p>
               </div>
-              <Button onClick={fetchWalletData} variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Atualizar
-              </Button>
+              <div className="flex gap-2">
+                {purchases.some(p => p.status === 'pending') && (
+                  <Button 
+                    onClick={verifyPendingPayments} 
+                    variant="default" 
+                    size="sm"
+                    disabled={verifyingPayment}
+                  >
+                    {verifyingPayment ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                    )}
+                    Verificar Pagamentos
+                  </Button>
+                )}
+                <Button onClick={fetchWalletData} variant="outline" size="sm">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Atualizar
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
