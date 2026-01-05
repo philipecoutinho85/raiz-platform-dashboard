@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.check-boleto-expiration]
 verify_jwt = false
+
+[functions.sync-mailgun]
+verify_jwt = true
