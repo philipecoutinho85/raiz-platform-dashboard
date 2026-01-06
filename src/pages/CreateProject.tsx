@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/Footer';
 import TokenSimulator from '@/components/TokenSimulator';
-import { useTokens } from '@/hooks/useTokens';
+import { useTokens } from '@/contexts/TokensContext';
 import { toZonedTime } from 'date-fns-tz';
 import CreatorDataProtectionNotice from '@/components/forms/CreatorDataProtectionNotice';
 

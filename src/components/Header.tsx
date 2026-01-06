@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTokens } from '@/hooks/useTokens';
+import { useTokens } from '@/contexts/TokensContext';
 import { LogOut, User, Settings, Shield, Coins, HelpCircle } from 'lucide-react';
 import raizLogo from '@/assets/raiz-logo.png';
 import NotificationBell from '@/components/NotificationBell';

@@ -1,10 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useRealtimeChannel } from './useRealtimeChannel';
+
+interface TokensContextType {
+  tokens: number;
+  loading: boolean;
+  fetchTokens: () => Promise<void>;
+  updateTokens: (amount: number, type: 'add' | 'subtract') => Promise<boolean>;
+  supportProject: (projectId: string, amount: number, description: string) => Promise<boolean>;
+}
+
+const TokensContext = createContext<TokensContextType | undefined>(undefined);
 
 export const useTokens = () => {
+  const context = useContext(TokensContext);
+  if (!context) {
+    throw new Error('useTokens must be used within a TokensProvider');
+  }
+  return context;
+};
+
+interface TokensProviderProps {
+  children: ReactNode;
+}
+
+export const TokensProvider = ({ children }: TokensProviderProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tokens, setTokens] = useState(0);
@@ -18,7 +39,6 @@ export const useTokens = () => {
     }
 
     try {
-      // Buscar saldo de tokens do usuário
       const { data, error } = await supabase
         .from('user_tokens')
         .select('balance')
@@ -167,56 +187,49 @@ export const useTokens = () => {
     }
   };
 
-  // Handler para atualizações de tokens via realtime
-  const handleTokenUpdate = useCallback((payload: any) => {
-    console.log('[Tokens] Balance updated via realtime:', payload);
-    const newBalance = payload.new?.balance;
-    if (typeof newBalance === 'number') {
-      setTokens(newBalance);
-    }
-  }, []);
-
-  // Handler para novos registros de tokens (primeira compra)
-  const handleTokenInsert = useCallback((payload: any) => {
-    console.log('[Tokens] New token record inserted:', payload);
-    const newBalance = payload.new?.balance;
-    if (typeof newBalance === 'number') {
-      setTokens(newBalance);
-    }
-  }, []);
-
   // Fetch inicial
   useEffect(() => {
     fetchTokens();
   }, [fetchTokens]);
 
-  // Configurar realtime para UPDATE
-  useRealtimeChannel({
-    channelName: `user-tokens-update-${user?.id || 'none'}`,
-    enabled: !!user?.id,
-    table: 'user_tokens',
-    schema: 'public',
-    event: 'UPDATE',
-    filter: user?.id ? `user_id=eq.${user.id}` : undefined,
-    onEvent: handleTokenUpdate,
-  });
+  // Realtime subscription - único para toda a aplicação
+  useEffect(() => {
+    if (!user?.id) return;
 
-  // Configurar realtime para INSERT (primeira compra)
-  useRealtimeChannel({
-    channelName: `user-tokens-insert-${user?.id || 'none'}`,
-    enabled: !!user?.id,
-    table: 'user_tokens',
-    schema: 'public',
-    event: 'INSERT',
-    filter: user?.id ? `user_id=eq.${user.id}` : undefined,
-    onEvent: handleTokenInsert,
-  });
+    console.log('[TokensContext] Setting up realtime for user:', user.id);
 
-  return {
-    tokens,
-    loading,
-    fetchTokens,
-    updateTokens,
-    supportProject
-  };
+    const channel = supabase
+      .channel(`global-tokens-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Escuta INSERT, UPDATE e DELETE
+          schema: 'public',
+          table: 'user_tokens',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[TokensContext] Realtime event received:', payload);
+          const newBalance = (payload.new as any)?.balance;
+          if (typeof newBalance === 'number') {
+            console.log('[TokensContext] Updating tokens to:', newBalance);
+            setTokens(newBalance);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[TokensContext] Realtime status:', status);
+      });
+
+    return () => {
+      console.log('[TokensContext] Cleaning up realtime channel');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  return (
+    <TokensContext.Provider value={{ tokens, loading, fetchTokens, updateTokens, supportProject }}>
+      {children}
+    </TokensContext.Provider>
+  );
 };

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTokens } from '@/hooks/useTokens';
+import { useTokens } from '@/contexts/TokensContext';
 import { useRealtimeChannel } from '@/hooks/useRealtimeChannel';
 import { supabase } from '@/integrations/supabase/client';
 import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock, Filter, Trash2, FileText, CreditCard, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
