@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/hooks/useTokens';
+import { useRealtimeChannel } from '@/hooks/useRealtimeChannel';
 import { supabase } from '@/integrations/supabase/client';
 import { Coins, TrendingUp, TrendingDown, RefreshCw, Clock, Filter, Trash2, FileText, CreditCard, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -137,6 +138,52 @@ const Wallet = () => {
     }
   };
 
+  // Handler para atualizações de compras via realtime
+  const handlePurchaseChange = useCallback((payload: any) => {
+    console.log('[Wallet] Purchase changed:', payload);
+    const updatedPurchase = payload.new;
+    
+    if (payload.eventType === 'INSERT') {
+      setPurchases(prev => [updatedPurchase, ...prev]);
+    } else if (payload.eventType === 'UPDATE') {
+      setPurchases(prev => prev.map(p => p.id === updatedPurchase.id ? updatedPurchase : p));
+      
+      // Se o pagamento foi confirmado, mostrar toast
+      if (updatedPurchase.status === 'paid') {
+        toast.success(`Pagamento confirmado! ${updatedPurchase.amount} tokens creditados.`);
+      }
+    }
+  }, []);
+
+  // Handler para novas transações via realtime
+  const handleTransactionInsert = useCallback((payload: any) => {
+    console.log('[Wallet] New transaction:', payload);
+    const newTransaction = payload.new;
+    setTransactions(prev => [newTransaction, ...prev].slice(0, 50));
+  }, []);
+
+  // Configurar realtime para token_purchases (INSERT e UPDATE)
+  useRealtimeChannel({
+    channelName: `wallet-purchases-${user?.id || 'none'}`,
+    enabled: !!user?.id,
+    table: 'token_purchases',
+    schema: 'public',
+    event: '*',
+    filter: user?.id ? `user_id=eq.${user.id}` : undefined,
+    onEvent: handlePurchaseChange,
+  });
+
+  // Configurar realtime para token_transactions (INSERT)
+  useRealtimeChannel({
+    channelName: `wallet-transactions-${user?.id || 'none'}`,
+    enabled: !!user?.id,
+    table: 'token_transactions',
+    schema: 'public',
+    event: 'INSERT',
+    filter: user?.id ? `user_id=eq.${user.id}` : undefined,
+    onEvent: handleTransactionInsert,
+  });
+
   useEffect(() => {
     if (user) {
       fetchWalletData();
@@ -163,8 +210,6 @@ const Wallet = () => {
         
         if (data?.status === 'paid' && !data?.alreadyProcessed) {
           toast.success('Pagamento confirmado! Seus tokens foram creditados.');
-          fetchWalletData();
-          fetchTokens();
         } else if (data?.status === 'pending') {
           toast.info('Pagamento pendente. Aguardando confirmação do boleto.');
         }
