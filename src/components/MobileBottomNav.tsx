@@ -4,7 +4,7 @@ import { Home, FolderPlus, Folder, User, Shield, MessageCircle, Menu, X, LogOut,
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupportMessages } from '@/hooks/useSupportMessages';
-import { useTokens } from '@/hooks/useTokens';
+import { useTokens } from '@/contexts/TokensContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';

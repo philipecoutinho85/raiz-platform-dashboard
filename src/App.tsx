@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { TokensProvider } from "./contexts/TokensContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AnalyticsScripts from "./components/AnalyticsScripts";
 import GoogleAnalyticsLoader from "./components/GoogleAnalyticsLoader";
@@ -48,119 +49,121 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <AnalyticsScripts />
-        <GoogleAnalyticsLoader />
-        <BrowserRouter>
-          <CookieConsent />
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/registro" element={<Register />} />
-              <Route path="/esqueci-senha" element={<ForgotPassword />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="/projetos" element={<Marketplace />} />
-              <Route 
-                path="/criar-projeto" 
-                element={
-                  <ProtectedRoute>
-                    <CreateProject />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/meus-projetos" 
-                element={
-                  <ProtectedRoute>
-                    <MyProjects />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/projeto/:id" 
-                element={<ProjectDetail />} 
-              />
-              <Route 
-                path="/perfil" 
-                element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/usuario/:userId" 
-                element={<PublicProfile />} 
-              />
-              <Route 
-                path="/admin" 
-                element={
-                  <ProtectedRoute requireAdmin={true}>
-                    <AdminPanel />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/blog" 
-                element={
-                  <ProtectedRoute requireAdmin={true}>
-                    <AdminBlog />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/blog/:id" 
-                element={
-                  <ProtectedRoute requireAdmin={true}>
-                    <AdminBlogEditor />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/carteira" 
-                element={
-                  <ProtectedRoute>
-                    <Wallet />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/checkout-pagamento" 
-                element={
-                  <ProtectedRoute>
-                    <CheckoutPayment />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* Public informational pages */}
-              <Route path="/how-it-works" element={<HowItWorks />} />
-              <Route path="/como-funciona" element={<HowItWorks />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/privacidade-apoiadores" element={<PrivacySupporters />} />
-              <Route path="/privacidade-criadores" element={<PrivacyCreators />} />
-              <Route path="/security" element={<Security />} />
-              <Route path="/politica-de-cookies" element={<CookiePolicy />} />
-              <Route path="/contato" element={<Contact />} />
-              <Route path="/avaliar-suporte" element={<RateSupportPage />} />
-              {/* Short URL routes for campaigns */}
-              <Route path="/c/:shortId" element={<ShortUrlRedirect />} />
-              <Route path="/campanha/:shortId" element={<ShortUrlRedirect />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-          <MobileBottomNav />
-        </BrowserRouter>
+        <TokensProvider>
+          <AnalyticsScripts />
+          <GoogleAnalyticsLoader />
+          <BrowserRouter>
+            <CookieConsent />
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/registro" element={<Register />} />
+                <Route path="/esqueci-senha" element={<ForgotPassword />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/projetos" element={<Marketplace />} />
+                <Route 
+                  path="/criar-projeto" 
+                  element={
+                    <ProtectedRoute>
+                      <CreateProject />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/meus-projetos" 
+                  element={
+                    <ProtectedRoute>
+                      <MyProjects />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/projeto/:id" 
+                  element={<ProjectDetail />} 
+                />
+                <Route 
+                  path="/perfil" 
+                  element={
+                    <ProtectedRoute>
+                      <UserProfile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/usuario/:userId" 
+                  element={<PublicProfile />} 
+                />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/blog" 
+                  element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AdminBlog />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/blog/:id" 
+                  element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <AdminBlogEditor />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/carteira" 
+                  element={
+                    <ProtectedRoute>
+                      <Wallet />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/checkout-pagamento" 
+                  element={
+                    <ProtectedRoute>
+                      <CheckoutPayment />
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* Public informational pages */}
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/como-funciona" element={<HowItWorks />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/privacidade-apoiadores" element={<PrivacySupporters />} />
+                <Route path="/privacidade-criadores" element={<PrivacyCreators />} />
+                <Route path="/security" element={<Security />} />
+                <Route path="/politica-de-cookies" element={<CookiePolicy />} />
+                <Route path="/contato" element={<Contact />} />
+                <Route path="/avaliar-suporte" element={<RateSupportPage />} />
+                {/* Short URL routes for campaigns */}
+                <Route path="/c/:shortId" element={<ShortUrlRedirect />} />
+                <Route path="/campanha/:shortId" element={<ShortUrlRedirect />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+            <MobileBottomNav />
+          </BrowserRouter>
+        </TokensProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
