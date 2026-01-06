@@ -169,8 +169,20 @@ export const useTokens = () => {
 
   // Handler para atualizações de tokens via realtime
   const handleTokenUpdate = useCallback((payload: any) => {
-    console.log('[Tokens] Balance updated:', payload);
-    setTokens(payload.new.balance);
+    console.log('[Tokens] Balance updated via realtime:', payload);
+    const newBalance = payload.new?.balance;
+    if (typeof newBalance === 'number') {
+      setTokens(newBalance);
+    }
+  }, []);
+
+  // Handler para novos registros de tokens (primeira compra)
+  const handleTokenInsert = useCallback((payload: any) => {
+    console.log('[Tokens] New token record inserted:', payload);
+    const newBalance = payload.new?.balance;
+    if (typeof newBalance === 'number') {
+      setTokens(newBalance);
+    }
   }, []);
 
   // Fetch inicial
@@ -178,15 +190,26 @@ export const useTokens = () => {
     fetchTokens();
   }, [fetchTokens]);
 
-  // Configurar realtime
+  // Configurar realtime para UPDATE
   useRealtimeChannel({
-    channelName: `user-tokens-${user?.id || 'none'}`,
+    channelName: `user-tokens-update-${user?.id || 'none'}`,
     enabled: !!user?.id,
     table: 'user_tokens',
     schema: 'public',
     event: 'UPDATE',
     filter: user?.id ? `user_id=eq.${user.id}` : undefined,
     onEvent: handleTokenUpdate,
+  });
+
+  // Configurar realtime para INSERT (primeira compra)
+  useRealtimeChannel({
+    channelName: `user-tokens-insert-${user?.id || 'none'}`,
+    enabled: !!user?.id,
+    table: 'user_tokens',
+    schema: 'public',
+    event: 'INSERT',
+    filter: user?.id ? `user_id=eq.${user.id}` : undefined,
+    onEvent: handleTokenInsert,
   });
 
   return {
