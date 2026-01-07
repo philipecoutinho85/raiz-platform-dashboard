@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Clock, RefreshCw, Eye, User, Coins, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, RefreshCw, Eye, User, Coins, Calendar, CreditCard, Mail, Phone, FileText, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminSecurity } from '@/hooks/useAdminSecurity';
 import { formatToBrasilia } from '@/lib/dateUtils';
@@ -26,6 +27,17 @@ interface Refund {
     nome: string;
     sobrenome: string;
     email: string;
+    cpf?: string;
+    celular?: string;
+  };
+  purchase_details?: {
+    id: string;
+    created_at: string;
+    payment_method: string;
+    payment_type?: string;
+    price: number;
+    pagarme_transaction_id?: string;
+    updated_at?: string;
   };
 }
 
@@ -58,22 +70,39 @@ const RefundsTab = () => {
 
       if (error) throw error;
 
-      // Buscar profiles separadamente
+      // Buscar profiles e detalhes de compra
       if (refundsData && refundsData.length > 0) {
         const userIds = [...new Set(refundsData.map(r => r.user_id))];
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, nome, sobrenome, email')
+          .select('id, nome, sobrenome, email, cpf, celular')
           .in('id', userIds);
+
+        // Buscar compras relacionadas (última compra de cada usuário com quantidade igual)
+        const { data: purchasesData } = await supabase
+          .from('token_purchases')
+          .select('*')
+          .in('user_id', userIds)
+          .eq('status', 'paid')
+          .order('created_at', { ascending: false });
 
         const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
         
-        const refundsWithProfiles = refundsData.map(refund => ({
-          ...refund,
-          user_profile: profilesMap.get(refund.user_id)
-        }));
+        const refundsWithDetails = refundsData.map(refund => {
+          // Encontrar a compra mais recente que corresponde à quantidade do reembolso
+          const userPurchases = purchasesData?.filter(p => 
+            p.user_id === refund.user_id && p.amount === refund.amount
+          );
+          const relatedPurchase = userPurchases?.[0];
 
-        setRefunds(refundsWithProfiles as Refund[]);
+          return {
+            ...refund,
+            user_profile: profilesMap.get(refund.user_id),
+            purchase_details: relatedPurchase
+          };
+        });
+
+        setRefunds(refundsWithDetails as Refund[]);
       } else {
         setRefunds([]);
       }
@@ -110,38 +139,19 @@ const RefundsTab = () => {
 
       if (error) throw error;
 
-      // Se aprovando, creditar tokens de volta
-      if (action === 'approve') {
-        const { data: currentTokens, error: fetchError } = await supabase
-          .from('user_tokens')
-          .select('balance')
-          .eq('user_id', refund.user_id)
-          .single();
+      // NÃO devolver tokens - é estorno em dinheiro na origem do pagamento
+      // Os tokens já foram utilizados ou deduzidos, o reembolso é financeiro
 
-        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
-
-        const newBalance = (currentTokens?.balance || 0) + refund.amount;
-
-        const { error: updateError } = await supabase
-          .from('user_tokens')
-          .upsert({
-            user_id: refund.user_id,
-            balance: newBalance,
-            updated_at: new Date().toISOString()
-          });
-
-        if (updateError) throw updateError;
-
-        // Registrar transação
-        await supabase.from('token_transactions').insert({
-          user_id: refund.user_id,
-          amount: refund.amount,
-          balance_after: newBalance,
-          transaction_type: 'refund',
-          description: `Reembolso de ${refund.amount} tokens aprovado`,
-          reference_id: refundId
-        });
-      }
+      // Notificar usuário sobre aprovação/rejeição
+      await supabase.from('notifications').insert({
+        user_id: refund.user_id,
+        title: action === 'approve' ? 'Reembolso Aprovado' : 'Reembolso Rejeitado',
+        message: action === 'approve' 
+          ? `Seu reembolso de ${refund.amount} tokens (${formatCurrency(refund.amount)}) foi aprovado. Você receberá um e-mail com os próximos passos para devolução do valor.`
+          : `Seu reembolso de ${refund.amount} tokens foi rejeitado. Entre em contato com o suporte para mais informações.`,
+        type: 'refund',
+        related_id: refundId
+      });
 
       // Log admin action
       await logAdminAction(
@@ -153,7 +163,9 @@ const RefundsTab = () => {
 
       toast({
         title: "Sucesso",
-        description: `Reembolso ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso!`,
+        description: action === 'approve' 
+          ? "Reembolso aprovado! O usuário será notificado sobre os próximos passos via e-mail."
+          : "Reembolso rejeitado com sucesso!",
       });
 
       setSelectedRefund(null);
@@ -190,6 +202,15 @@ const RefundsTab = () => {
     return reason;
   };
 
+  const getPaymentTypeLabel = (type?: string) => {
+    switch (type) {
+      case 'card': return 'Cartão de Crédito';
+      case 'boleto': return 'Boleto Bancário';
+      case 'pix': return 'PIX';
+      default: return type || 'Não informado';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -209,7 +230,7 @@ const RefundsTab = () => {
                 Gerenciar Reembolsos
               </CardTitle>
               <CardDescription>
-                Aprovar ou rejeitar solicitações de reembolso
+                Aprovar ou rejeitar solicitações de reembolso (estorno em dinheiro)
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchRefunds}>
@@ -296,13 +317,13 @@ const RefundsTab = () => {
         </CardContent>
       </Card>
 
-      {/* Modal de Detalhes */}
+      {/* Modal de Detalhes Completo */}
       <Dialog open={!!selectedRefund} onOpenChange={() => setSelectedRefund(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              Detalhes do Reembolso
+              Detalhes Completos do Reembolso
             </DialogTitle>
           </DialogHeader>
           {selectedRefund && (
@@ -315,27 +336,53 @@ const RefundsTab = () => {
                 </span>
               </div>
 
+              {/* Aviso sobre estorno */}
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Este é um estorno em dinheiro. O valor será devolvido na origem do pagamento, sem devolução de tokens.
+                </AlertDescription>
+              </Alert>
+
               {/* Informações do Usuário */}
               <div className="bg-muted/50 p-4 rounded-lg">
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Solicitante
+                  Dados do Solicitante
                 </h4>
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-muted-foreground">Nome</label>
+                    <label className="text-sm text-muted-foreground">Nome Completo</label>
                     <p className="font-medium">
                       {selectedRefund.user_profile?.nome} {selectedRefund.user_profile?.sobrenome}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm text-muted-foreground">Email</label>
+                    <label className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Mail className="h-3 w-3" /> Email
+                    </label>
                     <p className="text-sm">{selectedRefund.user_profile?.email}</p>
                   </div>
+                  {selectedRefund.user_profile?.cpf && (
+                    <div>
+                      <label className="text-sm text-muted-foreground flex items-center gap-1">
+                        <FileText className="h-3 w-3" /> CPF
+                      </label>
+                      <p className="text-sm font-mono">{selectedRefund.user_profile.cpf}</p>
+                    </div>
+                  )}
+                  {selectedRefund.user_profile?.celular && (
+                    <div>
+                      <label className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Phone className="h-3 w-3" /> Celular
+                      </label>
+                      <p className="text-sm">{selectedRefund.user_profile.celular}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Valores */}
+              {/* Valores do Reembolso */}
               <div className="grid grid-cols-2 gap-4">
                 <Card>
                   <CardContent className="p-4 text-center">
@@ -347,7 +394,7 @@ const RefundsTab = () => {
                 </Card>
                 <Card>
                   <CardContent className="p-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Valor em R$</p>
+                    <p className="text-sm text-muted-foreground mb-2">Valor a Estornar</p>
                     <p className="text-2xl font-bold text-green-600">
                       {formatCurrency(selectedRefund.amount)}
                     </p>
@@ -356,31 +403,97 @@ const RefundsTab = () => {
                 </Card>
               </div>
 
-              {/* Detalhes */}
+              {/* Detalhes da Compra Original */}
+              {selectedRefund.purchase_details && (
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-900">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Detalhes da Compra Original
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <label className="text-muted-foreground">Forma de Pagamento</label>
+                      <p className="font-medium">
+                        {getPaymentTypeLabel(selectedRefund.purchase_details.payment_type)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-muted-foreground">Valor Pago</label>
+                      <p className="font-medium">{formatCurrency(selectedRefund.purchase_details.price)}</p>
+                    </div>
+                    <div>
+                      <label className="text-muted-foreground">Data da Compra</label>
+                      <p className="font-medium">
+                        {format(new Date(selectedRefund.purchase_details.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-muted-foreground">Hora da Compra</label>
+                      <p className="font-medium">
+                        {format(new Date(selectedRefund.purchase_details.created_at), "HH:mm:ss", { locale: ptBR })}
+                      </p>
+                    </div>
+                    {selectedRefund.purchase_details.updated_at && (
+                      <>
+                        <div>
+                          <label className="text-muted-foreground">Pagamento Confirmado</label>
+                          <p className="font-medium">
+                            {format(new Date(selectedRefund.purchase_details.updated_at), "dd/MM/yyyy", { locale: ptBR })}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-muted-foreground">Hora da Confirmação</label>
+                          <p className="font-medium">
+                            {format(new Date(selectedRefund.purchase_details.updated_at), "HH:mm:ss", { locale: ptBR })}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                    {selectedRefund.purchase_details.pagarme_transaction_id && (
+                      <div className="col-span-2">
+                        <label className="text-muted-foreground">ID da Transação (Stripe)</label>
+                        <p className="font-mono text-xs break-all bg-white dark:bg-gray-900 p-2 rounded mt-1">
+                          {selectedRefund.purchase_details.pagarme_transaction_id}
+                        </p>
+                      </div>
+                    )}
+                    <div className="col-span-2">
+                      <label className="text-muted-foreground">ID da Compra</label>
+                      <p className="font-mono text-xs break-all bg-white dark:bg-gray-900 p-2 rounded mt-1">
+                        {selectedRefund.purchase_details.id}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Motivo e Datas */}
               <div className="space-y-3">
-                <div>
-                  <label className="text-sm text-muted-foreground">Motivo</label>
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <label className="text-sm text-muted-foreground">Motivo do Reembolso</label>
                   <p className="font-medium">{getReasonLabel(selectedRefund.reason)}</p>
                   {selectedRefund.reason.includes(':') && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {selectedRefund.reason.split(':').slice(1).join(':').trim()}
+                    <p className="text-sm text-muted-foreground mt-1 italic">
+                      "{selectedRefund.reason.split(':').slice(1).join(':').trim()}"
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                
+                <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <label className="text-sm text-muted-foreground">Data da Solicitação</label>
-                    <p className="text-sm">
-                      {format(new Date(selectedRefund.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                    <p className="text-sm font-medium">
+                      {format(new Date(selectedRefund.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: ptBR })}
                     </p>
                   </div>
                 </div>
+                
                 {selectedRefund.processed_at && (
-                  <div>
+                  <div className="p-3 bg-muted/30 rounded-lg">
                     <label className="text-sm text-muted-foreground">Processado em</label>
-                    <p className="text-sm">
-                      {format(new Date(selectedRefund.processed_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                    <p className="text-sm font-medium">
+                      {format(new Date(selectedRefund.processed_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: ptBR })}
                     </p>
                   </div>
                 )}
@@ -388,24 +501,33 @@ const RefundsTab = () => {
 
               {/* Ações para pendentes */}
               {selectedRefund.status === 'pending' && (
-                <div className="border-t pt-4 flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    className="text-red-600 border-red-600 hover:bg-red-50"
-                    onClick={() => handleRefundAction(selectedRefund.id, 'reject')}
-                    disabled={processingAction}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Rejeitar
-                  </Button>
-                  <Button
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => handleRefundAction(selectedRefund.id, 'approve')}
-                    disabled={processingAction}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Aprovar Reembolso
-                  </Button>
+                <div className="border-t pt-4 space-y-3">
+                  <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200">
+                    <Mail className="h-4 w-4" />
+                    <AlertDescription>
+                      Ao aprovar, o usuário será notificado automaticamente sobre os próximos passos via e-mail.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      className="text-red-600 border-red-600 hover:bg-red-50"
+                      onClick={() => handleRefundAction(selectedRefund.id, 'reject')}
+                      disabled={processingAction}
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Rejeitar
+                    </Button>
+                    <Button
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleRefundAction(selectedRefund.id, 'approve')}
+                      disabled={processingAction}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Aprovar Estorno
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
