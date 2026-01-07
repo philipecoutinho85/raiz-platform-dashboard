@@ -63,7 +63,7 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
-  }).format(value * 5); // 1 token = R$ 5
+  }).format(value); // 1 token = R$ 1
 };
 
 export function RefundsDisputesPanel() {
@@ -253,12 +253,13 @@ export function RefundsDisputesPanel() {
 
   const exportToCSV = () => {
     const headers = ['ID', 'Usuário', 'Email', 'Tokens', 'Valor (R$)', 'Motivo', 'Status', 'Data', 'Processado por', 'Data Processamento'];
+
     const rows = filteredRefunds.map(r => [
       r.id,
       r.user_name || '',
       r.user_email || '',
       r.amount.toString(),
-      (r.amount * 5).toString(),
+      r.amount.toString(), // 1 token = R$ 1
       getReasonLabel(r.reason),
       r.status,
       format(new Date(r.created_at), 'dd/MM/yyyy HH:mm'),

@@ -64,7 +64,7 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
-  }).format(value * 5); // 1 token = R$ 5
+  }).format(value); // 1 token = R$ 1
 };
 
 export function TokenTrackingPanel() {
@@ -246,7 +246,7 @@ export function TokenTrackingPanel() {
   );
 
   const totalTokens = userTokens.reduce((sum, u) => sum + u.balance, 0);
-  const totalValue = totalTokens * 5; // R$ 5 per token
+  const totalValue = totalTokens; // 1 token = R$ 1
 
   const exportToCSV = () => {
     const headers = ['Usuário', 'Email', 'Saldo', 'Valor (R$)', 'Última Atualização'];
@@ -254,7 +254,7 @@ export function TokenTrackingPanel() {
       token.user_name,
       token.user_email,
       token.balance.toString(),
-      (token.balance * 5).toString(),
+      token.balance.toString(), // 1 token = R$ 1
       format(new Date(token.updated_at), 'dd/MM/yyyy HH:mm')
     ]);
 

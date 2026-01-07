@@ -63,7 +63,7 @@ const RefundRequest = () => {
       const purchase = purchases.find(p => p.id === selectedPurchase);
       if (!purchase) return;
 
-      const { error } = await supabase
+      const { data: refundData, error } = await supabase
         .from('refunds')
         .insert({
           user_id: user.id,
@@ -71,9 +71,39 @@ const RefundRequest = () => {
           reason: `${reason}${description ? ': ' + description : ''}`,
           status: 'pending',
           requested_by: user.id
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Buscar perfil do usuário para incluir na notificação
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nome, sobrenome')
+        .eq('id', user.id)
+        .single();
+
+      const userName = profile ? `${profile.nome} ${profile.sobrenome}` : 'Usuário';
+      const valueInReais = purchase.amount; // 1 token = R$ 1
+
+      // Notificar todos os admins sobre a nova solicitação de reembolso
+      const { data: admins } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+
+      if (admins && admins.length > 0) {
+        const notifications = admins.map(admin => ({
+          user_id: admin.user_id,
+          title: 'Nova solicitação de reembolso',
+          message: `${userName} solicitou reembolso de ${purchase.amount} tokens (R$ ${valueInReais.toFixed(2)})`,
+          type: 'refund_request',
+          related_id: refundData?.id || null
+        }));
+
+        await supabase.from('notifications').insert(notifications);
+      }
 
       toast({
         title: "Solicitação enviada!",
