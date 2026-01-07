@@ -1831,6 +1831,81 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          analyzed_at: string | null
+          analyzed_by: string | null
+          bank_account_agency: string
+          bank_account_holder: string
+          bank_account_number: string
+          bank_account_type: string
+          bank_cpf_cnpj: string
+          bank_name: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          id: string
+          proof_of_payment_url: string | null
+          reason: string
+          rejection_reason: string | null
+          requested_at: string | null
+          status: string
+          transaction_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          analyzed_at?: string | null
+          analyzed_by?: string | null
+          bank_account_agency: string
+          bank_account_holder: string
+          bank_account_number: string
+          bank_account_type: string
+          bank_cpf_cnpj: string
+          bank_name: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          proof_of_payment_url?: string | null
+          reason: string
+          rejection_reason?: string | null
+          requested_at?: string | null
+          status?: string
+          transaction_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          analyzed_at?: string | null
+          analyzed_by?: string | null
+          bank_account_agency?: string
+          bank_account_holder?: string
+          bank_account_number?: string
+          bank_account_type?: string
+          bank_cpf_cnpj?: string
+          bank_name?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          proof_of_payment_url?: string | null
+          reason?: string
+          rejection_reason?: string | null
+          requested_at?: string | null
+          status?: string
+          transaction_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       refunds: {
         Row: {
           amount: number
