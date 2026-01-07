@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTokens } from '@/contexts/TokensContext';
 import raizTokenLogo from '@/assets/raiz-token-logo.png';
 import Footer from '@/components/Footer';
 import MaintenanceModal from '@/components/MaintenanceModal';
@@ -17,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 const Login = () => {
   const { toast } = useToast();
   const { signIn, user } = useAuth();
+  const { syncWalletOnLogin } = useTokens();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -87,6 +89,9 @@ const Login = () => {
           });
           return;
         }
+        
+        // Sync wallet for admin during maintenance
+        syncWalletOnLogin();
       }
       setLoading(false);
       if (user) {
@@ -116,7 +121,7 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const { error } = await signIn(formData.email, formData.password);
+      const { error, session } = await signIn(formData.email, formData.password);
       
       if (error) {
         let errorMessage = "Erro ao fazer login. Tente novamente.";
@@ -133,6 +138,10 @@ const Login = () => {
           variant: "destructive"
         });
       } else {
+        // Sync wallet after successful login (não bloqueia navegação)
+        if (session) {
+          syncWalletOnLogin();
+        }
         navigate('/projetos');
       }
     } catch (error) {
