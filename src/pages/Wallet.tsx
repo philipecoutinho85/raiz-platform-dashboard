@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/contexts/TokensContext';
 import { useRealtimeChannel } from '@/hooks/useRealtimeChannel';
@@ -58,6 +59,9 @@ const Wallet = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [loading, setLoading] = useState(true);
+  const [proofModalOpen, setProofModalOpen] = useState(false);
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [proofLoading, setProofLoading] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   
   // Filtros
@@ -344,18 +348,26 @@ const Wallet = () => {
   };
 
   const handleViewProof = async (proofPath: string) => {
+    setProofLoading(true);
+    setProofModalOpen(true);
+    setProofUrl(null);
+    
     try {
       const { data } = await supabase.storage
         .from('refund-proofs')
         .createSignedUrl(proofPath, 3600);
       
       if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        setProofUrl(data.signedUrl);
       } else {
         toast.error('Não foi possível carregar o comprovante.');
+        setProofModalOpen(false);
       }
     } catch {
       toast.error('Erro ao carregar o comprovante.');
+      setProofModalOpen(false);
+    } finally {
+      setProofLoading(false);
     }
   };
 
@@ -810,6 +822,31 @@ const Wallet = () => {
       </main>
 
       <Footer />
+
+      {/* Modal de Comprovante */}
+      <Dialog open={proofModalOpen} onOpenChange={setProofModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Comprovante de Reembolso</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center min-h-[300px]">
+            {proofLoading ? (
+              <div className="flex flex-col items-center gap-2">
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Carregando comprovante...</p>
+              </div>
+            ) : proofUrl ? (
+              <img 
+                src={proofUrl} 
+                alt="Comprovante de reembolso" 
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              />
+            ) : (
+              <p className="text-muted-foreground">Não foi possível carregar o comprovante.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
