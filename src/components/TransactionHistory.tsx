@@ -55,15 +55,25 @@ interface RefundRequest {
   proof_of_payment_url: string | null;
 }
 
+interface RefundStatusHistory {
+  id: string;
+  new_status: string;
+  notes: string | null;
+  proof_url: string | null;
+  created_at: string;
+}
+
 const TransactionHistory = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
+  const [refundHistories, setRefundHistories] = useState<Record<string, RefundStatusHistory[]>>({});
+  const [loadingHistories, setLoadingHistories] = useState<Record<string, boolean>>({});
+  const [expandedRefund, setExpandedRefund] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
-
   const fetchData = async () => {
     if (!user?.id) return;
 
@@ -176,13 +186,23 @@ const TransactionHistory = () => {
         icon: <Clock className="h-3 w-3" />, 
         className: 'border-yellow-500 text-yellow-600' 
       },
-      realizado: { 
+      em_analise: { 
+        label: 'Em Análise', 
+        icon: <Clock className="h-3 w-3" />, 
+        className: 'border-yellow-500 text-yellow-600' 
+      },
+      aprovado: { 
         label: 'Aprovado', 
+        icon: <CheckCircle className="h-3 w-3" />, 
+        className: 'border-blue-500 text-blue-600' 
+      },
+      realizado: { 
+        label: 'Reembolso Realizado', 
         icon: <CheckCircle className="h-3 w-3" />, 
         className: 'border-green-500 text-green-600' 
       },
       completed: { 
-        label: 'Aprovado', 
+        label: 'Reembolso Realizado', 
         icon: <CheckCircle className="h-3 w-3" />, 
         className: 'border-green-500 text-green-600' 
       },
@@ -206,6 +226,20 @@ const TransactionHistory = () => {
         {config.label}
       </Badge>
     );
+  };
+
+  const getHistoryStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      solicitado: 'Solicitado',
+      pending: 'Solicitado',
+      em_analise: 'Em Análise',
+      aprovado: 'Aprovado',
+      realizado: 'Reembolso Realizado',
+      completed: 'Reembolso Realizado',
+      rejeitado: 'Rejeitado',
+      rejected: 'Rejeitado',
+    };
+    return labels[status] || status;
   };
 
   const getReasonLabel = (reason: string) => {
@@ -426,13 +460,23 @@ const TransactionHistory = () => {
                     </Alert>
                   )}
 
-                  {/* Aprovado com comprovante */}
+                  {/* Aprovado aguardando pagamento */}
+                  {refund.status === 'aprovado' && (
+                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-900">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm">
+                        Reembolso aprovado. Aguardando processamento do pagamento.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Concluído com comprovante */}
                   {(refund.status === 'realizado' || refund.status === 'completed') && (
                     <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 p-3 rounded-lg border border-green-200 dark:border-green-900">
                       <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                         <CheckCircle className="h-4 w-4" />
                         <span className="text-sm font-medium">
-                          Reembolso processado
+                          Reembolso realizado
                           {refund.completed_at && (
                             <span className="font-normal ml-1">
                               em {format(new Date(refund.completed_at), "dd/MM/yyyy", { locale: ptBR })}
@@ -455,12 +499,95 @@ const TransactionHistory = () => {
                   )}
 
                   {/* Pendente */}
-                  {(refund.status === 'solicitado' || refund.status === 'pending') && (
+                  {(refund.status === 'solicitado' || refund.status === 'pending' || refund.status === 'em_analise') && (
                     <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-900">
                       <Clock className="h-4 w-4" />
                       <span className="text-sm">
                         Sua solicitação está em análise. Prazo: até 5 dias úteis.
                       </span>
+                    </div>
+                  )}
+
+                  {/* Botão para ver histórico */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-center"
+                    onClick={() => toggleRefundHistory(refund.id)}
+                  >
+                    {expandedRefund === refund.id ? (
+                      <>
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Ocultar Histórico
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-4 w-4 mr-1" />
+                        Ver Histórico Completo
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Histórico expandido */}
+                  {expandedRefund === refund.id && (
+                    <div className="border-t pt-3 mt-2">
+                      <h4 className="text-sm font-medium mb-2">Histórico de Status</h4>
+                      {loadingHistories[refund.id] ? (
+                        <div className="flex justify-center py-3">
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        </div>
+                      ) : refundHistories[refund.id]?.length > 0 ? (
+                        <div className="space-y-2">
+                          {/* Evento inicial de solicitação */}
+                          <div className="flex items-start gap-2 text-sm border-l-2 border-muted pl-3 pb-2">
+                            <Clock className="h-4 w-4 text-yellow-500 mt-0.5" />
+                            <div>
+                              <p className="font-medium">Solicitação Enviada</p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(refund.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                              </p>
+                            </div>
+                          </div>
+                          {/* Histórico de mudanças */}
+                          {refundHistories[refund.id].map((history) => (
+                            <div key={history.id} className="flex items-start gap-2 text-sm border-l-2 border-muted pl-3 pb-2">
+                              {history.new_status === 'rejeitado' || history.new_status === 'rejected' ? (
+                                <XCircle className="h-4 w-4 text-red-500 mt-0.5" />
+                              ) : history.new_status === 'realizado' || history.new_status === 'completed' ? (
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                              ) : history.new_status === 'aprovado' ? (
+                                <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+                              ) : (
+                                <Clock className="h-4 w-4 text-yellow-500 mt-0.5" />
+                              )}
+                              <div>
+                                <p className="font-medium">{getHistoryStatusLabel(history.new_status)}</p>
+                                {history.notes && (
+                                  <p className="text-muted-foreground">{history.notes}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  {format(new Date(history.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                </p>
+                                {history.proof_url && (
+                                  <Button
+                                    size="sm"
+                                    variant="link"
+                                    className="p-0 h-auto text-xs"
+                                    onClick={() => handleViewProof(history.proof_url!)}
+                                  >
+                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                    Ver comprovante
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-2">
+                          Nenhum histórico adicional
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

@@ -1969,6 +1969,47 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_status_history: {
+        Row: {
+          changed_by: string
+          created_at: string
+          id: string
+          new_status: string
+          notes: string | null
+          previous_status: string | null
+          proof_url: string | null
+          refund_request_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_status: string
+          notes?: string | null
+          previous_status?: string | null
+          proof_url?: string | null
+          refund_request_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_status?: string
+          notes?: string | null
+          previous_status?: string | null
+          proof_url?: string | null
+          refund_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_status_history_refund_request_id_fkey"
+            columns: ["refund_request_id"]
+            isOneToOne: false
+            referencedRelation: "refund_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refunds: {
         Row: {
           amount: number
