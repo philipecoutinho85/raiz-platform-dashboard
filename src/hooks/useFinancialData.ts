@@ -124,18 +124,29 @@ export const useFinancialData = (startDate?: string, endDate?: string) => {
 
       const tokensInCirculation = tokensData?.reduce((sum, t) => sum + t.balance, 0) || 0;
 
-      // Total de reembolsos
-      let refundsQuery = supabase
+      // Total de reembolsos - buscar de ambas as tabelas
+      let oldRefundsQuery = supabase
         .from('refunds')
         .select('amount, status');
 
-      if (startDate) refundsQuery = refundsQuery.gte('created_at', startDate);
-      if (endDate) refundsQuery = refundsQuery.lte('created_at', endDate);
+      if (startDate) oldRefundsQuery = oldRefundsQuery.gte('created_at', startDate);
+      if (endDate) oldRefundsQuery = oldRefundsQuery.lte('created_at', endDate);
 
-      const { data: refundsData } = await refundsQuery;
+      const { data: oldRefundsData } = await oldRefundsQuery;
 
-      const completedRefunds = refundsData?.filter(r => r.status === 'completed') || [];
-      const totalRefunds = completedRefunds.reduce((sum, r) => sum + r.amount, 0);
+      let newRefundsQuery = supabase
+        .from('refund_requests')
+        .select('amount, status');
+
+      if (startDate) newRefundsQuery = newRefundsQuery.gte('created_at', startDate);
+      if (endDate) newRefundsQuery = newRefundsQuery.lte('created_at', endDate);
+
+      const { data: newRefundsData } = await newRefundsQuery;
+
+      const completedOldRefunds = oldRefundsData?.filter(r => r.status === 'completed') || [];
+      const completedNewRefunds = newRefundsData?.filter(r => r.status === 'realizado') || [];
+      const totalRefunds = completedOldRefunds.reduce((sum, r) => sum + r.amount, 0) + 
+                          completedNewRefunds.reduce((sum, r) => sum + Number(r.amount), 0);
       const totalRefundsReais = totalRefunds; // Aproximação: 1 token = 1 real
 
       // Saldo em custódia (projetos concluídos sem resgate)
@@ -238,7 +249,8 @@ export const useFinancialData = (startDate?: string, endDate?: string) => {
 
   const fetchRefunds = async () => {
     try {
-      let query = supabase
+      // Buscar de refunds (antiga)
+      let oldQuery = supabase
         .from('refunds')
         .select(`
           *,
@@ -247,18 +259,69 @@ export const useFinancialData = (startDate?: string, endDate?: string) => {
         `)
         .order('created_at', { ascending: false });
 
-      if (startDate) query = query.gte('created_at', startDate);
-      if (endDate) query = query.lte('created_at', endDate);
+      if (startDate) oldQuery = oldQuery.gte('created_at', startDate);
+      if (endDate) oldQuery = oldQuery.lte('created_at', endDate);
 
-      const { data } = await query;
+      const { data: oldData } = await oldQuery;
 
-      setRefunds(
-        data?.map((r: any) => ({
-          ...r,
-          user_name: r.profiles ? `${r.profiles.nome} ${r.profiles.sobrenome}` : 'N/A',
-          project_title: r.projects?.title || 'N/A',
-        })) || []
+      // Buscar de refund_requests (nova)
+      let newQuery = supabase
+        .from('refund_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (startDate) newQuery = newQuery.gte('created_at', startDate);
+      if (endDate) newQuery = newQuery.lte('created_at', endDate);
+
+      const { data: newData } = await newQuery;
+
+      // Buscar profiles para refund_requests
+      const userIds = [...new Set(newData?.map(r => r.user_id) || [])];
+      
+      interface ProfileData {
+        id: string;
+        nome: string;
+        sobrenome: string;
+      }
+      
+      const { data: profilesData } = userIds.length > 0 
+        ? await supabase.from('profiles').select('id, nome, sobrenome').in('id', userIds)
+        : { data: [] as ProfileData[] };
+      
+      const profilesMap = new Map<string, ProfileData>(
+        (profilesData || []).map((p: ProfileData) => [p.id, p])
       );
+
+      const oldRefunds = oldData?.map((r: any) => ({
+        ...r,
+        user_name: r.profiles ? `${r.profiles.nome} ${r.profiles.sobrenome}` : 'N/A',
+        project_title: r.projects?.title || 'N/A',
+        source: 'refunds'
+      })) || [];
+
+      const newRefunds = newData?.map((r: any) => {
+        const profile = profilesMap.get(r.user_id);
+        return {
+          id: r.id,
+          user_id: r.user_id,
+          project_id: null,
+          amount: Number(r.amount),
+          reason: r.reason,
+          status: r.status === 'solicitado' ? 'pending' : r.status === 'realizado' ? 'completed' : r.status,
+          created_at: r.created_at,
+          processed_at: r.completed_at,
+          processed_by: r.completed_by,
+          user_name: profile ? `${profile.nome} ${profile.sobrenome}` : 'N/A',
+          project_title: 'Compra de Tokens',
+          source: 'refund_requests'
+        };
+      }) || [];
+
+      // Combinar e ordenar por data
+      const allRefunds = [...oldRefunds, ...newRefunds]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setRefunds(allRefunds);
     } catch (error) {
       console.error('Erro ao buscar reembolsos:', error);
     }
