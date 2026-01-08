@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import TokenPurchase from '@/components/TokenPurchase';
-import RefundRequest from '@/components/RefundRequest';
 import BoletoRefundRequest from '@/components/BoletoRefundRequest';
 import PendingPayments from '@/components/PendingPayments';
 import Footer from '@/components/Footer';
@@ -417,12 +416,11 @@ const Wallet = () => {
         </div>
 
         <Tabs defaultValue="transactions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 gap-2">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
             <TabsTrigger value="transactions" className="text-xs md:text-sm">Histórico</TabsTrigger>
             <TabsTrigger value="purchases" className="text-xs md:text-sm">Compras</TabsTrigger>
             <TabsTrigger value="refunds" className="text-xs md:text-sm">Reembolsos</TabsTrigger>
-            <TabsTrigger value="refund-request" className="text-xs md:text-sm">Reembolso Token</TabsTrigger>
-            <TabsTrigger value="boleto-refund" className="text-xs md:text-sm">Reembolso Boleto</TabsTrigger>
+            <TabsTrigger value="refund-request" className="text-xs md:text-sm">Solicitar Reembolso</TabsTrigger>
             <TabsTrigger value="buy" className="text-xs md:text-sm">Comprar Tokens</TabsTrigger>
           </TabsList>
 
@@ -679,13 +677,8 @@ const Wallet = () => {
             </Card>
           </TabsContent>
 
-          {/* Solicitar Reembolso de Tokens */}
+          {/* Solicitar Reembolso */}
           <TabsContent value="refund-request">
-            <RefundRequest />
-          </TabsContent>
-
-          {/* Solicitar Reembolso de Boleto */}
-          <TabsContent value="boleto-refund">
             <BoletoRefundRequest />
           </TabsContent>
 
