@@ -185,6 +185,66 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_files: {
+        Row: {
+          created_at: string
+          created_by: string
+          downloaded_at: string | null
+          downloaded_count: number | null
+          errors: Json | null
+          expires_at: string | null
+          file_path: string
+          file_size: number
+          filename: string
+          id: string
+          include_storage: boolean | null
+          manifest: Json | null
+          records_count: number
+          status: string
+          storage_files_count: number | null
+          storage_size_bytes: number | null
+          tables_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          downloaded_at?: string | null
+          downloaded_count?: number | null
+          errors?: Json | null
+          expires_at?: string | null
+          file_path: string
+          file_size?: number
+          filename: string
+          id?: string
+          include_storage?: boolean | null
+          manifest?: Json | null
+          records_count?: number
+          status?: string
+          storage_files_count?: number | null
+          storage_size_bytes?: number | null
+          tables_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          downloaded_at?: string | null
+          downloaded_count?: number | null
+          errors?: Json | null
+          expires_at?: string | null
+          file_path?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          include_storage?: boolean | null
+          manifest?: Json | null
+          records_count?: number
+          status?: string
+          storage_files_count?: number | null
+          storage_size_bytes?: number | null
+          tables_count?: number
+        }
+        Relationships: []
+      }
       badges: {
         Row: {
           created_at: string | null
