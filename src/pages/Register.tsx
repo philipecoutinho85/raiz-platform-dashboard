@@ -316,6 +316,9 @@ const Register = () => {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mínimo 8 caracteres, máximo 64, pelo menos 1 letra maiúscula (A–Z) e 1 número (0–9)
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
@@ -342,9 +345,6 @@ const Register = () => {
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Mínimo 8 caracteres, máximo 64, pelo menos 1 letra maiúscula (A–Z) e 1 número (0–9)
-                    </p>
                   </div>
                 </div>
 
