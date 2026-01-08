@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Clock, RefreshCw, Eye, User, Coins, Calendar, CreditCard, Mail, Phone, FileText, Info } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, RefreshCw, Eye, User, Coins, Calendar, CreditCard, Mail, Phone, FileText, Info, Upload, AlertTriangle, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminSecurity } from '@/hooks/useAdminSecurity';
 import { formatToBrasilia } from '@/lib/dateUtils';
@@ -23,6 +26,9 @@ interface Refund {
   created_at: string;
   processed_at?: string;
   processed_by?: string;
+  rejection_reason?: string;
+  proof_of_payment_url?: string;
+  source?: 'refund_requests' | 'refunds';
   user_profile?: {
     nome: string;
     sobrenome: string;
@@ -45,7 +51,7 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
-  }).format(value); // 1 token = R$ 1
+  }).format(value);
 };
 
 const RefundsTab = () => {
@@ -56,12 +62,21 @@ const RefundsTab = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRefund, setSelectedRefund] = useState<Refund | null>(null);
   const [processingAction, setProcessingAction] = useState(false);
+  
+  // Modal states
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchRefunds();
   }, []);
 
   const fetchRefunds = async () => {
+    setLoading(true);
     try {
       // Buscar de refund_requests (nova tabela) e refunds (antiga) para compatibilidade
       const { data: refundRequestsData, error: rrError } = await supabase
@@ -85,9 +100,11 @@ const RefundsTab = () => {
           amount: r.amount,
           reason: r.reason,
           status: r.status === 'solicitado' ? 'pending' : r.status === 'realizado' ? 'completed' : r.status,
-          created_at: r.created_at,
+          created_at: r.created_at || r.requested_at,
           processed_at: r.completed_at,
           processed_by: r.completed_by,
+          rejection_reason: r.rejection_reason,
+          proof_of_payment_url: r.proof_of_payment_url,
           transaction_id: r.transaction_id,
           source: 'refund_requests' as const
         })) || []),
@@ -147,63 +164,210 @@ const RefundsTab = () => {
     }
   };
 
-  const handleRefundAction = async (refundId: string, action: 'approve' | 'reject') => {
-    if (!user) return;
+  const handleApproveClick = (refund: Refund) => {
+    setSelectedRefund(refund);
+    setProofFile(null);
+    setShowApproveModal(true);
+  };
+
+  const handleRejectClick = (refund: Refund) => {
+    setSelectedRefund(refund);
+    setRejectionReason('');
+    setShowRejectModal(true);
+  };
+
+  const uploadProofFile = async (file: File, refundId: string): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${refundId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('refund-proofs')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      return fileName;
+    } catch (error) {
+      console.error('Error uploading proof:', error);
+      return null;
+    }
+  };
+
+  const handleApproveRefund = async () => {
+    if (!user || !selectedRefund) return;
+
+    if (!proofFile) {
+      toast({
+        title: "Comprovante obrigatório",
+        description: "É necessário anexar um comprovante de depósito para aprovar o estorno.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
-      setProcessingAction(true);
-      const refund = refunds.find(r => r.id === refundId);
-      if (!refund) return;
+      setUploadingProof(true);
+      
+      // Upload do comprovante
+      const proofPath = await uploadProofFile(proofFile, selectedRefund.id);
+      if (!proofPath) {
+        toast({
+          title: "Erro",
+          description: "Erro ao enviar comprovante. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      const newStatus = action === 'approve' ? 'completed' : 'rejected';
+      // Atualizar status na tabela correta
+      if (selectedRefund.source === 'refund_requests') {
+        const { error } = await supabase
+          .from('refund_requests')
+          .update({
+            status: 'realizado',
+            completed_at: new Date().toISOString(),
+            completed_by: user.id,
+            proof_of_payment_url: proofPath
+          })
+          .eq('id', selectedRefund.id);
 
-      const { error } = await supabase
-        .from('refunds')
-        .update({
-          status: newStatus,
-          processed_at: new Date().toISOString(),
-          processed_by: user.id
-        })
-        .eq('id', refundId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('refunds')
+          .update({
+            status: 'completed',
+            processed_at: new Date().toISOString(),
+            processed_by: user.id
+          })
+          .eq('id', selectedRefund.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
-      // NÃO devolver tokens - é estorno em dinheiro na origem do pagamento
-      // Os tokens já foram utilizados ou deduzidos, o reembolso é financeiro
-
-      // Notificar usuário sobre aprovação/rejeição
+      // Notificar usuário
       await supabase.from('notifications').insert({
-        user_id: refund.user_id,
-        title: action === 'approve' ? 'Reembolso Aprovado' : 'Reembolso Rejeitado',
-        message: action === 'approve' 
-          ? `Seu reembolso de ${refund.amount} tokens (${formatCurrency(refund.amount)}) foi aprovado. Você receberá um e-mail com os próximos passos para devolução do valor.`
-          : `Seu reembolso de ${refund.amount} tokens foi rejeitado. Entre em contato com o suporte para mais informações.`,
+        user_id: selectedRefund.user_id,
+        title: 'Reembolso Aprovado',
+        message: `Seu reembolso de ${selectedRefund.amount} tokens (${formatCurrency(selectedRefund.amount)}) foi aprovado e processado. O comprovante está disponível no seu histórico.`,
         type: 'refund',
-        related_id: refundId
+        related_id: selectedRefund.id
       });
+
+      // Enviar email de confirmação
+      try {
+        await supabase.functions.invoke('send-boleto-refund-email', {
+          body: {
+            type: 'payment_confirmation',
+            refundId: selectedRefund.id
+          }
+        });
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+      }
 
       // Log admin action
       await logAdminAction(
-        action === 'approve' ? 'approve_refund' : 'reject_refund',
+        'approve_refund',
         'refund',
-        refundId,
-        { amount: refund.amount, user_id: refund.user_id }
+        selectedRefund.id,
+        { amount: selectedRefund.amount, user_id: selectedRefund.user_id, proof_uploaded: true }
       );
 
       toast({
         title: "Sucesso",
-        description: action === 'approve' 
-          ? "Reembolso aprovado! O usuário será notificado sobre os próximos passos via e-mail."
-          : "Reembolso rejeitado com sucesso!",
+        description: "Reembolso aprovado! O usuário foi notificado por e-mail.",
       });
 
+      setShowApproveModal(false);
       setSelectedRefund(null);
+      setProofFile(null);
       fetchRefunds();
     } catch (error) {
-      console.error('Error processing refund:', error);
+      console.error('Error approving refund:', error);
       toast({
         title: "Erro",
-        description: "Erro ao processar reembolso.",
+        description: "Erro ao aprovar reembolso.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingProof(false);
+    }
+  };
+
+  const handleRejectRefund = async () => {
+    if (!user || !selectedRefund) return;
+
+    if (!rejectionReason.trim()) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "É necessário informar o motivo da rejeição.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setProcessingAction(true);
+
+      // Atualizar status na tabela correta
+      if (selectedRefund.source === 'refund_requests') {
+        const { error } = await supabase
+          .from('refund_requests')
+          .update({
+            status: 'rejeitado',
+            rejection_reason: rejectionReason,
+            analyzed_at: new Date().toISOString(),
+            analyzed_by: user.id
+          })
+          .eq('id', selectedRefund.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('refunds')
+          .update({
+            status: 'rejected',
+            processed_at: new Date().toISOString(),
+            processed_by: user.id
+          })
+          .eq('id', selectedRefund.id);
+
+        if (error) throw error;
+      }
+
+      // Notificar usuário com o motivo
+      await supabase.from('notifications').insert({
+        user_id: selectedRefund.user_id,
+        title: 'Solicitação de Reembolso Rejeitada',
+        message: `Sua solicitação de reembolso de ${selectedRefund.amount} tokens foi rejeitada. Motivo: ${rejectionReason}`,
+        type: 'refund',
+        related_id: selectedRefund.id
+      });
+
+      // Log admin action
+      await logAdminAction(
+        'reject_refund',
+        'refund',
+        selectedRefund.id,
+        { amount: selectedRefund.amount, user_id: selectedRefund.user_id, rejection_reason: rejectionReason }
+      );
+
+      toast({
+        title: "Reembolso Rejeitado",
+        description: "O usuário foi notificado sobre a rejeição.",
+      });
+
+      setShowRejectModal(false);
+      setSelectedRefund(null);
+      setRejectionReason('');
+      fetchRefunds();
+    } catch (error) {
+      console.error('Error rejecting refund:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao rejeitar reembolso.",
         variant: "destructive"
       });
     } finally {
@@ -211,11 +375,39 @@ const RefundsTab = () => {
     }
   };
 
+  const getProofUrl = async (path: string): Promise<string | null> => {
+    try {
+      const { data } = await supabase.storage
+        .from('refund-proofs')
+        .createSignedUrl(path, 3600); // 1 hour
+      return data?.signedUrl || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleViewProof = async (refund: Refund) => {
+    if (!refund.proof_of_payment_url) return;
+    
+    const url = await getProofUrl(refund.proof_of_payment_url);
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar o comprovante.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
+      case 'realizado':
         return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
       case 'rejected':
+      case 'rejeitado':
         return <Badge variant="destructive">Rejeitado</Badge>;
       default:
         return <Badge variant="secondary">Pendente</Badge>;
@@ -240,6 +432,10 @@ const RefundsTab = () => {
     }
   };
 
+  // Filtrar apenas pendentes para exibição principal (rejeitados não aparecem)
+  const pendingRefunds = refunds.filter(r => r.status === 'pending' || r.status === 'solicitado');
+  const completedRefunds = refunds.filter(r => r.status === 'completed' || r.status === 'realizado');
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -262,97 +458,161 @@ const RefundsTab = () => {
                 Aprovar ou rejeitar solicitações de reembolso (estorno em dinheiro)
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={fetchRefunds}>
-              <RefreshCw className="w-4 h-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={fetchRefunds} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          {refunds.length === 0 ? (
-            <div className="text-center py-8 text-raiz-secondary">
-              <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Nenhuma solicitação de reembolso encontrada</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Tokens</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {refunds.map((refund) => (
-                  <TableRow key={refund.id}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {refund.user_profile?.nome} {refund.user_profile?.sobrenome}
-                        </span>
-                        <span className="text-xs text-raiz-secondary">
-                          {refund.user_profile?.email}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{refund.amount} tokens</TableCell>
-                    <TableCell className="font-medium text-green-600">
-                      {formatCurrency(refund.amount)}
-                    </TableCell>
-                    <TableCell>
-                      {formatToBrasilia(refund.created_at)}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(refund.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedRefund(refund)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {refund.status === 'pending' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-green-600 border-green-600 hover:bg-green-50"
-                              onClick={() => handleRefundAction(refund.id, 'approve')}
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 border-red-600 hover:bg-red-50"
-                              onClick={() => handleRefundAction(refund.id, 'reject')}
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+        <CardContent className="space-y-6">
+          {/* Pendentes */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500" />
+              Solicitações Pendentes ({pendingRefunds.length})
+            </h3>
+            {pendingRefunds.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg">
+                <Clock className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>Nenhuma solicitação pendente</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Tokens</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableHeader>
+                <TableBody>
+                  {pendingRefunds.map((refund) => (
+                    <TableRow key={refund.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {refund.user_profile?.nome} {refund.user_profile?.sobrenome}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {refund.user_profile?.email}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{refund.amount} tokens</TableCell>
+                      <TableCell className="font-medium text-green-600">
+                        {formatCurrency(refund.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {formatToBrasilia(refund.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedRefund(refund)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                            onClick={() => handleApproveClick(refund)}
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                            onClick={() => handleRejectClick(refund)}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          {/* Aprovados */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              Reembolsos Aprovados ({completedRefunds.length})
+            </h3>
+            {completedRefunds.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg">
+                <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>Nenhum reembolso aprovado</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Tokens</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Data Aprovação</TableHead>
+                    <TableHead>Comprovante</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {completedRefunds.map((refund) => (
+                    <TableRow key={refund.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {refund.user_profile?.nome} {refund.user_profile?.sobrenome}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {refund.user_profile?.email}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{refund.amount} tokens</TableCell>
+                      <TableCell className="font-medium text-green-600">
+                        {formatCurrency(refund.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {refund.processed_at ? formatToBrasilia(refund.processed_at) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {refund.proof_of_payment_url ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewProof(refund)}
+                          >
+                            <ExternalLink className="w-4 h-4 mr-1" />
+                            Ver
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Modal de Detalhes Completo */}
-      <Dialog open={!!selectedRefund} onOpenChange={() => setSelectedRefund(null)}>
+      {/* Modal de Detalhes */}
+      <Dialog open={!!selectedRefund && !showApproveModal && !showRejectModal} onOpenChange={() => setSelectedRefund(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              Detalhes Completos do Reembolso
+              Detalhes do Reembolso
             </DialogTitle>
           </DialogHeader>
           {selectedRefund && (
@@ -364,14 +624,6 @@ const RefundsTab = () => {
                   ID: {selectedRefund.id.slice(0, 8)}...
                 </span>
               </div>
-
-              {/* Aviso sobre estorno */}
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Este é um estorno em dinheiro. O valor será devolvido na origem do pagamento, sem devolução de tokens.
-                </AlertDescription>
-              </Alert>
 
               {/* Informações do Usuário */}
               <div className="bg-muted/50 p-4 rounded-lg">
@@ -432,70 +684,6 @@ const RefundsTab = () => {
                 </Card>
               </div>
 
-              {/* Detalhes da Compra Original */}
-              {selectedRefund.purchase_details && (
-                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-900">
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Detalhes da Compra Original
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <label className="text-muted-foreground">Forma de Pagamento</label>
-                      <p className="font-medium">
-                        {getPaymentTypeLabel(selectedRefund.purchase_details.payment_type)}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-muted-foreground">Valor Pago</label>
-                      <p className="font-medium">{formatCurrency(selectedRefund.purchase_details.price)}</p>
-                    </div>
-                    <div>
-                      <label className="text-muted-foreground">Data da Compra</label>
-                      <p className="font-medium">
-                        {format(new Date(selectedRefund.purchase_details.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-muted-foreground">Hora da Compra</label>
-                      <p className="font-medium">
-                        {format(new Date(selectedRefund.purchase_details.created_at), "HH:mm:ss", { locale: ptBR })}
-                      </p>
-                    </div>
-                    {selectedRefund.purchase_details.updated_at && (
-                      <>
-                        <div>
-                          <label className="text-muted-foreground">Pagamento Confirmado</label>
-                          <p className="font-medium">
-                            {format(new Date(selectedRefund.purchase_details.updated_at), "dd/MM/yyyy", { locale: ptBR })}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-muted-foreground">Hora da Confirmação</label>
-                          <p className="font-medium">
-                            {format(new Date(selectedRefund.purchase_details.updated_at), "HH:mm:ss", { locale: ptBR })}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                    {selectedRefund.purchase_details.pagarme_transaction_id && (
-                      <div className="col-span-2">
-                        <label className="text-muted-foreground">ID da Transação (Stripe)</label>
-                        <p className="font-mono text-xs break-all bg-white dark:bg-gray-900 p-2 rounded mt-1">
-                          {selectedRefund.purchase_details.pagarme_transaction_id}
-                        </p>
-                      </div>
-                    )}
-                    <div className="col-span-2">
-                      <label className="text-muted-foreground">ID da Compra</label>
-                      <p className="font-mono text-xs break-all bg-white dark:bg-gray-900 p-2 rounded mt-1">
-                        {selectedRefund.purchase_details.id}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Motivo e Datas */}
               <div className="space-y-3">
                 <div className="bg-muted/50 p-4 rounded-lg">
@@ -507,6 +695,15 @@ const RefundsTab = () => {
                     </p>
                   )}
                 </div>
+
+                {selectedRefund.rejection_reason && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Motivo da Rejeição:</strong> {selectedRefund.rejection_reason}
+                    </AlertDescription>
+                  </Alert>
+                )}
                 
                 <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -517,50 +714,170 @@ const RefundsTab = () => {
                     </p>
                   </div>
                 </div>
-                
-                {selectedRefund.processed_at && (
-                  <div className="p-3 bg-muted/30 rounded-lg">
-                    <label className="text-sm text-muted-foreground">Processado em</label>
-                    <p className="text-sm font-medium">
-                      {format(new Date(selectedRefund.processed_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: ptBR })}
-                    </p>
-                  </div>
-                )}
               </div>
 
               {/* Ações para pendentes */}
-              {selectedRefund.status === 'pending' && (
-                <div className="border-t pt-4 space-y-3">
-                  <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200">
-                    <Mail className="h-4 w-4" />
-                    <AlertDescription>
-                      Ao aprovar, o usuário será notificado automaticamente sobre os próximos passos via e-mail.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      className="text-red-600 border-red-600 hover:bg-red-50"
-                      onClick={() => handleRefundAction(selectedRefund.id, 'reject')}
-                      disabled={processingAction}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Rejeitar
-                    </Button>
-                    <Button
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleRefundAction(selectedRefund.id, 'approve')}
-                      disabled={processingAction}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Aprovar Estorno
-                    </Button>
-                  </div>
+              {(selectedRefund.status === 'pending' || selectedRefund.status === 'solicitado') && (
+                <div className="border-t pt-4 flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    className="text-red-600 border-red-600 hover:bg-red-50"
+                    onClick={() => {
+                      setShowRejectModal(true);
+                      setRejectionReason('');
+                    }}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Rejeitar
+                  </Button>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      setProofFile(null);
+                      setShowApproveModal(true);
+                    }}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Aprovar Estorno
+                  </Button>
                 </div>
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Aprovação com Upload */}
+      <Dialog open={showApproveModal} onOpenChange={setShowApproveModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Aprovar Reembolso
+            </DialogTitle>
+          </DialogHeader>
+          {selectedRefund && (
+            <div className="space-y-4">
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Valor a ser estornado: <strong>{formatCurrency(selectedRefund.amount)}</strong>
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Label htmlFor="proof" className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Comprovante de Depósito *
+                </Label>
+                <Input
+                  ref={fileInputRef}
+                  id="proof"
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                  className="cursor-pointer"
+                />
+                {proofFile && (
+                  <p className="text-sm text-green-600">
+                    ✓ Arquivo selecionado: {proofFile.name}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Anexe o comprovante de transferência/depósito (imagem ou PDF)
+                </p>
+              </div>
+
+              <Alert className="bg-amber-50 border-amber-200">
+                <Mail className="h-4 w-4" />
+                <AlertDescription>
+                  O usuário receberá um e-mail com o comprovante anexado.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApproveModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleApproveRefund}
+              disabled={uploadingProof || !proofFile}
+            >
+              {uploadingProof ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Confirmar Aprovação
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Rejeição */}
+      <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              Rejeitar Reembolso
+            </DialogTitle>
+          </DialogHeader>
+          {selectedRefund && (
+            <div className="space-y-4">
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Você está rejeitando o reembolso de <strong>{formatCurrency(selectedRefund.amount)}</strong>
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Label htmlFor="rejection-reason">
+                  Motivo da Rejeição *
+                </Label>
+                <Textarea
+                  id="rejection-reason"
+                  placeholder="Informe o motivo da rejeição. Este texto será visível para o usuário."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  O usuário será notificado com este motivo.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectRefund}
+              disabled={processingAction || !rejectionReason.trim()}
+            >
+              {processingAction ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Confirmar Rejeição
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
