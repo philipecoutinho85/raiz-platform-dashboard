@@ -58,14 +58,34 @@ async function processTokenPurchase(supabase: any, session: Stripe.Checkout.Sess
   const currentBalance = userTokens?.balance || 0;
   const newBalance = currentBalance + tokensAmount;
 
-  // Update user balance
-  await supabase
-    .from('user_tokens')
-    .upsert({
-      user_id: userId,
-      balance: newBalance,
-      updated_at: new Date().toISOString()
-    });
+  // Update or insert user balance - using explicit update/insert for proper realtime events
+  if (userTokens) {
+    // Record exists, use UPDATE for proper realtime trigger
+    const { error: updateError } = await supabase
+      .from('user_tokens')
+      .update({
+        balance: newBalance,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId);
+    
+    if (updateError) {
+      logStep("Error updating user balance", { error: updateError.message });
+    }
+  } else {
+    // Record doesn't exist, INSERT
+    const { error: insertError } = await supabase
+      .from('user_tokens')
+      .insert({
+        user_id: userId,
+        balance: newBalance,
+        updated_at: new Date().toISOString()
+      });
+    
+    if (insertError) {
+      logStep("Error inserting user balance", { error: insertError.message });
+    }
+  }
 
   logStep("User balance updated", { oldBalance: currentBalance, newBalance });
 
