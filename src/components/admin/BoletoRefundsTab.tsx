@@ -18,6 +18,7 @@ import {
   Building2, CreditCard, Loader2, Download, Send, Filter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import AdminRefundHistory from './AdminRefundHistory';
 
 interface RefundRequest {
   id: string;
@@ -246,6 +247,20 @@ const BoletoRefundsTab = () => {
 
       if (error) throw error;
 
+      // Save status history
+      await supabase.from('refund_status_history').insert({
+        refund_request_id: refundId,
+        previous_status: selectedRefund?.status || null,
+        new_status: newStatus,
+        changed_by: user.id,
+        notes: newStatus === 'rejeitado' ? rejectionReason : adminNotes || null
+      });
+
+      // If status is 'aprovado', debit tokens from user
+      if (newStatus === 'aprovado' && selectedRefund) {
+        await debitTokensForRefund(selectedRefund);
+      }
+
       // Log admin action
       await supabase.from('admin_logs').insert({
         admin_id: user.id,
@@ -257,12 +272,17 @@ const BoletoRefundsTab = () => {
 
       // Notify user
       if (selectedRefund) {
+        const statusMessages: Record<string, string> = {
+          'em_analise': 'Sua solicitação de reembolso está em análise.',
+          'aprovado': `Seu reembolso de ${formatCurrency(selectedRefund.amount)} foi aprovado. Os tokens foram removidos da sua carteira e o pagamento será processado em breve.`,
+          'rejeitado': `Sua solicitação de reembolso de ${formatCurrency(selectedRefund.amount)} foi rejeitada. Motivo: ${rejectionReason}`
+        };
+
         await supabase.from('notifications').insert({
           user_id: selectedRefund.user_id,
-          title: newStatus === 'rejeitado' ? 'Reembolso Rejeitado' : 'Atualização de Reembolso',
-          message: newStatus === 'rejeitado' 
-            ? `Sua solicitação de reembolso de ${formatCurrency(selectedRefund.amount)} foi rejeitada. Motivo: ${rejectionReason}`
-            : `Sua solicitação de reembolso está ${newStatus === 'em_analise' ? 'em análise' : newStatus === 'aprovado' ? 'aprovada e aguardando pagamento' : 'atualizada'}.`,
+          title: newStatus === 'rejeitado' ? 'Reembolso Rejeitado' : 
+                 newStatus === 'aprovado' ? 'Reembolso Aprovado' : 'Atualização de Reembolso',
+          message: statusMessages[newStatus] || 'Sua solicitação de reembolso foi atualizada.',
           type: 'refund_update',
           related_id: refundId
         });
@@ -286,6 +306,72 @@ const BoletoRefundsTab = () => {
       });
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // Function to debit tokens when refund is approved
+  const debitTokensForRefund = async (refund: RefundRequest) => {
+    try {
+      // Get purchase details to know how many tokens to debit
+      const { data: purchase } = await supabase
+        .from('token_purchases')
+        .select('amount')
+        .eq('id', refund.transaction_id)
+        .single();
+
+      if (!purchase) {
+        console.error('Purchase not found for refund');
+        return;
+      }
+
+      const tokensToDebit = purchase.amount;
+
+      // Get current user balance
+      const { data: userTokens } = await supabase
+        .from('user_tokens')
+        .select('balance')
+        .eq('user_id', refund.user_id)
+        .single();
+
+      const currentBalance = userTokens?.balance || 0;
+      const newBalance = Math.max(0, currentBalance - tokensToDebit);
+
+      // Update user token balance
+      const { error: updateError } = await supabase
+        .from('user_tokens')
+        .upsert({
+          user_id: refund.user_id,
+          balance: newBalance,
+          updated_at: new Date().toISOString()
+        });
+
+      if (updateError) throw updateError;
+
+      // Create token transaction record
+      await supabase.from('token_transactions').insert({
+        user_id: refund.user_id,
+        amount: -tokensToDebit,
+        transaction_type: 'refund',
+        reference_id: refund.id,
+        description: `Reembolso aprovado - ${tokensToDebit} tokens devolvidos`,
+        balance_after: newBalance
+      });
+
+      // Create ledger movement for financial tracking
+      await supabase.from('ledger_movements').insert({
+        movement_type: 'refund_debit',
+        amount: Number(refund.amount),
+        description: `Reembolso aprovado - ${tokensToDebit} tokens`,
+        reference_type: 'refund_request',
+        reference_id: refund.id,
+        from_entity: refund.user_id,
+        to_entity: 'platform'
+      });
+
+      console.log(`Debited ${tokensToDebit} tokens from user ${refund.user_id} for refund ${refund.id}`);
+    } catch (error) {
+      console.error('Error debiting tokens for refund:', error);
+      throw error;
     }
   };
 
@@ -374,6 +460,8 @@ const BoletoRefundsTab = () => {
     setActionLoading(true);
 
     try {
+      const previousStatus = selectedRefund.status;
+
       const { error } = await supabase
         .from('refund_requests')
         .update({
@@ -386,6 +474,32 @@ const BoletoRefundsTab = () => {
         .eq('id', selectedRefund.id);
 
       if (error) throw error;
+
+      // Save status history with proof
+      await supabase.from('refund_status_history').insert({
+        refund_request_id: selectedRefund.id,
+        previous_status: previousStatus,
+        new_status: 'realizado',
+        changed_by: user.id,
+        notes: adminNotes || 'Reembolso processado e comprovante anexado',
+        proof_url: selectedRefund.proof_of_payment_url
+      });
+
+      // If tokens were not debited yet (status was not 'aprovado'), debit now
+      if (previousStatus !== 'aprovado') {
+        await debitTokensForRefund(selectedRefund);
+      }
+
+      // Create final ledger movement for completed refund
+      await supabase.from('ledger_movements').insert({
+        movement_type: 'refund_completed',
+        amount: Number(selectedRefund.amount),
+        description: `Reembolso realizado - R$ ${Number(selectedRefund.amount).toFixed(2)}`,
+        reference_type: 'refund_request',
+        reference_id: selectedRefund.id,
+        from_entity: 'platform',
+        to_entity: selectedRefund.user_id
+      });
 
       // Send email with attachment
       try {
@@ -410,7 +524,7 @@ const BoletoRefundsTab = () => {
         action: 'refund_payment_confirmed',
         target_type: 'refund_request',
         target_id: selectedRefund.id,
-        details: { amount: selectedRefund.amount }
+        details: { amount: selectedRefund.amount, proof_url: selectedRefund.proof_of_payment_url }
       });
 
       // Notify user
@@ -885,6 +999,9 @@ const BoletoRefundsTab = () => {
                     <p className="text-sm">{selectedRefund.admin_notes}</p>
                   </div>
                 )}
+
+                {/* Status History Section */}
+                <AdminRefundHistory refundId={selectedRefund.id} requestedAt={selectedRefund.requested_at} />
               </div>
 
               <DialogFooter className="flex-col sm:flex-row gap-2">
