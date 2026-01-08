@@ -1897,16 +1897,17 @@ export type Database = {
           amount: number
           analyzed_at: string | null
           analyzed_by: string | null
-          bank_account_agency: string
-          bank_account_holder: string
-          bank_account_number: string
-          bank_account_type: string
-          bank_cpf_cnpj: string
-          bank_name: string
+          bank_account_agency: string | null
+          bank_account_holder: string | null
+          bank_account_number: string | null
+          bank_account_type: string | null
+          bank_cpf_cnpj: string | null
+          bank_name: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string | null
           id: string
+          payment_method: string | null
           proof_of_payment_url: string | null
           reason: string
           rejection_reason: string | null
@@ -1921,16 +1922,17 @@ export type Database = {
           amount: number
           analyzed_at?: string | null
           analyzed_by?: string | null
-          bank_account_agency: string
-          bank_account_holder: string
-          bank_account_number: string
-          bank_account_type: string
-          bank_cpf_cnpj: string
-          bank_name: string
+          bank_account_agency?: string | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_cpf_cnpj?: string | null
+          bank_name?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string | null
           id?: string
+          payment_method?: string | null
           proof_of_payment_url?: string | null
           reason: string
           rejection_reason?: string | null
@@ -1945,16 +1947,17 @@ export type Database = {
           amount?: number
           analyzed_at?: string | null
           analyzed_by?: string | null
-          bank_account_agency?: string
-          bank_account_holder?: string
-          bank_account_number?: string
-          bank_account_type?: string
-          bank_cpf_cnpj?: string
-          bank_name?: string
+          bank_account_agency?: string | null
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_cpf_cnpj?: string | null
+          bank_name?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string | null
           id?: string
+          payment_method?: string | null
           proof_of_payment_url?: string | null
           reason?: string
           rejection_reason?: string | null

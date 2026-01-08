@@ -158,24 +158,30 @@ const BoletoRefundRequest = () => {
       const purchase = purchases.find(p => p.id === selectedPurchase);
       if (!purchase) return;
 
-      // Get bank info
-      const selectedBank = brazilianBanks.find(b => b.code === bankName);
+      // Build refund request data
+      const refundData: Record<string, unknown> = {
+        user_id: user.id,
+        transaction_id: purchase.id,
+        amount: purchase.price,
+        reason: reason,
+        status: 'solicitado',
+        payment_method: purchase.payment_type
+      };
 
-      const { data: refundData, error } = await supabase
+      // Only include bank details for boleto and pix payments
+      if (purchase.payment_type === 'boleto' || purchase.payment_type === 'pix') {
+        const selectedBank = brazilianBanks.find(b => b.code === bankName);
+        refundData.bank_account_holder = accountHolder.trim();
+        refundData.bank_cpf_cnpj = cpfCnpj.replace(/\D/g, '');
+        refundData.bank_name = selectedBank ? `${selectedBank.code} - ${selectedBank.name}` : bankName;
+        refundData.bank_account_agency = agency.trim();
+        refundData.bank_account_number = accountNumber.trim();
+        refundData.bank_account_type = accountType;
+      }
+
+      const { data: insertedRefund, error } = await supabase
         .from('refund_requests')
-        .insert({
-          user_id: user.id,
-          transaction_id: purchase.id,
-          amount: purchase.price,
-          reason: reason,
-          status: 'solicitado',
-          bank_account_holder: accountHolder.trim(),
-          bank_cpf_cnpj: cpfCnpj.replace(/\D/g, ''),
-          bank_name: selectedBank ? `${selectedBank.code} - ${selectedBank.name}` : bankName,
-          bank_account_agency: agency.trim(),
-          bank_account_number: accountNumber.trim(),
-          bank_account_type: accountType
-        })
+        .insert(refundData as any)
         .select()
         .single();
 
@@ -186,7 +192,7 @@ const BoletoRefundRequest = () => {
         await supabase.functions.invoke('send-boleto-refund-email', {
           body: {
             type: 'request_confirmation',
-            refundId: refundData.id
+            refundId: insertedRefund.id
           }
         });
       } catch (emailError) {
@@ -214,7 +220,7 @@ const BoletoRefundRequest = () => {
           title: 'Nova solicitação de reembolso',
           message: `${userName} solicitou reembolso de R$ ${purchase.price.toFixed(2)}`,
           type: 'refund_request',
-          related_id: refundData.id
+          related_id: insertedRefund.id
         }));
 
         await supabase.from('notifications').insert(notifications);
