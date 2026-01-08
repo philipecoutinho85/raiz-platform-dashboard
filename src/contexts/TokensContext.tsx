@@ -34,8 +34,8 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
   const [tokens, setTokens] = useState(0);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const syncedSessionRef = useRef<string | null>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUserIdRef = useRef<string | null>(null);
 
   const fetchTokens = useCallback(async () => {
     if (!user?.id) {
@@ -65,16 +65,9 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
     }
   }, [user?.id]);
 
-  // Sync wallet on login - runs once per session with feedback
+  // Sync wallet on login - força atualização do saldo
   const syncWalletOnLogin = useCallback(async (): Promise<boolean> => {
     if (!user?.id) return false;
-
-    // Debounce: só executa uma vez por sessão (user.id + timestamp de login)
-    const sessionKey = `${user.id}-${user.last_sign_in_at || 'initial'}`;
-    if (syncedSessionRef.current === sessionKey) {
-      console.log('[TokensContext] Wallet already synced for this session');
-      return true;
-    }
 
     console.log('[TokensContext] Starting wallet sync on login...');
     setSyncing(true);
@@ -102,7 +95,6 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
 
         const newBalance = data?.balance || 0;
         setTokens(newBalance);
-        syncedSessionRef.current = sessionKey;
         console.log('[TokensContext] Wallet synced successfully:', newBalance);
         return true;
       } catch (error) {
@@ -137,7 +129,7 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
     }
 
     return success;
-  }, [user?.id, user?.last_sign_in_at, toast]);
+  }, [user?.id, toast]);
 
   const updateTokens = async (amount: number, type: 'add' | 'subtract') => {
     if (!user) return false;
@@ -267,10 +259,24 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
     }
   };
 
-  // Fetch inicial
+  // Fetch inicial e sync automático ao detectar mudança de usuário (login)
   useEffect(() => {
-    fetchTokens();
-  }, [fetchTokens]);
+    if (!user?.id) {
+      setTokens(0);
+      setLoading(false);
+      lastUserIdRef.current = null;
+      return;
+    }
+
+    // Se o user.id mudou (novo login), força sync
+    if (lastUserIdRef.current !== user.id) {
+      console.log('[TokensContext] User changed, syncing wallet automatically');
+      lastUserIdRef.current = user.id;
+      syncWalletOnLogin();
+    } else {
+      fetchTokens();
+    }
+  }, [user?.id, fetchTokens, syncWalletOnLogin]);
 
   // Realtime subscription - único para toda a aplicação
   useEffect(() => {
