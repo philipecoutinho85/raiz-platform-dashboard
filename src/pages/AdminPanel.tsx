@@ -13,6 +13,7 @@ import SettingsTab from '@/components/admin/SettingsTab';
 import { FinancialDashboard } from '@/components/admin/financial/FinancialDashboard';
 import BadgesTab from '@/components/admin/BadgesTab';
 import RefundsTab from '@/components/admin/RefundsTab';
+import BoletoRefundsTab from '@/components/admin/BoletoRefundsTab';
 import ExpiredProjectsTab from '@/components/admin/ExpiredProjectsTab';
 import AdminTestPanel from '@/components/admin/AdminTestPanel';
 import { WithdrawalsTab } from '@/components/admin/WithdrawalsTab';
@@ -143,6 +144,7 @@ const AdminPanel = () => {
                   <SelectItem value="tokens">🪙 Tokens</SelectItem>
                   <SelectItem value="transactions">💸 Transações</SelectItem>
                   <SelectItem value="refunds">🔄 Reembolsos</SelectItem>
+                  <SelectItem value="boleto-refunds">🧾 Reemb. Boleto</SelectItem>
                   <SelectItem value="withdrawals">💵 Resgates</SelectItem>
                   <SelectItem value="expired">⏱️ Proj. Expirados</SelectItem>
                   <SelectItem value="support">💬 Suporte</SelectItem>
@@ -203,6 +205,10 @@ const AdminPanel = () => {
 
           <TabsContent value="refunds">
             <RefundsTab />
+          </TabsContent>
+
+          <TabsContent value="boleto-refunds">
+            <BoletoRefundsTab />
           </TabsContent>
 
           <TabsContent value="withdrawals">
