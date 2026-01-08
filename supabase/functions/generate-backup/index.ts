@@ -339,22 +339,20 @@ serve(async (req) => {
     if (saveForLater) {
       console.log('Salvando backup no storage...');
       
-      // Upload para o bucket de backups
+      // Upload para o bucket de backups usando octet-stream (mais compatível)
       const { data: uploadData, error: uploadError } = await supabaseAdmin
         .storage
         .from('backups')
         .upload(filename, zipContent, {
-          contentType: 'application/zip',
-          upsert: false
+          contentType: 'application/octet-stream',
+          upsert: true
         });
 
       if (uploadError) {
         console.error('Erro ao salvar backup:', uploadError);
-        // Se o bucket não existir, tentar criar
-        if (uploadError.message.includes('not found')) {
-          console.log('Bucket backups não existe, retornando download direto...');
-        }
       } else {
+        console.log('Backup salvo com sucesso:', uploadData?.path);
+        
         // Registrar backup na tabela
         const { error: insertError } = await supabaseAdmin
           .from('backup_files')
@@ -375,6 +373,8 @@ serve(async (req) => {
 
         if (insertError) {
           console.error('Erro ao registrar backup:', insertError);
+        } else {
+          console.log('Backup registrado na tabela backup_files');
         }
       }
     }
