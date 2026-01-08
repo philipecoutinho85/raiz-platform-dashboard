@@ -126,10 +126,12 @@ const Register = () => {
       return;
     }
 
-    if (formData.senha.length < 6) {
+    // Validação de senha completa
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,64}$/;
+    if (!passwordRegex.test(formData.senha)) {
       toast({
         title: "Erro",
-        description: "A senha deve ter pelo menos 6 caracteres.",
+        description: "A senha deve ter entre 8-64 caracteres, pelo menos 1 letra maiúscula e 1 número.",
         variant: "destructive"
       });
       return;
@@ -224,9 +226,6 @@ const Register = () => {
                   <User className="w-5 h-5" />
                   <span>Dados de Cadastro</span>
                 </CardTitle>
-                <CardDescription>
-                  Complete seu perfil depois com CPF, data de nascimento e endereço
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 
@@ -305,7 +304,8 @@ const Register = () => {
                         onChange={(e) => handleInputChange('senha', e.target.value)}
                         required
                         disabled={loading}
-                        minLength={6}
+                        minLength={8}
+                        maxLength={64}
                       />
                       <button
                         type="button"
@@ -330,7 +330,8 @@ const Register = () => {
                         onChange={(e) => handleInputChange('confirmarSenha', e.target.value)}
                         required
                         disabled={loading}
-                        minLength={6}
+                        minLength={8}
+                        maxLength={64}
                       />
                       <button
                         type="button"
@@ -341,14 +342,12 @@ const Register = () => {
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Mínimo 8 caracteres, máximo 64, pelo menos 1 letra maiúscula (A–Z) e 1 número (0–9)
+                    </p>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800">
-                    <strong>Importante:</strong> Após o cadastro, você precisará completar seu perfil com CPF, data de nascimento e endereço para poder apoiar ou criar projetos.
-                  </p>
-                </div>
 
                 <TermsConsentCheckbox
                   checked={termsAccepted}

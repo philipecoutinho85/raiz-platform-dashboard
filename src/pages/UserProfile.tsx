@@ -417,7 +417,7 @@ const UserProfile = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="cpf">CPF *</Label>
+                      <Label htmlFor="cpf">CPF</Label>
                       {!isCpfLocked && (
                         <Alert className="mb-2">
                           <AlertCircle className="h-4 w-4" />
@@ -429,7 +429,6 @@ const UserProfile = () => {
                       <Input
                         id="cpf"
                         {...register('cpf', { 
-                          required: 'CPF é obrigatório',
                           validate: (value) => {
                             if (!isCpfLocked && value) {
                               return validateCPF(value) || 'CPF inválido';
@@ -450,24 +449,28 @@ const UserProfile = () => {
                       {errors.cpf && (
                         <p className="text-red-500 text-sm">{errors.cpf.message}</p>
                       )}
-                      {isCpfLocked && (
+                      {isCpfLocked ? (
                         <p className="text-sm text-raiz-secondary">
                           O CPF não pode ser alterado após o cadastro
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Opcional. Necessário para solicitar reembolsos e resgates de projetos.
                         </p>
                       )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="data_nascimento">Data de Nascimento *</Label>
+                    <Label htmlFor="data_nascimento">Data de Nascimento</Label>
                     <Input
                       id="data_nascimento"
                       type="date"
-                      {...register('data_nascimento', { required: 'Data de nascimento é obrigatória' })}
+                      {...register('data_nascimento')}
                     />
-                    {errors.data_nascimento && (
-                      <p className="text-red-500 text-sm">{errors.data_nascimento.message}</p>
-                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Opcional.
+                    </p>
                   </div>
 
                   <div className="flex justify-end">
