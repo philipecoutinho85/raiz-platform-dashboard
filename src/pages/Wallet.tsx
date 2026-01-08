@@ -43,6 +43,9 @@ interface Refund {
   reason: string;
   status: string;
   created_at: string;
+  completed_at: string | null;
+  rejection_reason: string | null;
+  proof_of_payment_url: string | null;
 }
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { format, isPast } from 'date-fns';
@@ -241,10 +244,10 @@ const Wallet = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      // Buscar reembolsos
+      // Buscar reembolsos da tabela refund_requests
       const { data: refundsData } = await supabase
-        .from('refunds')
-        .select('*')
+        .from('refund_requests')
+        .select('id, amount, reason, status, created_at, completed_at, rejection_reason, proof_of_payment_url')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -305,6 +308,55 @@ const Wallet = () => {
         {labels[status as keyof typeof labels] || status}
       </span>
     );
+  };
+
+  const getRefundStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      solicitado: 'bg-orange-100 text-orange-800',
+      em_analise: 'bg-yellow-100 text-yellow-800',
+      aprovado: 'bg-blue-100 text-blue-800',
+      realizado: 'bg-green-100 text-green-800',
+      rejeitado: 'bg-red-100 text-red-800'
+    };
+
+    const labels: Record<string, string> = {
+      solicitado: 'Solicitado',
+      em_analise: 'Em Análise',
+      aprovado: 'Aprovado',
+      realizado: 'Realizado',
+      rejeitado: 'Rejeitado'
+    };
+
+    const icons: Record<string, React.ReactNode> = {
+      solicitado: <Clock className="w-3 h-3" />,
+      em_analise: <Clock className="w-3 h-3" />,
+      aprovado: <CheckCircle className="w-3 h-3" />,
+      realizado: <CheckCircle className="w-3 h-3" />,
+      rejeitado: <XCircle className="w-3 h-3" />
+    };
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+        {icons[status]}
+        {labels[status] || status}
+      </span>
+    );
+  };
+
+  const handleViewProof = async (proofPath: string) => {
+    try {
+      const { data } = await supabase.storage
+        .from('refund-proofs')
+        .createSignedUrl(proofPath, 3600);
+      
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      } else {
+        toast.error('Não foi possível carregar o comprovante.');
+      }
+    } catch {
+      toast.error('Erro ao carregar o comprovante.');
+    }
   };
 
   const getPaymentMethodLabel = (method: string, type: string | null) => {
@@ -625,9 +677,11 @@ const Wallet = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os status</SelectItem>
-                      <SelectItem value="completed">Completado</SelectItem>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="rejected">Rejeitado</SelectItem>
+                      <SelectItem value="realizado">Realizado</SelectItem>
+                      <SelectItem value="aprovado">Aprovado</SelectItem>
+                      <SelectItem value="em_analise">Em Análise</SelectItem>
+                      <SelectItem value="solicitado">Solicitado</SelectItem>
+                      <SelectItem value="rejeitado">Rejeitado</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -659,16 +713,82 @@ const Wallet = () => {
                     {filteredRefunds.map((refund) => (
                       <div
                         key={refund.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
+                        className="flex flex-col p-4 border rounded-lg gap-3"
                       >
-                        <div>
-                          <p className="font-medium text-raiz-dark">{refund.amount} tokens</p>
-                          <p className="text-sm text-raiz-secondary">{refund.reason}</p>
-                          <p className="text-xs text-raiz-secondary">
-                            {formatToBrasilia(refund.created_at)}
-                          </p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-raiz-dark">{refund.amount} tokens</p>
+                            <p className="text-sm text-raiz-secondary">{refund.reason}</p>
+                            <p className="text-xs text-raiz-secondary">
+                              Solicitado em {formatToBrasilia(refund.created_at)}
+                            </p>
+                          </div>
+                          {getRefundStatusBadge(refund.status)}
                         </div>
-                        {getStatusBadge(refund.status)}
+
+                        {/* Status específicos */}
+                        {refund.status === 'rejeitado' && refund.rejection_reason && (
+                          <div className="flex items-center gap-2 text-red-700 bg-red-50 p-3 rounded-lg border border-red-200">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span className="text-sm">
+                              <strong>Motivo da rejeição:</strong> {refund.rejection_reason}
+                            </span>
+                          </div>
+                        )}
+
+                        {refund.status === 'aprovado' && (
+                          <div className="flex items-center gap-2 text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-sm">
+                              Reembolso aprovado. Aguardando processamento do pagamento.
+                            </span>
+                          </div>
+                        )}
+
+                        {refund.status === 'realizado' && (
+                          <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-200">
+                            <div className="flex items-center gap-2 text-green-700">
+                              <CheckCircle className="h-4 w-4" />
+                              <span className="text-sm font-medium">
+                                Reembolso realizado
+                                {refund.completed_at && (
+                                  <span className="font-normal ml-1">
+                                    em {formatToBrasilia(refund.completed_at)}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            {refund.proof_of_payment_url && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-700 border-green-500 hover:bg-green-100"
+                                onClick={() => handleViewProof(refund.proof_of_payment_url!)}
+                              >
+                                <FileText className="h-4 w-4 mr-1" />
+                                Ver Comprovante
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        {refund.status === 'solicitado' && (
+                          <div className="flex items-center gap-2 text-orange-700 bg-orange-50 p-3 rounded-lg border border-orange-200">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-sm">
+                              Sua solicitação foi recebida e está aguardando análise.
+                            </span>
+                          </div>
+                        )}
+
+                        {refund.status === 'em_analise' && (
+                          <div className="flex items-center gap-2 text-yellow-700 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-sm">
+                              Sua solicitação está sendo analisada pela equipe.
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
