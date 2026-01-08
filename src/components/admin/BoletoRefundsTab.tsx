@@ -248,13 +248,17 @@ const BoletoRefundsTab = () => {
       if (error) throw error;
 
       // Save status history
-      await supabase.from('refund_status_history').insert({
+      const { error: historyError } = await supabase.from('refund_status_history').insert({
         refund_request_id: refundId,
         previous_status: selectedRefund?.status || null,
         new_status: newStatus,
         changed_by: user.id,
         notes: newStatus === 'rejeitado' ? rejectionReason : adminNotes || null
       });
+
+      if (historyError) {
+        console.error('Error saving refund history:', historyError);
+      }
 
       // If status is 'aprovado', debit tokens from user
       if (newStatus === 'aprovado' && selectedRefund) {
@@ -476,7 +480,7 @@ const BoletoRefundsTab = () => {
       if (error) throw error;
 
       // Save status history with proof
-      await supabase.from('refund_status_history').insert({
+      const { error: historyError } = await supabase.from('refund_status_history').insert({
         refund_request_id: selectedRefund.id,
         previous_status: previousStatus,
         new_status: 'realizado',
@@ -484,6 +488,10 @@ const BoletoRefundsTab = () => {
         notes: adminNotes || 'Reembolso processado e comprovante anexado',
         proof_url: selectedRefund.proof_of_payment_url
       });
+
+      if (historyError) {
+        console.error('Error saving refund history:', historyError);
+      }
 
       // If tokens were not debited yet (status was not 'aprovado'), debit now
       if (previousStatus !== 'aprovado') {
