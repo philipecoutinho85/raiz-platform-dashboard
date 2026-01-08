@@ -16,12 +16,13 @@ import { brazilianBanks } from '@/lib/brazilianBanks';
 import { validateCPF, formatCPF } from '@/lib/cpfValidator';
 import { validateCNPJ, formatCNPJ, validateCPForCNPJ, formatCPForCNPJ } from '@/lib/cnpjValidator';
 
-interface BoletoPurchase {
+interface Purchase {
   id: string;
   amount: number;
   price: number;
   created_at: string;
   updated_at: string;
+  payment_type: string | null;
   pagarme_transaction_id: string | null;
 }
 
@@ -34,7 +35,7 @@ interface ExistingRefund {
 const BoletoRefundRequest = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [purchases, setPurchases] = useState<BoletoPurchase[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [existingRefunds, setExistingRefunds] = useState<ExistingRefund[]>([]);
   const [selectedPurchase, setSelectedPurchase] = useState('');
   const [reason, setReason] = useState('');
@@ -60,13 +61,12 @@ const BoletoRefundRequest = () => {
     setLoadingPurchases(true);
 
     try {
-      // Fetch boleto purchases that are paid
+      // Fetch all paid purchases (any payment method)
       const { data: purchasesData } = await supabase
         .from('token_purchases')
-        .select('id, amount, price, created_at, updated_at, pagarme_transaction_id')
+        .select('id, amount, price, created_at, updated_at, payment_type, pagarme_transaction_id')
         .eq('user_id', user.id)
         .eq('status', 'paid')
-        .eq('payment_type', 'boleto')
         .order('created_at', { ascending: false });
 
       // Fetch existing refund requests to exclude already requested
@@ -90,8 +90,18 @@ const BoletoRefundRequest = () => {
   });
 
   const handleCpfCnpjChange = (value: string) => {
-    const formatted = formatCPForCNPJ(value);
-    setCpfCnpj(formatted);
+    // Allow digits and formatting characters during typing
+    const numbers = value.replace(/\D/g, '').slice(0, 14);
+    setCpfCnpj(formatCPForCNPJ(numbers));
+  };
+
+  const getPaymentTypeLabel = (type: string | null) => {
+    const labels: Record<string, string> = {
+      'pix': 'PIX',
+      'credit_card': 'Cartão de Crédito',
+      'boleto': 'Boleto'
+    };
+    return labels[type || ''] || type || 'N/A';
   };
 
   const isFormValid = () => {
@@ -183,8 +193,8 @@ const BoletoRefundRequest = () => {
 
         const notifications = admins.map(admin => ({
           user_id: admin.user_id,
-          title: 'Nova solicitação de reembolso de boleto',
-          message: `${userName} solicitou reembolso de R$ ${purchase.price.toFixed(2)} via boleto`,
+          title: 'Nova solicitação de reembolso',
+          message: `${userName} solicitou reembolso de R$ ${purchase.price.toFixed(2)}`,
           type: 'refund_request',
           related_id: refundData.id
         }));
@@ -226,10 +236,10 @@ const BoletoRefundRequest = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          Reembolso de Boleto
+          Solicitar Reembolso
         </CardTitle>
         <CardDescription>
-          Solicite o reembolso de pagamentos realizados via boleto bancário
+          Solicite o reembolso de pagamentos realizados na plataforma
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -250,14 +260,14 @@ const BoletoRefundRequest = () => {
           <Alert variant="default">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Não há pagamentos de boleto disponíveis para reembolso.
+              Não há pagamentos disponíveis para reembolso.
             </AlertDescription>
           </Alert>
         ) : (
           <div className="space-y-6">
             {/* Transaction Selection */}
             <div className="space-y-2">
-              <Label>Selecione a transação de boleto *</Label>
+              <Label>Selecione a transação *</Label>
               <Select value={selectedPurchase} onValueChange={setSelectedPurchase}>
                 <SelectTrigger>
                   <SelectValue placeholder="Escolha uma transação" />
@@ -265,7 +275,7 @@ const BoletoRefundRequest = () => {
                 <SelectContent>
                   {availablePurchases.map((purchase) => (
                     <SelectItem key={purchase.id} value={purchase.id}>
-                      {purchase.amount} tokens • R$ {purchase.price.toFixed(2)} • {formatToBrasilia(purchase.created_at, "dd/MM/yyyy 'às' HH:mm")}
+                      {purchase.amount} tokens • R$ {purchase.price.toFixed(2)} • {getPaymentTypeLabel(purchase.payment_type)} • {formatToBrasilia(purchase.created_at, "dd/MM/yyyy 'às' HH:mm")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -276,6 +286,7 @@ const BoletoRefundRequest = () => {
               <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
                 <p><strong>Valor:</strong> R$ {selectedPurchaseData.price.toFixed(2)}</p>
                 <p><strong>Tokens:</strong> {selectedPurchaseData.amount}</p>
+                <p><strong>Método de pagamento:</strong> {getPaymentTypeLabel(selectedPurchaseData.payment_type)}</p>
                 <p><strong>Data da compra:</strong> {formatToBrasilia(selectedPurchaseData.created_at, "dd/MM/yyyy 'às' HH:mm")}</p>
                 {selectedPurchaseData.updated_at && (
                   <p><strong>Confirmação:</strong> {formatToBrasilia(selectedPurchaseData.updated_at, "dd/MM/yyyy 'às' HH:mm")}</p>
