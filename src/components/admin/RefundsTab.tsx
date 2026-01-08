@@ -491,6 +491,35 @@ const RefundsTab = () => {
       setProcessingAction(true);
       const previousStatus = refund.status;
 
+      // 1. Subtrair tokens do usuário
+      const { data: currentBalance, error: balanceError } = await supabase
+        .from('user_tokens')
+        .select('balance')
+        .eq('user_id', refund.user_id)
+        .single();
+
+      if (balanceError) throw balanceError;
+
+      const newBalance = Math.max(0, (currentBalance?.balance || 0) - refund.amount);
+
+      const { error: updateBalanceError } = await supabase
+        .from('user_tokens')
+        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('user_id', refund.user_id);
+
+      if (updateBalanceError) throw updateBalanceError;
+
+      // 2. Registrar transação de tokens
+      await supabase.from('token_transactions').insert({
+        user_id: refund.user_id,
+        amount: -refund.amount,
+        transaction_type: 'refund',
+        description: `Reembolso aprovado - ${refund.amount} tokens`,
+        balance_after: newBalance,
+        reference_id: refund.id
+      });
+
+      // 3. Atualizar status do reembolso
       if (refund.source === 'refund_requests') {
         const { error } = await supabase
           .from('refund_requests')
@@ -503,19 +532,24 @@ const RefundsTab = () => {
         if (error) throw error;
       }
 
-      await addStatusHistory(refund.id, previousStatus, 'aprovado', 'Reembolso aprovado. Aguardando processamento do pagamento.');
+      await addStatusHistory(refund.id, previousStatus, 'aprovado', `Reembolso aprovado. ${refund.amount} tokens subtraídos. Aguardando processamento do pagamento.`);
 
       await supabase.from('notifications').insert({
         user_id: refund.user_id,
         title: 'Reembolso Aprovado',
-        message: `Seu reembolso de ${formatCurrency(refund.amount)} foi aprovado. Em breve será processado.`,
+        message: `Seu reembolso de ${formatCurrency(refund.amount)} foi aprovado. ${refund.amount} tokens foram subtraídos da sua carteira. Em breve o valor será depositado.`,
         type: 'refund',
         related_id: refund.id
       });
 
-      await logAdminAction('approve_refund_analysis', 'refund', refund.id, { amount: refund.amount });
+      await logAdminAction('approve_refund_analysis', 'refund', refund.id, { 
+        amount: refund.amount,
+        tokens_subtracted: refund.amount,
+        previous_balance: currentBalance?.balance || 0,
+        new_balance: newBalance
+      });
 
-      toast({ title: "Sucesso", description: "Reembolso aprovado. Aguardando processamento." });
+      toast({ title: "Sucesso", description: `Reembolso aprovado. ${refund.amount} tokens subtraídos do usuário.` });
       fetchRefunds();
     } catch (error) {
       console.error('Error:', error);
