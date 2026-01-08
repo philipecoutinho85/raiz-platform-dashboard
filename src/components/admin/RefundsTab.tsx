@@ -661,16 +661,16 @@ const RefundsTab = () => {
             )}
           </div>
 
-          {/* Aprovados */}
+          {/* Aguardando Pagamento */}
           <div>
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              Reembolsos Aprovados ({completedRefunds.length})
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Aguardando Pagamento ({approvedRefunds.length})
             </h3>
-            {completedRefunds.length === 0 ? (
+            {approvedRefunds.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg">
                 <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                <p>Nenhum reembolso aprovado</p>
+                <p>Nenhum reembolso aguardando pagamento</p>
               </div>
             ) : (
               <Table>
@@ -680,7 +680,83 @@ const RefundsTab = () => {
                     <TableHead>Tokens</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Data Aprovação</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {approvedRefunds.map((refund) => (
+                    <TableRow key={refund.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {refund.user_profile?.nome} {refund.user_profile?.sobrenome}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {refund.user_profile?.email}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{refund.amount} tokens</TableCell>
+                      <TableCell className="font-medium text-green-600">
+                        {formatCurrency(refund.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {refund.processed_at ? formatToBrasilia(refund.processed_at) : formatToBrasilia(refund.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedRefund(refund)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => handleCompleteClick(refund)}
+                          >
+                            <Upload className="w-4 h-4 mr-1" />
+                            Finalizar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewHistory(refund)}
+                          >
+                            <Clock className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          {/* Concluídos */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              Reembolsos Concluídos ({completedRefunds.length})
+            </h3>
+            {completedRefunds.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg">
+                <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>Nenhum reembolso concluído</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Tokens</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Data Conclusão</TableHead>
                     <TableHead>Comprovante</TableHead>
+                    <TableHead>Histórico</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -716,6 +792,73 @@ const RefundsTab = () => {
                         ) : (
                           <span className="text-muted-foreground text-sm">-</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewHistory(refund)}
+                        >
+                          <Clock className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          {/* Rejeitados */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-500" />
+              Rejeitados ({rejectedRefunds.length})
+            </h3>
+            {rejectedRefunds.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg">
+                <XCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>Nenhum reembolso rejeitado</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Tokens</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Motivo</TableHead>
+                    <TableHead>Histórico</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rejectedRefunds.map((refund) => (
+                    <TableRow key={refund.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {refund.user_profile?.nome} {refund.user_profile?.sobrenome}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {refund.user_profile?.email}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{refund.amount} tokens</TableCell>
+                      <TableCell>
+                        {formatToBrasilia(refund.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-red-600">{refund.rejection_reason || '-'}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewHistory(refund)}
+                        >
+                          <Clock className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
