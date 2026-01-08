@@ -228,7 +228,7 @@ const BoletoRefundRequest = () => {
 
       toast({
         title: "Solicitação enviada!",
-        description: "Você receberá um e-mail de confirmação. Prazo de análise: 5 dias úteis.",
+        description: "Prazo de análise: 5 dias úteis.",
       });
 
       // Reset form
