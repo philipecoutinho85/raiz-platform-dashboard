@@ -6,25 +6,47 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Download, Upload, AlertTriangle, Shield, Database, HardDrive, FileText, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Download, Upload, AlertTriangle, Shield, Database, HardDrive, FileText, Clock, CheckCircle2, XCircle, Loader2, RefreshCw, Trash2, Archive } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface BackupLog {
   id: string;
   created_at: string;
   action: string;
   details: {
+    filename?: string;
     tables_count?: number;
     records_count?: number;
     storage_files?: number;
     storage_size_bytes?: number;
     errors?: Array<{ table: string; error: string }>;
+    tables_empty?: string[];
     include_storage?: boolean;
+    save_for_later?: boolean;
   };
+}
+
+interface BackupFile {
+  id: string;
+  filename: string;
+  file_path: string;
+  file_size: number;
+  tables_count: number;
+  records_count: number;
+  storage_files_count: number | null;
+  storage_size_bytes: number | null;
+  include_storage: boolean | null;
+  status: string;
+  created_at: string;
+  expires_at: string | null;
+  downloaded_at: string | null;
+  downloaded_count: number | null;
+  errors: unknown;
 }
 
 const BackupSettings = () => {
@@ -33,9 +55,12 @@ const BackupSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [includeStorage, setIncludeStorage] = useState(true);
+  const [saveForLater, setSaveForLater] = useState(true);
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState('');
   const [backupLogs, setBackupLogs] = useState<BackupLog[]>([]);
+  const [savedBackups, setSavedBackups] = useState<BackupFile[]>([]);
+  const [isLoadingBackups, setIsLoadingBackups] = useState(false);
   
   // Restore state
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
@@ -43,10 +68,21 @@ const BackupSettings = () => {
   const [restorePassword, setRestorePassword] = useState('');
   const [isRestoring, setIsRestoring] = useState(false);
 
+  // Delete state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [backupToDelete, setBackupToDelete] = useState<BackupFile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     checkMasterAdmin();
-    fetchBackupLogs();
   }, [user]);
+
+  useEffect(() => {
+    if (isMasterAdmin) {
+      fetchBackupLogs();
+      fetchSavedBackups();
+    }
+  }, [isMasterAdmin]);
 
   const checkMasterAdmin = async () => {
     if (!user) return;
@@ -86,6 +122,25 @@ const BackupSettings = () => {
     }
   };
 
+  const fetchSavedBackups = async () => {
+    setIsLoadingBackups(true);
+    try {
+      const { data, error } = await supabase
+        .from('backup_files')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!error && data) {
+        setSavedBackups(data as BackupFile[]);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar backups salvos:', err);
+    } finally {
+      setIsLoadingBackups(false);
+    }
+  };
+
   const handleGenerateBackup = async () => {
     setIsGenerating(true);
     setProgress(0);
@@ -107,18 +162,18 @@ const BackupSettings = () => {
         throw new Error('Sessão não encontrada');
       }
 
-      setProgressMessage('Exportando dados do banco...');
+      setProgressMessage('Exportando dados do banco (70+ tabelas)...');
       setProgress(20);
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL || 'https://oefkzjyqjjfzfrmovfdt.supabase.co'}/functions/v1/generate-backup`,
+        `https://oefkzjyqjjfzfrmovfdt.supabase.co/functions/v1/generate-backup`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${sessionData.session.access_token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ includeStorage })
+          body: JSON.stringify({ includeStorage, saveForLater })
         }
       );
 
@@ -137,7 +192,16 @@ const BackupSettings = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `raiztoken-backup-${new Date().toISOString().split('T')[0]}.zip`;
+      
+      // Extrair nome do arquivo do header ou gerar
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `raiztoken-backup-${new Date().toISOString().split('T')[0]}.zip`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match) filename = match[1];
+      }
+      
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -148,8 +212,9 @@ const BackupSettings = () => {
       
       toast.success('Backup gerado e baixado com sucesso!');
       
-      // Atualizar logs
+      // Atualizar listas
       await fetchBackupLogs();
+      await fetchSavedBackups();
       
     } catch (error: any) {
       console.error('Erro ao gerar backup:', error);
@@ -161,6 +226,83 @@ const BackupSettings = () => {
         setProgress(0);
         setProgressMessage('');
       }, 3000);
+    }
+  };
+
+  const handleDownloadSavedBackup = async (backup: BackupFile) => {
+    try {
+      toast.info('Preparando download...');
+      
+      const { data, error } = await supabase
+        .storage
+        .from('backups')
+        .download(backup.file_path);
+
+      if (error) {
+        throw new Error('Erro ao baixar backup: ' + error.message);
+      }
+
+      // Atualizar contador de downloads
+      await supabase
+        .from('backup_files')
+        .update({ 
+          downloaded_at: new Date().toISOString(),
+          downloaded_count: (backup.downloaded_count || 0) + 1
+        })
+        .eq('id', backup.id);
+
+      // Baixar arquivo
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = backup.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Backup baixado com sucesso!');
+      await fetchSavedBackups();
+    } catch (error: any) {
+      console.error('Erro ao baixar backup:', error);
+      toast.error(error.message || 'Erro ao baixar backup');
+    }
+  };
+
+  const handleDeleteBackup = async () => {
+    if (!backupToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // Deletar do storage
+      const { error: storageError } = await supabase
+        .storage
+        .from('backups')
+        .remove([backupToDelete.file_path]);
+
+      if (storageError) {
+        console.error('Erro ao deletar do storage:', storageError);
+      }
+
+      // Deletar do banco
+      const { error: dbError } = await supabase
+        .from('backup_files')
+        .delete()
+        .eq('id', backupToDelete.id);
+
+      if (dbError) {
+        throw new Error('Erro ao deletar registro: ' + dbError.message);
+      }
+
+      toast.success('Backup deletado com sucesso!');
+      setShowDeleteDialog(false);
+      setBackupToDelete(null);
+      await fetchSavedBackups();
+    } catch (error: any) {
+      console.error('Erro ao deletar backup:', error);
+      toast.error(error.message || 'Erro ao deletar backup');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -265,7 +407,7 @@ const BackupSettings = () => {
                 <div>
                   <h4 className="font-medium text-sm">Banco de Dados</h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Todas as tabelas críticas: usuários, projetos, transações, ledger financeiro, tokens
+                    70+ tabelas: usuários, projetos, transações, ledger, tokens, saques, reembolsos, logs
                   </p>
                 </div>
               </div>
@@ -274,7 +416,7 @@ const BackupSettings = () => {
                 <div>
                   <h4 className="font-medium text-sm">Storage</h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Comprovantes de reembolso, arquivos de projetos, anexos de suporte
+                    Comprovantes, imagens, anexos de suporte, avatares, blog
                   </p>
                 </div>
               </div>
@@ -294,16 +436,29 @@ const BackupSettings = () => {
             {/* Opções de Backup */}
             <div className="space-y-4">
               <h4 className="font-medium">Opções de Backup</h4>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="include-storage" 
-                  checked={includeStorage}
-                  onCheckedChange={(checked) => setIncludeStorage(checked as boolean)}
-                  disabled={isGenerating}
-                />
-                <Label htmlFor="include-storage" className="text-sm cursor-pointer">
-                  Incluir arquivos do Storage (comprovantes, imagens, anexos)
-                </Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="include-storage" 
+                    checked={includeStorage}
+                    onCheckedChange={(checked) => setIncludeStorage(checked as boolean)}
+                    disabled={isGenerating}
+                  />
+                  <Label htmlFor="include-storage" className="text-sm cursor-pointer">
+                    Incluir arquivos do Storage (comprovantes, imagens, anexos)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="save-for-later" 
+                    checked={saveForLater}
+                    onCheckedChange={(checked) => setSaveForLater(checked as boolean)}
+                    disabled={isGenerating}
+                  />
+                  <Label htmlFor="save-for-later" className="text-sm cursor-pointer">
+                    Salvar backup para download posterior (30 dias)
+                  </Label>
+                </div>
               </div>
             </div>
 
@@ -340,12 +495,103 @@ const BackupSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Backups Salvos */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Archive className="w-5 h-5 text-primary" />
+                <CardTitle className="text-lg">Backups Salvos</CardTitle>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchSavedBackups}
+                disabled={isLoadingBackups}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingBackups ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
+            <CardDescription>
+              Backups disponíveis para download (expiram em 30 dias)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingBackups ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : savedBackups.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhum backup salvo. Gere um backup com a opção "Salvar para download posterior" ativada.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Tabelas</TableHead>
+                      <TableHead>Registros</TableHead>
+                      <TableHead>Arquivos</TableHead>
+                      <TableHead>Tamanho</TableHead>
+                      <TableHead>Downloads</TableHead>
+                      <TableHead>Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {savedBackups.map((backup) => (
+                      <TableRow key={backup.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDate(backup.created_at)}
+                        </TableCell>
+                        <TableCell>{backup.tables_count}</TableCell>
+                        <TableCell>{backup.records_count.toLocaleString()}</TableCell>
+                        <TableCell>{backup.storage_files_count || 0}</TableCell>
+                        <TableCell>{formatBytes(backup.file_size)}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {backup.downloaded_count || 0}x
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadSavedBackup(backup)}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                setBackupToDelete(backup);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Histórico de Backups */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-muted-foreground" />
-              <CardTitle className="text-lg">Histórico de Backups</CardTitle>
+              <CardTitle className="text-lg">Histórico de Geração</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -373,8 +619,13 @@ const BackupSettings = () => {
                           {log.details.errors.length} erros
                         </Badge>
                       )}
-                      {log.details?.storage_size_bytes && (
+                      {log.details?.tables_empty && log.details.tables_empty.length > 0 && (
                         <Badge variant="secondary" className="text-xs">
+                          {log.details.tables_empty.length} vazias
+                        </Badge>
+                      )}
+                      {log.details?.storage_size_bytes && (
+                        <Badge variant="outline" className="text-xs">
                           {formatBytes(log.details.storage_size_bytes)}
                         </Badge>
                       )}
@@ -466,6 +717,43 @@ const BackupSettings = () => {
                 </>
               ) : (
                 'Restaurar Backup'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              Excluir Backup
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o backup <strong>{backupToDelete?.filename}</strong>?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setBackupToDelete(null);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteBackup}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
