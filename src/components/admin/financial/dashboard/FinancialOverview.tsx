@@ -11,9 +11,14 @@ import {
   RefreshCw,
   Wallet,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  FileText,
+  AlertCircle,
+  BadgeCheck,
+  Banknote
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FinancialOverviewProps {
   filters: FinancialFilters;
@@ -61,14 +66,12 @@ export const FinancialOverview = ({ filters }: FinancialOverviewProps) => {
       trendUp: true,
     },
     {
-      title: 'Lucro Líquido',
-      value: formatCurrency(monthlyMetrics.netProfit),
-      subtitle: 'Receita - Custos',
-      icon: DollarSign,
+      title: 'Saldo Disponível',
+      value: formatCurrency(monthlyMetrics.availableBalance),
+      subtitle: 'Recebido - Reembolsos aprovados',
+      icon: Banknote,
       color: 'text-green-600',
       bgColor: 'bg-green-500/10',
-      trend: '+5%',
-      trendUp: true,
     },
     {
       title: 'Projetos Criados',
@@ -95,7 +98,7 @@ export const FinancialOverview = ({ filters }: FinancialOverviewProps) => {
       bgColor: 'bg-amber-500/10',
     },
     {
-      title: 'Extornos',
+      title: 'Extornos Processados',
       value: formatNumber(monthlyMetrics.refundsCount),
       subtitle: formatCurrency(monthlyMetrics.refundsAmount),
       icon: RefreshCw,
@@ -198,6 +201,73 @@ export const FinancialOverview = ({ filters }: FinancialOverviewProps) => {
             </Card>
           );
         })}
+      </div>
+
+      {/* Refunds Impact Alert */}
+      {monthlyMetrics.refundsApproved > 0 && (
+        <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Atenção:</strong> Existem {monthlyMetrics.refundsApproved} reembolso(s) aprovado(s) 
+            totalizando {formatCurrency(monthlyMetrics.refundsApprovedAmount)}. Este valor não estará 
+            disponível na conta.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Boletos and Tokens Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-slate-500/5 to-slate-500/10 border-slate-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <FileText className="h-4 w-4 text-slate-600" />
+              Boletos Gerados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-slate-600">{formatNumber(monthlyMetrics.boletosGenerated)}</p>
+            <p className="text-sm text-muted-foreground mt-1">Total no período</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-500/5 to-red-500/10 border-red-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              Boletos Não Pagos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-red-600">{formatNumber(monthlyMetrics.boletosNotPaid)}</p>
+            <p className="text-sm text-muted-foreground mt-1">{formatCurrency(monthlyMetrics.boletosNotPaidAmount)} em aberto</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Coins className="h-4 w-4 text-primary" />
+              Tokens Gerados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-primary">{formatNumber(monthlyMetrics.tokensGenerated)}</p>
+            <p className="text-sm text-muted-foreground mt-1">Compras confirmadas</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-500/5 to-orange-500/10 border-orange-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <BadgeCheck className="h-4 w-4 text-orange-600" />
+              Reembolsos Aprovados
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-orange-600">{formatNumber(monthlyMetrics.refundsApproved)}</p>
+            <p className="text-sm text-muted-foreground mt-1">{formatCurrency(monthlyMetrics.refundsApprovedAmount)} comprometido</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Secondary Stats Row */}
