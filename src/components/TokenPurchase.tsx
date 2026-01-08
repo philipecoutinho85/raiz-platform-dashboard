@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Coins, CreditCard, Shield, Lock, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Coins, CreditCard, Shield, Lock, CheckCircle2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import EmbeddedCheckoutComponent from './EmbeddedCheckout';
@@ -102,10 +102,19 @@ const TokenPurchase = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Escolha seu método de pagamento: <strong>Cartão de Crédito</strong> ou <strong>Boleto Bancário</strong>
-              </p>
+            <div className="mb-4 space-y-2">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Escolha seu método de pagamento: <strong>Cartão de Crédito</strong> ou <strong>Boleto Bancário</strong>
+                </p>
+              </div>
+              <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800 dark:text-amber-200">
+                  <strong>Pagamento via Boleto:</strong> A compensação bancária pode levar até 3 dias úteis. 
+                  Seus tokens serão creditados automaticamente após a confirmação do pagamento.
+                </AlertDescription>
+              </Alert>
             </div>
             <EmbeddedCheckoutComponent 
               amount={selectedAmount}

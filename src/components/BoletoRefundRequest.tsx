@@ -233,11 +233,12 @@ const BoletoRefundRequest = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Reembolsos de boleto são processados em até 5 dias úteis após aprovação. 
-            O valor será transferido para a conta bancária informada.
+        <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Importante:</strong> Sua solicitação será analisada pela nossa equipe. 
+            O prazo de análise é de até 5 dias úteis. Após aprovação, o valor será 
+            transferido para a conta bancária informada em até 5 dias úteis adicionais.
           </AlertDescription>
         </Alert>
 

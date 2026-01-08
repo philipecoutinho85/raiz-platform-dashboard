@@ -1,3 +1,5 @@
+import { validateCPF, formatCPF } from './cpfValidator';
+
 export const validateCNPJ = (cnpj: string): boolean => {
   // Remove caracteres não numéricos
   const numbers = cnpj.replace(/\D/g, '');
@@ -57,8 +59,6 @@ export const formatCNPJ = (value: string): string => {
 export const validateCPForCNPJ = (value: string): boolean => {
   const numbers = value.replace(/\D/g, '');
   if (numbers.length === 11) {
-    // Import dynamically to avoid circular dependencies
-    const { validateCPF } = require('./cpfValidator');
     return validateCPF(value);
   } else if (numbers.length === 14) {
     return validateCNPJ(value);
@@ -69,7 +69,6 @@ export const validateCPForCNPJ = (value: string): boolean => {
 export const formatCPForCNPJ = (value: string): string => {
   const numbers = value.replace(/\D/g, '');
   if (numbers.length <= 11) {
-    const { formatCPF } = require('./cpfValidator');
     return formatCPF(value);
   }
   return formatCNPJ(value);
