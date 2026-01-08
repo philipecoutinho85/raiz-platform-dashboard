@@ -84,11 +84,14 @@ const BoletoRefundRequest = () => {
     }
   };
 
-  // Filter out purchases that already have refund requests and are within 7 days
+  // Filter out purchases that already have active/pending refund requests and are within 7 days
   const availablePurchases = purchases.filter(purchase => {
-    // Check if already has refund request
-    const hasRefund = existingRefunds.some(refund => refund.transaction_id === purchase.id);
-    if (hasRefund) return false;
+    // Check if already has active refund request (not rejected)
+    const hasActiveRefund = existingRefunds.some(refund => 
+      refund.transaction_id === purchase.id && 
+      !['rejeitado', 'rejected', 'cancelado', 'cancelled'].includes(refund.status.toLowerCase())
+    );
+    if (hasActiveRefund) return false;
     
     // Check if within 7 days from payment confirmation (updated_at)
     const paymentDate = new Date(purchase.updated_at || purchase.created_at);
