@@ -84,10 +84,24 @@ const BoletoRefundRequest = () => {
     }
   };
 
-  // Filter out purchases that already have refund requests
+  // Filter out purchases that already have refund requests and are within 7 days
   const availablePurchases = purchases.filter(purchase => {
-    return !existingRefunds.some(refund => refund.transaction_id === purchase.id);
+    // Check if already has refund request
+    const hasRefund = existingRefunds.some(refund => refund.transaction_id === purchase.id);
+    if (hasRefund) return false;
+    
+    // Check if within 7 days from payment confirmation (updated_at)
+    const paymentDate = new Date(purchase.updated_at || purchase.created_at);
+    const now = new Date();
+    const daysDiff = Math.floor((now.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysDiff <= 7;
   });
+
+  const selectedPurchaseData = purchases.find(p => p.id === selectedPurchase);
+
+  // Check if selected purchase requires bank details (only boleto and pix need it)
+  const requiresBankDetails = selectedPurchaseData && 
+    (selectedPurchaseData.payment_type === 'boleto' || selectedPurchaseData.payment_type === 'pix');
 
   const handleCpfCnpjChange = (value: string) => {
     // Allow digits and formatting characters during typing
@@ -107,11 +121,15 @@ const BoletoRefundRequest = () => {
   const isFormValid = () => {
     if (!selectedPurchase) return false;
     if (reason.length < 20) return false;
-    if (!accountHolder.trim()) return false;
-    if (!validateCPForCNPJ(cpfCnpj)) return false;
-    if (!bankName) return false;
-    if (!agency.trim()) return false;
-    if (!accountNumber.trim()) return false;
+    
+    // Bank details only required for boleto and pix
+    if (requiresBankDetails) {
+      if (!accountHolder.trim()) return false;
+      if (!validateCPForCNPJ(cpfCnpj)) return false;
+      if (!bankName) return false;
+      if (!agency.trim()) return false;
+      if (!accountNumber.trim()) return false;
+    }
     return true;
   };
 
@@ -229,8 +247,6 @@ const BoletoRefundRequest = () => {
     }
   };
 
-  const selectedPurchaseData = purchases.find(p => p.id === selectedPurchase);
-
   return (
     <Card>
       <CardHeader>
@@ -246,9 +262,16 @@ const BoletoRefundRequest = () => {
         <Alert variant="default" className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800 dark:text-amber-200">
-            <strong>Importante:</strong> Sua solicitação será analisada pela nossa equipe. 
-            O prazo de análise é de até 5 dias úteis. Após aprovação, o valor será 
-            transferido para a conta bancária informada em até 5 dias úteis adicionais.
+            <strong>Direito de Arrependimento:</strong> O usuário poderá solicitar o reembolso do valor pago na compra de tokens no prazo de até 7 (sete) dias corridos, contados da confirmação do pagamento, conforme art. 49 do Código de Defesa do Consumidor. Após esse prazo, não será possível solicitar reembolso.
+          </AlertDescription>
+        </Alert>
+
+        <Alert variant="default" className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/20">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800 dark:text-blue-200">
+            <strong>Como funciona:</strong> Pagamentos via <strong>Boleto</strong> ou <strong>PIX</strong> serão reembolsados via depósito em conta bancária. 
+            Pagamentos via <strong>Cartão de Crédito</strong> serão estornados diretamente no cartão utilizado na compra.
+            O prazo de análise é de até 5 dias úteis.
           </AlertDescription>
         </Alert>
 
@@ -309,95 +332,113 @@ const BoletoRefundRequest = () => {
               </p>
             </div>
 
-            {/* Bank Details Section */}
-            <div className="space-y-4 border-t pt-6">
-              <h3 className="font-semibold text-lg">Dados Bancários para Reembolso</h3>
-              
-              {/* Account Holder */}
-              <div className="space-y-2">
-                <Label>Nome do titular da conta *</Label>
-                <Input
-                  value={accountHolder}
-                  onChange={(e) => setAccountHolder(e.target.value)}
-                  placeholder="Nome completo conforme cadastro no banco"
-                />
-              </div>
-
-              {/* CPF/CNPJ */}
-              <div className="space-y-2">
-                <Label>CPF ou CNPJ do titular *</Label>
-                <Input
-                  value={cpfCnpj}
-                  onChange={(e) => handleCpfCnpjChange(e.target.value)}
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  maxLength={18}
-                />
-                {cpfCnpj && !validateCPForCNPJ(cpfCnpj) && (
-                  <p className="text-xs text-destructive">CPF/CNPJ inválido</p>
-                )}
-              </div>
-
-              {/* Bank Selection */}
-              <div className="space-y-2">
-                <Label>Banco *</Label>
-                <Select value={bankName} onValueChange={setBankName}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o banco" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {brazilianBanks.map((bank) => (
-                      <SelectItem key={bank.code} value={bank.code}>
-                        {bank.code} - {bank.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Agency and Account */}
-              <div className="grid grid-cols-2 gap-4">
+            {/* Bank Details Section - Only for boleto and pix */}
+            {requiresBankDetails && (
+              <div className="space-y-4 border-t pt-6">
+                <h3 className="font-semibold text-lg">Dados Bancários para Reembolso</h3>
+                <p className="text-sm text-muted-foreground">
+                  Como seu pagamento foi via {getPaymentTypeLabel(selectedPurchaseData?.payment_type)}, o reembolso será feito por depósito em conta.
+                </p>
+                
+                {/* Account Holder */}
                 <div className="space-y-2">
-                  <Label>Agência *</Label>
+                  <Label>Nome do titular da conta *</Label>
                   <Input
-                    value={agency}
-                    onChange={(e) => setAgency(e.target.value.replace(/\D/g, ''))}
-                    placeholder="0000"
-                    maxLength={6}
+                    value={accountHolder}
+                    onChange={(e) => setAccountHolder(e.target.value)}
+                    placeholder="Nome completo conforme cadastro no banco"
                   />
                 </div>
+
+                {/* CPF/CNPJ */}
                 <div className="space-y-2">
-                  <Label>Número da conta *</Label>
+                  <Label>CPF ou CNPJ do titular *</Label>
                   <Input
-                    value={accountNumber}
-                    onChange={(e) => setAccountNumber(e.target.value)}
-                    placeholder="00000-0"
+                    value={cpfCnpj}
+                    onChange={(e) => handleCpfCnpjChange(e.target.value)}
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                    maxLength={18}
                   />
+                  {cpfCnpj && !validateCPForCNPJ(cpfCnpj) && (
+                    <p className="text-xs text-destructive">CPF/CNPJ inválido</p>
+                  )}
+                </div>
+
+                {/* Bank Selection */}
+                <div className="space-y-2">
+                  <Label>Banco *</Label>
+                  <Select value={bankName} onValueChange={setBankName}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o banco" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {brazilianBanks.map((bank) => (
+                        <SelectItem key={bank.code} value={bank.code}>
+                          {bank.code} - {bank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Agency and Account */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Agência *</Label>
+                    <Input
+                      value={agency}
+                      onChange={(e) => setAgency(e.target.value.replace(/\D/g, ''))}
+                      placeholder="0000"
+                      maxLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Número da conta *</Label>
+                    <Input
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder="00000-0"
+                    />
+                  </div>
+                </div>
+
+                {/* Account Type */}
+                <div className="space-y-2">
+                  <Label>Tipo de conta *</Label>
+                  <RadioGroup
+                    value={accountType}
+                    onValueChange={(value) => setAccountType(value as 'checking' | 'savings')}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="checking" id="checking" />
+                      <Label htmlFor="checking" className="font-normal cursor-pointer">
+                        Conta Corrente
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="savings" id="savings" />
+                      <Label htmlFor="savings" className="font-normal cursor-pointer">
+                        Conta Poupança
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
               </div>
+            )}
 
-              {/* Account Type */}
-              <div className="space-y-2">
-                <Label>Tipo de conta *</Label>
-                <RadioGroup
-                  value={accountType}
-                  onValueChange={(value) => setAccountType(value as 'checking' | 'savings')}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="checking" id="checking" />
-                    <Label htmlFor="checking" className="font-normal cursor-pointer">
-                      Conta Corrente
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="savings" id="savings" />
-                    <Label htmlFor="savings" className="font-normal cursor-pointer">
-                      Conta Poupança
-                    </Label>
-                  </div>
-                </RadioGroup>
+            {/* Credit Card Refund Info */}
+            {selectedPurchaseData && selectedPurchaseData.payment_type === 'credit_card' && (
+              <div className="border-t pt-6">
+                <Alert variant="default" className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+                  <AlertCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800 dark:text-green-200">
+                    <strong>Estorno no Cartão:</strong> O reembolso será processado diretamente no cartão de crédito utilizado na compra. 
+                    O prazo de estorno depende da operadora do cartão e pode levar de 1 a 2 faturas para ser creditado.
+                  </AlertDescription>
+                </Alert>
               </div>
-            </div>
+            )}
 
             <Button 
               onClick={handleSubmit}
