@@ -63,12 +63,41 @@ const RefundsTab = () => {
 
   const fetchRefunds = async () => {
     try {
-      const { data: refundsData, error } = await supabase
+      // Buscar de refund_requests (nova tabela) e refunds (antiga) para compatibilidade
+      const { data: refundRequestsData, error: rrError } = await supabase
+        .from('refund_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const { data: oldRefundsData, error: orError } = await supabase
         .from('refunds')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (rrError) console.error('Error fetching refund_requests:', rrError);
+      if (orError) console.error('Error fetching refunds:', orError);
+
+      // Combinar dados de ambas as tabelas
+      const combinedRefunds = [
+        ...(refundRequestsData?.map(r => ({
+          id: r.id,
+          user_id: r.user_id,
+          amount: r.amount,
+          reason: r.reason,
+          status: r.status === 'solicitado' ? 'pending' : r.status === 'realizado' ? 'completed' : r.status,
+          created_at: r.created_at,
+          processed_at: r.completed_at,
+          processed_by: r.completed_by,
+          transaction_id: r.transaction_id,
+          source: 'refund_requests' as const
+        })) || []),
+        ...(oldRefundsData?.map(r => ({
+          ...r,
+          source: 'refunds' as const
+        })) || [])
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      const refundsData = combinedRefunds;
 
       // Buscar profiles e detalhes de compra
       if (refundsData && refundsData.length > 0) {
