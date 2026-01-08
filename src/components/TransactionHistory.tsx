@@ -208,14 +208,14 @@ const TransactionHistory = () => {
   const getRefundStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
       solicitado: { 
-        label: 'Em Análise', 
+        label: 'Solicitado', 
         icon: <Clock className="h-3 w-3" />, 
-        className: 'border-yellow-500 text-yellow-600' 
+        className: 'border-orange-500 text-orange-600' 
       },
       pending: { 
-        label: 'Em Análise', 
+        label: 'Solicitado', 
         icon: <Clock className="h-3 w-3" />, 
-        className: 'border-yellow-500 text-yellow-600' 
+        className: 'border-orange-500 text-orange-600' 
       },
       em_analise: { 
         label: 'Em Análise', 
@@ -228,12 +228,12 @@ const TransactionHistory = () => {
         className: 'border-blue-500 text-blue-600' 
       },
       realizado: { 
-        label: 'Reembolso Realizado', 
+        label: 'Realizado', 
         icon: <CheckCircle className="h-3 w-3" />, 
         className: 'border-green-500 text-green-600' 
       },
       completed: { 
-        label: 'Reembolso Realizado', 
+        label: 'Realizado', 
         icon: <CheckCircle className="h-3 w-3" />, 
         className: 'border-green-500 text-green-600' 
       },
@@ -261,14 +261,14 @@ const TransactionHistory = () => {
 
   const getHistoryStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      solicitado: 'Solicitado',
-      pending: 'Solicitado',
+      solicitado: 'Solicitação Enviada',
+      pending: 'Solicitação Enviada',
       em_analise: 'Em Análise',
-      aprovado: 'Aprovado',
-      realizado: 'Reembolso Realizado',
-      completed: 'Reembolso Realizado',
-      rejeitado: 'Rejeitado',
-      rejected: 'Rejeitado',
+      aprovado: 'Reembolso Aprovado',
+      realizado: 'Pagamento Realizado',
+      completed: 'Pagamento Realizado',
+      rejeitado: 'Solicitação Rejeitada',
+      rejected: 'Solicitação Rejeitada',
     };
     return labels[status] || status;
   };
@@ -529,12 +529,22 @@ const TransactionHistory = () => {
                     </div>
                   )}
 
-                  {/* Pendente */}
-                  {(refund.status === 'solicitado' || refund.status === 'pending' || refund.status === 'em_analise') && (
+                  {/* Solicitado */}
+                  {refund.status === 'solicitado' && (
+                    <div className="flex items-center gap-2 text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg border border-orange-200 dark:border-orange-900">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm">
+                        Sua solicitação foi recebida e está aguardando análise.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Em Análise */}
+                  {refund.status === 'em_analise' && (
                     <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-900">
                       <Clock className="h-4 w-4" />
                       <span className="text-sm">
-                        Sua solicitação está em análise. Prazo: até 5 dias úteis.
+                        Sua solicitação está sendo analisada pela equipe. Prazo: até 5 dias úteis.
                       </span>
                     </div>
                   )}
