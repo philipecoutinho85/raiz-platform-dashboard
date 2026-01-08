@@ -34,7 +34,6 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
   const [tokens, setTokens] = useState(0);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastUserIdRef = useRef<string | null>(null);
 
   const fetchTokens = useCallback(async () => {
@@ -65,71 +64,94 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
     }
   }, [user?.id]);
 
-  // Sync wallet on login - força atualização do saldo
+  // Verifica pagamentos pendentes e credita tokens se confirmados
+  const verifyPendingPayments = useCallback(async (): Promise<boolean> => {
+    if (!user?.id) return false;
+
+    try {
+      // Buscar compras pendentes com ID de transação Stripe
+      const { data: pendingPurchases } = await supabase
+        .from('token_purchases')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .not('pagarme_transaction_id', 'is', null);
+
+      if (!pendingPurchases || pendingPurchases.length === 0) {
+        return false;
+      }
+
+      console.log(`[TokensContext] Verifying ${pendingPurchases.length} pending payments...`);
+
+      let anyUpdated = false;
+
+      for (const purchase of pendingPurchases) {
+        try {
+          const { data, error } = await supabase.functions.invoke('verify-token-payment', {
+            body: { purchaseId: purchase.id }
+          });
+
+          if (error) {
+            console.warn('[TokensContext] Error verifying payment:', error);
+            continue;
+          }
+
+          if (data?.status === 'paid' && !data?.alreadyProcessed) {
+            anyUpdated = true;
+            console.log(`[TokensContext] Payment confirmed! ${purchase.amount} tokens credited.`);
+            toast({
+              title: "Pagamento confirmado! 🎉",
+              description: `${purchase.amount} tokens foram creditados na sua carteira.`,
+            });
+          }
+        } catch (err) {
+          console.warn('[TokensContext] Error verifying purchase:', purchase.id, err);
+        }
+      }
+
+      return anyUpdated;
+    } catch (error) {
+      console.error('[TokensContext] Error verifying pending payments:', error);
+      return false;
+    }
+  }, [user?.id, toast]);
+
+  // Sync wallet on login - verifica pagamentos pendentes e atualiza saldo
   const syncWalletOnLogin = useCallback(async (): Promise<boolean> => {
     if (!user?.id) return false;
 
     console.log('[TokensContext] Starting wallet sync on login...');
     setSyncing(true);
 
-    // Timeout máximo de 5 segundos
-    const timeoutPromise = new Promise<boolean>((resolve) => {
-      syncTimeoutRef.current = setTimeout(() => {
-        console.log('[TokensContext] Sync timeout reached');
-        resolve(false);
-      }, 5000);
-    });
+    try {
+      // 1. Primeiro verifica pagamentos pendentes
+      const hadPendingPayments = await verifyPendingPayments();
+      
+      // 2. Depois busca o saldo atualizado
+      const { data, error } = await supabase
+        .from('user_tokens')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
 
-    const fetchPromise = (async (): Promise<boolean> => {
-      try {
-        const { data, error } = await supabase
-          .from('user_tokens')
-          .select('balance')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('[TokensContext] Error syncing wallet:', error);
-          return false;
-        }
-
-        const newBalance = data?.balance || 0;
-        setTokens(newBalance);
-        console.log('[TokensContext] Wallet synced successfully:', newBalance);
-        return true;
-      } catch (error) {
-        console.error('[TokensContext] Unexpected error syncing wallet:', error);
+      if (error && error.code !== 'PGRST116') {
+        console.error('[TokensContext] Error syncing wallet:', error);
+        setSyncing(false);
         return false;
       }
-    })();
 
-    const success = await Promise.race([fetchPromise, timeoutPromise]);
-
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-      syncTimeoutRef.current = null;
+      const newBalance = data?.balance || 0;
+      setTokens(newBalance);
+      console.log('[TokensContext] Wallet synced successfully:', newBalance);
+      
+      setSyncing(false);
+      return true;
+    } catch (error) {
+      console.error('[TokensContext] Unexpected error syncing wallet:', error);
+      setSyncing(false);
+      return false;
     }
-
-    setSyncing(false);
-
-    if (!success) {
-      toast({
-        title: "Aviso",
-        description: "Não foi possível sincronizar sua carteira. Os valores podem estar desatualizados.",
-        variant: "destructive",
-        action: (
-          <button
-            onClick={() => syncWalletOnLogin()}
-            className="text-xs underline hover:no-underline"
-          >
-            Tentar novamente
-          </button>
-        ),
-      });
-    }
-
-    return success;
-  }, [user?.id, toast]);
+  }, [user?.id, verifyPendingPayments]);
 
   const updateTokens = async (amount: number, type: 'add' | 'subtract') => {
     if (!user) return false;
@@ -313,14 +335,8 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
     };
   }, [user?.id]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
-    };
-  }, []);
+
+
 
   return (
     <TokensContext.Provider value={{ tokens, loading, syncing, fetchTokens, syncWalletOnLogin, updateTokens, supportProject }}>
