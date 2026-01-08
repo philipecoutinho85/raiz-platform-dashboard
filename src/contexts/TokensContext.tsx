@@ -1,3 +1,4 @@
+// TokensContext - Gerenciamento global de tokens do usuário
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
