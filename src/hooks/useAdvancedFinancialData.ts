@@ -25,6 +25,14 @@ export interface MonthlyMetrics {
   refundsAmount: number;
   tokensInCirculation: number;
   totalPaidToCreators: number;
+  // New metrics
+  boletosGenerated: number;
+  boletosNotPaid: number;
+  boletosNotPaidAmount: number;
+  tokensGenerated: number;
+  refundsApproved: number;
+  refundsApprovedAmount: number;
+  availableBalance: number;
 }
 
 export interface TokenMetrics {
@@ -114,6 +122,13 @@ export const useAdvancedFinancialData = (filters: FinancialFilters) => {
     refundsAmount: 0,
     tokensInCirculation: 0,
     totalPaidToCreators: 0,
+    boletosGenerated: 0,
+    boletosNotPaid: 0,
+    boletosNotPaidAmount: 0,
+    tokensGenerated: 0,
+    refundsApproved: 0,
+    refundsApprovedAmount: 0,
+    availableBalance: 0,
   });
   const [tokenMetrics, setTokenMetrics] = useState<TokenMetrics>({
     purchased: 0,
@@ -168,16 +183,27 @@ export const useAdvancedFinancialData = (filters: FinancialFilters) => {
     const { start, end } = buildDateFilter();
     
     try {
-      // Token purchases
+      // Token purchases (all)
       const { data: purchases } = await supabase
         .from('token_purchases')
-        .select('amount, price, status, created_at')
+        .select('amount, price, status, payment_type, created_at')
         .gte('created_at', start)
         .lte('created_at', end);
 
       const paidPurchases = purchases?.filter(p => p.status === 'paid') || [];
       const totalMovement = paidPurchases.reduce((sum, p) => sum + p.amount, 0);
-      const totalMovementReais = paidPurchases.reduce((sum, p) => sum + p.price, 0);
+      const totalMovementReais = paidPurchases.reduce((sum, p) => sum + Number(p.price), 0);
+
+      // Boletos metrics
+      const boletoPurchases = purchases?.filter(p => p.payment_type === 'boleto') || [];
+      const boletosGenerated = boletoPurchases.length;
+      const boletosNotPaid = boletoPurchases.filter(p => p.status !== 'paid').length;
+      const boletosNotPaidAmount = boletoPurchases
+        .filter(p => p.status !== 'paid')
+        .reduce((sum, p) => sum + Number(p.price), 0);
+
+      // Tokens generated (all paid purchases)
+      const tokensGenerated = paidPurchases.reduce((sum, p) => sum + p.amount, 0);
 
       // Withdrawals
       const { data: withdrawals } = await supabase
@@ -190,7 +216,7 @@ export const useAdvancedFinancialData = (filters: FinancialFilters) => {
       const platformRevenue = approvedWithdrawals.reduce((sum, w) => sum + Number(w.admin_fee), 0);
       const totalPaidToCreators = approvedWithdrawals.reduce((sum, w) => sum + Number(w.net_amount), 0);
 
-      // Refunds
+      // Refunds - both pending/approved and completed
       const { data: refunds } = await supabase
         .from('refunds')
         .select('amount, status, created_at')
@@ -200,6 +226,11 @@ export const useAdvancedFinancialData = (filters: FinancialFilters) => {
       const completedRefunds = refunds?.filter(r => r.status === 'completed') || [];
       const refundsCount = completedRefunds.length;
       const refundsAmount = completedRefunds.reduce((sum, r) => sum + r.amount, 0);
+
+      // Approved refunds (pending payment or being processed)
+      const approvedRefunds = refunds?.filter(r => r.status === 'approved' || r.status === 'completed') || [];
+      const refundsApproved = approvedRefunds.length;
+      const refundsApprovedAmount = approvedRefunds.reduce((sum, r) => sum + r.amount, 0);
 
       // Projects created
       const { data: projectsCreated } = await supabase
@@ -259,6 +290,9 @@ export const useAdvancedFinancialData = (filters: FinancialFilters) => {
         });
       }
 
+      // Available balance = Total received - Refunds approved (money that won't be available)
+      const availableBalance = totalMovementReais - refundsApprovedAmount;
+
       setMonthlyMetrics({
         totalMovement,
         totalMovementReais,
@@ -271,6 +305,13 @@ export const useAdvancedFinancialData = (filters: FinancialFilters) => {
         refundsAmount,
         tokensInCirculation,
         totalPaidToCreators,
+        boletosGenerated,
+        boletosNotPaid,
+        boletosNotPaidAmount,
+        tokensGenerated,
+        refundsApproved,
+        refundsApprovedAmount,
+        availableBalance,
       });
     } catch (error) {
       console.error('Error fetching monthly metrics:', error);
