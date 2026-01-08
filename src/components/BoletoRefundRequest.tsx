@@ -48,7 +48,7 @@ const BoletoRefundRequest = () => {
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [agency, setAgency] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
-  const [accountType, setAccountType] = useState<'checking' | 'savings'>('checking');
+  const [accountType, setAccountType] = useState<'corrente' | 'poupanca'>('corrente');
 
   useEffect(() => {
     if (user) {
@@ -239,7 +239,7 @@ const BoletoRefundRequest = () => {
       setBankName('');
       setAgency('');
       setAccountNumber('');
-      setAccountType('checking');
+      setAccountType('corrente');
       fetchData();
     } catch (error) {
       console.error('Erro ao solicitar reembolso:', error);
@@ -413,18 +413,18 @@ const BoletoRefundRequest = () => {
                   <Label>Tipo de conta *</Label>
                   <RadioGroup
                     value={accountType}
-                    onValueChange={(value) => setAccountType(value as 'checking' | 'savings')}
+                    onValueChange={(value) => setAccountType(value as 'corrente' | 'poupanca')}
                     className="flex gap-6"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="checking" id="checking" />
-                      <Label htmlFor="checking" className="font-normal cursor-pointer">
+                      <RadioGroupItem value="corrente" id="corrente" />
+                      <Label htmlFor="corrente" className="font-normal cursor-pointer">
                         Conta Corrente
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="savings" id="savings" />
-                      <Label htmlFor="savings" className="font-normal cursor-pointer">
+                      <RadioGroupItem value="poupanca" id="poupanca" />
+                      <Label htmlFor="poupanca" className="font-normal cursor-pointer">
                         Conta Poupança
                       </Label>
                     </div>
