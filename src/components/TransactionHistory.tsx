@@ -74,6 +74,37 @@ const TransactionHistory = () => {
   const [expandedRefund, setExpandedRefund] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+
+  const fetchRefundHistory = async (refundId: string) => {
+    setLoadingHistories(prev => ({ ...prev, [refundId]: true }));
+    try {
+      const { data, error } = await supabase
+        .from('refund_status_history')
+        .select('id, new_status, notes, proof_url, created_at')
+        .eq('refund_request_id', refundId)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        setRefundHistories(prev => ({ ...prev, [refundId]: data }));
+      }
+    } catch (error) {
+      console.error('Error fetching refund history:', error);
+    } finally {
+      setLoadingHistories(prev => ({ ...prev, [refundId]: false }));
+    }
+  };
+
+  const toggleRefundHistory = async (refundId: string) => {
+    if (expandedRefund === refundId) {
+      setExpandedRefund(null);
+    } else {
+      setExpandedRefund(refundId);
+      if (!refundHistories[refundId]) {
+        await fetchRefundHistory(refundId);
+      }
+    }
+  };
+
   const fetchData = async () => {
     if (!user?.id) return;
 
