@@ -403,74 +403,16 @@ const UserProfile = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="celular">Celular *</Label>
-                      <Input
-                        id="celular"
-                        {...register('celular', { required: 'Celular é obrigatório' })}
-                        placeholder="(11) 99999-9999"
-                      />
-                      {errors.celular && (
-                        <p className="text-red-500 text-sm">{errors.celular.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cpf">CPF</Label>
-                      {!isCpfLocked && (
-                        <Alert className="mb-2">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            <strong>Atenção:</strong> Após cadastrar seu CPF, não será possível alterar. Preencha com cuidado.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      <Input
-                        id="cpf"
-                        {...register('cpf', { 
-                          validate: (value) => {
-                            if (!isCpfLocked && value) {
-                              return validateCPF(value) || 'CPF inválido';
-                            }
-                            return true;
-                          }
-                        })}
-                        placeholder="000.000.000-00"
-                        disabled={isCpfLocked}
-                        className={isCpfLocked ? 'bg-gray-100' : ''}
-                        onChange={(e) => {
-                          if (!isCpfLocked) {
-                            e.target.value = formatCPF(e.target.value);
-                          }
-                        }}
-                        maxLength={14}
-                      />
-                      {errors.cpf && (
-                        <p className="text-red-500 text-sm">{errors.cpf.message}</p>
-                      )}
-                      {isCpfLocked ? (
-                        <p className="text-sm text-raiz-secondary">
-                          O CPF não pode ser alterado após o cadastro
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Opcional. Necessário para solicitar reembolsos e resgates de projetos.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="data_nascimento">Data de Nascimento</Label>
+                    <Label htmlFor="celular">Celular *</Label>
                     <Input
-                      id="data_nascimento"
-                      type="date"
-                      {...register('data_nascimento')}
+                      id="celular"
+                      {...register('celular', { required: 'Celular é obrigatório' })}
+                      placeholder="(11) 99999-9999"
                     />
-                    <p className="text-sm text-muted-foreground">
-                      Opcional.
-                    </p>
+                    {errors.celular && (
+                      <p className="text-red-500 text-sm">{errors.celular.message}</p>
+                    )}
                   </div>
 
                   <div className="flex justify-end">
