@@ -147,6 +147,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendWelcomeEmail = async (email: string, fullName: string) => {
+    try {
+      console.log('Sending welcome email to:', email);
+      
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email,
+          fullName,
+        },
+      });
+      
+      if (error) {
+        console.warn('Welcome email failed (non-blocking):', error);
+        return { success: false, error };
+      }
+      
+      console.log('Welcome email sent successfully:', data);
+      return { success: true, data };
+    } catch (error) {
+      console.warn('Welcome email error (non-blocking):', error);
+      return { success: false, error };
+    }
+  };
+
   const signUp = async (email: string, password: string, userData: any) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -166,10 +190,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Verifique seu e-mail para confirmar sua conta.",
         });
         
-        // Sync with Mailgun in background (non-blocking)
         const fullName = `${userData.nome || ''} ${userData.sobrenome || ''}`.trim() || 'Usuário Raiz Token';
         
-        // Don't await - let it run in background
+        // Send welcome email in background (non-blocking)
+        sendWelcomeEmail(email, fullName)
+          .then((result) => {
+            if (result.success) {
+              console.log('Welcome email sent successfully');
+            }
+          })
+          .catch((err) => {
+            console.warn('Background welcome email failed:', err);
+          });
+        
+        // Sync with Mailgun newsletter in background (non-blocking)
         syncWithMailgun(data.user.id, email, fullName, 'apoiador')
           .then((result) => {
             if (result.success) {
