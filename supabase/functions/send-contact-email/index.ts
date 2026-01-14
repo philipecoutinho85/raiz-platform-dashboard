@@ -101,11 +101,11 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    console.log("Iniciando envio para contato@raiztoken.com.br...");
+    console.log("Iniciando envio para raiztoken@gmail.com...");
     
     try {
       const emailResponse = await sendMailgunEmail(
-        "contato@raiztoken.com.br",
+        "raiztoken@gmail.com",
         `[${categoryDisplay}] ${title}`,
         supportEmailHtml,
         email
