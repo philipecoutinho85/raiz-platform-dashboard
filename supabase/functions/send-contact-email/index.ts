@@ -101,14 +101,20 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    const emailResponse = await sendMailgunEmail(
-      "contato@raiztoken.com.br",
-      `[${categoryDisplay}] ${title}`,
-      supportEmailHtml,
-      email
-    );
-
-    console.log("Email para suporte enviado com sucesso:", emailResponse);
+    console.log("Iniciando envio para contato@raiztoken.com.br...");
+    
+    try {
+      const emailResponse = await sendMailgunEmail(
+        "contato@raiztoken.com.br",
+        `[${categoryDisplay}] ${title}`,
+        supportEmailHtml,
+        email
+      );
+      console.log("Email para suporte enviado com sucesso:", emailResponse);
+    } catch (supportError: any) {
+      console.error("ERRO ao enviar email para suporte:", supportError.message);
+      // Continua para enviar confirmação mesmo se falhar
+    }
 
     // Enviar email de confirmação para o usuário
     const confirmationEmailHtml = `
