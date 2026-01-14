@@ -31,7 +31,7 @@ const sendMailgunEmail = async (
   replyTo?: string
 ) => {
   const formData = new FormData();
-  formData.append("from", "Raiz Token <contato@raiztoken.com.br>");
+  formData.append("from", "Raiz Token <noreply@raiztoken.com.br>");
   formData.append("to", to);
   formData.append("subject", subject);
   formData.append("html", html);
