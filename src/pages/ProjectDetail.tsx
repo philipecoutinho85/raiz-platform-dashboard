@@ -94,6 +94,28 @@ const ProjectDetail = () => {
   const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isSupporter, setIsSupporter] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+      
+      setIsAdmin(!!data);
+    };
+    
+    checkAdminStatus();
+  }, [user]);
 
   useEffect(() => {
     if (id) {
@@ -521,6 +543,8 @@ const ProjectDetail = () => {
               accountabilityApproved={project.accountability_approved}
               goalReached={project.raised_amount >= getEffectiveGoal()}
               projectStatus={project.status}
+              isSupporter={isSupporter}
+              isAdmin={isAdmin}
             />
 
             {/* Location */}
