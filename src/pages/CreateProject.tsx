@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Upload, X, Plus, Coins, Info, AlertTriangle, ShieldAlert, FileCheck } from 'lucide-react';
+import { Upload, X, Plus, Coins, Info, AlertTriangle, ShieldAlert, FileCheck, Clock } from 'lucide-react';
 import { PlatformRulesModal, CONSENT_VERSION, CONSENT_TEXT } from '@/components/forms/PlatformRulesModal';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -105,6 +105,7 @@ const CreateProject = () => {
   // Validation states
   const [isIdentityVerified, setIsIdentityVerified] = useState<boolean | null>(null);
   const [pendingAccountability, setPendingAccountability] = useState<{ projectId: string; projectTitle: string } | null>(null);
+  const [activeProject, setActiveProject] = useState<{ projectId: string; projectTitle: string; status: string } | null>(null);
   const [checkingEligibility, setCheckingEligibility] = useState(true);
 
   useEffect(() => {
@@ -140,16 +141,54 @@ const CreateProject = () => {
         // For now, we'll consider stripe_onboarding_complete or is_identity_verified as KYC
         setIsIdentityVerified(profile?.stripe_onboarding_complete || profile?.is_identity_verified || false);
 
-        // Check for projects with pending accountability (100% funded but not approved)
-        const { data: pendingProjects } = await supabase
+        // Check for active projects (pending or approved that are still running)
+        const { data: userProjects } = await supabase
           .from('projects')
-          .select('id, title, goal, raised_amount, custom_goal, accountability_approved')
+          .select('id, title, status, goal, raised_amount, custom_goal, deadline, accountability_approved')
           .eq('user_id', user.id)
-          .eq('status', 'approved')
-          .or('accountability_approved.is.null,accountability_approved.eq.false');
+          .in('status', ['pending', 'approved']);
 
-        // Find projects that reached 100% but don't have approved accountability
-        const projectWithPendingAccountability = pendingProjects?.find(p => {
+        const now = new Date();
+
+        // Find any active project that blocks new creation
+        const activeProjectFound = userProjects?.find(p => {
+          // Pending projects always block
+          if (p.status === 'pending') {
+            return true;
+          }
+
+          // For approved projects, check if it's still active
+          if (p.status === 'approved') {
+            const effectiveGoal = p.custom_goal || p.goal;
+            const hasReachedGoal = p.raised_amount >= effectiveGoal;
+            const hasExpired = p.deadline && new Date(p.deadline) < now;
+
+            // Project is still active if:
+            // - Has not reached goal AND has not expired
+            if (!hasReachedGoal && !hasExpired) {
+              return true;
+            }
+
+            // Project reached goal but accountability not approved yet
+            if (hasReachedGoal && !p.accountability_approved) {
+              return false; // This will be handled by pendingAccountability check
+            }
+          }
+
+          return false;
+        });
+
+        if (activeProjectFound) {
+          setActiveProject({
+            projectId: activeProjectFound.id,
+            projectTitle: activeProjectFound.title,
+            status: activeProjectFound.status
+          });
+        }
+
+        // Check for projects with pending accountability (100% funded but not approved)
+        const projectWithPendingAccountability = userProjects?.find(p => {
+          if (p.status !== 'approved') return false;
           const effectiveGoal = p.custom_goal || p.goal;
           return p.raised_amount >= effectiveGoal && !p.accountability_approved;
         });
@@ -457,7 +496,7 @@ const CreateProject = () => {
   };
 
   // Check if user can create projects
-  const canCreateProject = isAdmin || (isIdentityVerified && !pendingAccountability);
+  const canCreateProject = isAdmin || (isIdentityVerified && !pendingAccountability && !activeProject);
 
   if (checkingEligibility) {
     return (
@@ -502,8 +541,36 @@ const CreateProject = () => {
           </Alert>
         )}
 
+        {/* Active Project Blocking */}
+        {!isAdmin && activeProject && (
+          <Alert className="mb-6 border-blue-300 bg-blue-50">
+            <Clock className="h-5 w-5 text-blue-600" />
+            <AlertTitle className="text-blue-800">Você já possui um projeto ativo</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              <p className="mb-3">
+                Você só pode ter um projeto por vez. Para criar um novo projeto, seu projeto atual deve ser:
+              </p>
+              <ul className="list-disc list-inside mb-3 text-sm">
+                <li>Cancelado pela administração</li>
+                <li>Expirado (não atingiu a meta no prazo)</li>
+                <li>Concluído (atingiu 100% da meta com prestação de contas aprovada)</li>
+              </ul>
+              <p className="font-medium mb-3">
+                Projeto ativo: "{activeProject.projectTitle}" ({activeProject.status === 'pending' ? 'Aguardando aprovação' : 'Em andamento'})
+              </p>
+              <Button 
+                onClick={() => navigate(activeProject.status === 'pending' ? '/meus-projetos' : `/projeto/${activeProject.projectId}`)}
+                variant="outline" 
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                {activeProject.status === 'pending' ? 'Ver Meus Projetos' : 'Ver Projeto'}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Pending Accountability Required */}
-        {!isAdmin && pendingAccountability && (
+        {!isAdmin && !activeProject && pendingAccountability && (
           <Alert className="mb-6 border-amber-300 bg-amber-50">
             <FileCheck className="h-5 w-5 text-amber-600" />
             <AlertTitle className="text-amber-800">Prestação de Contas Pendente</AlertTitle>
