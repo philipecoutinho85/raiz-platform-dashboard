@@ -96,7 +96,7 @@ const TokenSimulator = ({ onGoalChange }: TokenSimulatorProps) => {
 
         <div className="mt-4 p-3 bg-raiz-light/50 rounded-lg">
           <p className="text-xs text-raiz-dark/60 text-center">
-            💡 1 Token = R$ 1,00 • Taxa administrativa de 10% aplicada sobre o valor arrecadado
+            💡 1 Token = R$ 1,00 • Taxa administrativa de 10% + taxa do sistema de pagamento aplicadas sobre o valor arrecadado
           </p>
         </div>
       </CardContent>
