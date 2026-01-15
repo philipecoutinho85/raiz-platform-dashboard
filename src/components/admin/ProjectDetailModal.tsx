@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, MapPin, Target, Users, DollarSign, Clock, Edit2, Save, Sprout } from 'lucide-react';
+import { Calendar, MapPin, Target, Users, DollarSign, Clock, Edit2, Save, Sprout, FileText, CheckCircle, ExternalLink } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,10 @@ interface Project {
   pending_requirements?: string;
   project_type?: 'seed' | 'regular';
   platform_fee_percentage?: number;
+  accountability_report?: string;
+  accountability_images?: string[];
+  accountability_submitted_at?: string;
+  accountability_approved?: boolean;
 }
 
 interface ProjectDetailModalProps {
@@ -56,6 +60,7 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
   const [userIsAdmin, setUserIsAdmin] = useState(false);
   const [projectType, setProjectType] = useState<'seed' | 'regular'>('regular');
   const [isSavingType, setIsSavingType] = useState(false);
+  const [isApprovingAccountability, setIsApprovingAccountability] = useState(false);
 
   // Verificar se o usuário é admin
   useEffect(() => {
@@ -445,6 +450,97 @@ const ProjectDetailModal = ({ isOpen, onOpenChange, project, onUpdate }: Project
                   allowFullScreen
                 />
               </div>
+            </div>
+          )}
+
+          {/* Accountability Section for Admin */}
+          {project.accountability_submitted_at && (
+            <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Prestação de Contas
+                  {project.accountability_approved ? (
+                    <Badge className="bg-green-500 text-white">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Aprovada
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Aguardando Aprovação</Badge>
+                  )}
+                </h3>
+                {!project.accountability_approved && (
+                  <Button
+                    onClick={async () => {
+                      setIsApprovingAccountability(true);
+                      try {
+                        const { error } = await supabase
+                          .from('projects')
+                          .update({
+                            accountability_approved: true,
+                            can_create_new_project: true
+                          })
+                          .eq('id', project.id);
+
+                        if (error) throw error;
+
+                        toast.success('Prestação de contas aprovada! O criador pode criar novos projetos.');
+                        if (onUpdate) onUpdate();
+                      } catch (error) {
+                        console.error('Error approving accountability:', error);
+                        toast.error('Erro ao aprovar prestação de contas');
+                      } finally {
+                        setIsApprovingAccountability(false);
+                      }
+                    }}
+                    disabled={isApprovingAccountability}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {isApprovingAccountability ? 'Aprovando...' : 'Aprovar Prestação'}
+                  </Button>
+                )}
+              </div>
+              
+              <div className="text-sm text-muted-foreground">
+                Enviada em: {new Date(project.accountability_submitted_at).toLocaleDateString('pt-BR')}
+              </div>
+              
+              {project.accountability_report && (
+                <div>
+                  <h4 className="font-medium mb-2">Relatório:</h4>
+                  <p className="text-sm whitespace-pre-wrap bg-background p-3 rounded border">{project.accountability_report}</p>
+                </div>
+              )}
+              
+              {project.accountability_images && project.accountability_images.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Comprovantes ({project.accountability_images.length}):</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {project.accountability_images.map((file, idx) => {
+                      const isPdf = file.toLowerCase().endsWith('.pdf');
+                      return isPdf ? (
+                        <a
+                          key={idx}
+                          href={file}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex flex-col items-center justify-center h-24 bg-muted rounded hover:bg-muted/80 transition-colors border"
+                        >
+                          <FileText className="w-8 h-8 text-red-500" />
+                          <span className="text-xs flex items-center gap-1 mt-1">
+                            <ExternalLink className="w-3 h-3" /> PDF
+                          </span>
+                        </a>
+                      ) : (
+                        <a key={idx} href={file} target="_blank" rel="noopener noreferrer">
+                          <img src={file} alt={`Comprovante ${idx + 1}`} className="w-full h-24 object-cover rounded border hover:opacity-90" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
