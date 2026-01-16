@@ -33,17 +33,9 @@ const Footer = () => {
     const Icon = platform === 'linkedin' ? Linkedin : platform === 'instagram' ? Instagram : Twitter;
     const label = platform === 'linkedin' ? 'LinkedIn' : platform === 'instagram' ? 'Instagram' : 'Twitter';
     
-    // Se não houver URL, mostra ícone desabilitado
-    if (!url) {
-      return (
-        <span 
-          className="text-raiz-light/50 p-3 bg-raiz-light/10 rounded-lg flex items-center justify-center cursor-not-allowed"
-          aria-label={label}
-          title="Link indisponível"
-        >
-          <Icon className="w-6 h-6" />
-        </span>
-      );
+    // Se não houver URL, não renderiza o ícone
+    if (!url || url.trim() === '') {
+      return null;
     }
 
     // External links use <a> tag with target="_blank"
