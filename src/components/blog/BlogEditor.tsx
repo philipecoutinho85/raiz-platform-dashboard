@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBlogPost, useCreateBlogPost, useUpdateBlogPost, useSaveVersion } from '@/hooks/useBlogPosts';
 import { analyzeSEO, generateExcerpt, calculateReadingTime, countWordsInContent } from '@/lib/seoAnalyzer';
@@ -175,29 +175,6 @@ export function BlogEditor() {
     } catch (error) {
       console.error('Error saving post:', error);
     }
-  };
-
-  const insertFormatting = (tag: string, wrap = true) => {
-    const textarea = document.getElementById('content-editor') as HTMLTextAreaElement;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = formData.content?.substring(start, end) || '';
-    
-    let newText = '';
-    if (wrap) {
-      newText = `<${tag}>${selectedText}</${tag}>`;
-    } else {
-      newText = `<${tag}>${selectedText}`;
-    }
-
-    const newContent = 
-      (formData.content?.substring(0, start) || '') + 
-      newText + 
-      (formData.content?.substring(end) || '');
-    
-    handleChange('content', newContent);
   };
 
   if (isLoading) {
