@@ -22,6 +22,8 @@ import PublicProfile from "./pages/PublicProfile";
 import AdminPanel from "./pages/AdminPanel";
 import AdminBlog from "./pages/AdminBlog";
 import AdminBlogEditor from "./pages/AdminBlogEditor";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -142,6 +144,9 @@ const App = () => (
                     </ProtectedRoute>
                   } 
                 />
+                {/* Blog public pages */}
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
                 {/* Public informational pages */}
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/como-funciona" element={<HowItWorks />} />
