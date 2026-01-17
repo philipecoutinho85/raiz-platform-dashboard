@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBlogPost, useCreateBlogPost, useUpdateBlogPost, useSaveVersion } from '@/hooks/useBlogPosts';
 import { analyzeSEO, generateExcerpt, calculateReadingTime, countWordsInContent } from '@/lib/seoAnalyzer';
@@ -36,23 +36,14 @@ import {
   Monitor,
   Tablet,
   Smartphone,
-  Bold,
-  Italic,
-  Underline,
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Link as LinkIcon,
-  Image,
-  Code,
-  Quote,
+  Code as CodeIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { BlogSEOChecklist } from './BlogSEOChecklist';
 import { BlogVersionHistory } from './BlogVersionHistory';
 import { BlogSocialPreview } from './BlogSocialPreview';
+import { TipTapEditor } from './TipTapEditor';
+import { BlogImageGallery } from './BlogImageGallery';
 
 const BLOG_CATEGORIES = [
   'Tecnologia',
@@ -310,9 +301,9 @@ export function BlogEditor() {
                   />
                 </div>
 
-                {/* Toolbar */}
-                <div className="flex items-center gap-1 p-2 border rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-1 border-r pr-2 mr-2">
+                {/* Editor Mode Toggle */}
+                <div className="flex items-center gap-2 p-2 border rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-1">
                     <Button
                       variant={editorMode === 'visual' ? 'secondary' : 'ghost'}
                       size="sm"
@@ -325,58 +316,28 @@ export function BlogEditor() {
                       size="sm"
                       onClick={() => setEditorMode('html')}
                     >
+                      <CodeIcon className="h-4 w-4 mr-1" />
                       HTML
                     </Button>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('strong')}>
-                    <Bold className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('em')}>
-                    <Italic className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('u')}>
-                    <Underline className="h-4 w-4" />
-                  </Button>
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('h1')}>
-                    <Heading1 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('h2')}>
-                    <Heading2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('h3')}>
-                    <Heading3 className="h-4 w-4" />
-                  </Button>
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('ul')}>
-                    <List className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('ol')}>
-                    <ListOrdered className="h-4 w-4" />
-                  </Button>
-                  <Separator orientation="vertical" className="h-6 mx-1" />
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('a href=""', false)}>
-                    <LinkIcon className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('img src="" alt=""', false)}>
-                    <Image className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('code')}>
-                    <Code className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => insertFormatting('blockquote')}>
-                    <Quote className="h-4 w-4" />
-                  </Button>
                 </div>
 
                 {/* Content Editor */}
-                <Textarea
-                  id="content-editor"
-                  placeholder="Comece a escrever seu conteúdo..."
-                  value={formData.content || ''}
-                  onChange={(e) => handleChange('content', e.target.value)}
-                  className="min-h-[500px] font-mono text-sm resize-y"
-                />
+                {editorMode === 'visual' ? (
+                  <TipTapEditor
+                    content={formData.content || ''}
+                    onChange={(html) => handleChange('content', html)}
+                    placeholder="Comece a escrever seu conteúdo..."
+                  />
+                ) : (
+                  <Textarea
+                    id="content-editor"
+                    placeholder="Comece a escrever seu conteúdo em HTML..."
+                    value={formData.content || ''}
+                    onChange={(e) => handleChange('content', e.target.value)}
+                    className="min-h-[500px] font-mono text-sm resize-y"
+                  />
+                )}
 
                 {/* Excerpt */}
                 <div className="space-y-2">
@@ -515,40 +476,13 @@ export function BlogEditor() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Imagem Destacada</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>URL da Imagem</Label>
-                      <Input
-                        value={formData.featured_image_url || ''}
-                        onChange={(e) => handleChange('featured_image_url', e.target.value)}
-                        placeholder="https://..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Alt Text</Label>
-                      <Input
-                        value={formData.featured_image_alt || ''}
-                        onChange={(e) => handleChange('featured_image_alt', e.target.value)}
-                        placeholder="Descrição da imagem para SEO"
-                      />
-                    </div>
-
-                    {formData.featured_image_url && (
-                      <div className="border rounded-lg overflow-hidden">
-                        <img
-                          src={formData.featured_image_url}
-                          alt={formData.featured_image_alt || 'Preview'}
-                          className="w-full h-48 object-cover"
-                        />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <BlogImageGallery
+                  postId={isEditing ? id : undefined}
+                  featuredImageUrl={formData.featured_image_url || ''}
+                  featuredImageAlt={formData.featured_image_alt || ''}
+                  onFeaturedImageChange={(url) => handleChange('featured_image_url', url)}
+                  onFeaturedImageAltChange={(alt) => handleChange('featured_image_alt', alt)}
+                />
 
                 <Card>
                   <CardHeader>
