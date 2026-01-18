@@ -142,18 +142,39 @@ export default function BlogPost() {
 
         {/* Featured Image */}
         {post.featured_image_url && (
-          <div className="mb-8 rounded-lg overflow-hidden">
+          <figure className="mb-8 rounded-lg overflow-hidden">
             <img
               src={post.featured_image_url}
               alt={post.featured_image_alt || post.title}
-              className="w-full h-auto"
+              className="w-full h-auto object-cover"
             />
-          </div>
+            {post.featured_image_alt && (
+              <figcaption className="text-sm text-muted-foreground mt-2 text-center">
+                {post.featured_image_alt}
+              </figcaption>
+            )}
+          </figure>
         )}
 
         {/* Content */}
         <div 
-          className="prose prose-lg max-w-none dark:prose-invert mb-8"
+          className="prose prose-lg prose-slate dark:prose-invert max-w-none 
+            prose-headings:font-bold prose-headings:tracking-tight
+            prose-h1:text-3xl prose-h1:md:text-4xl prose-h1:mt-8 prose-h1:mb-4
+            prose-h2:text-2xl prose-h2:md:text-3xl prose-h2:mt-8 prose-h2:mb-4
+            prose-h3:text-xl prose-h3:md:text-2xl prose-h3:mt-6 prose-h3:mb-3
+            prose-p:text-base prose-p:leading-7 prose-p:my-4
+            prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+            prose-strong:font-semibold
+            prose-ul:my-4 prose-ul:list-disc prose-ul:pl-6
+            prose-ol:my-4 prose-ol:list-decimal prose-ol:pl-6
+            prose-li:my-1
+            prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic
+            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+            prose-pre:bg-muted prose-pre:p-4 prose-pre:rounded-lg
+            prose-img:rounded-lg prose-img:my-6
+            prose-hr:my-8 prose-hr:border-border
+            mb-8"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 

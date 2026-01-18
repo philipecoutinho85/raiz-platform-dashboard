@@ -114,15 +114,21 @@ export default function Blog() {
           {filteredPosts.map(post => (
             <Link key={post.id} to={`/blog/${post.slug}`}>
               <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden group">
-                {post.featured_image_url && (
-                  <div className="aspect-video overflow-hidden">
+                <div className="aspect-video overflow-hidden bg-muted">
+                  {post.featured_image_url ? (
                     <img
                       src={post.featured_image_url}
                       alt={post.featured_image_alt || post.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                      <span className="text-4xl font-bold text-primary/20">
+                        {post.title.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <CardHeader>
                   {post.category && (
                     <Badge variant="secondary" className="w-fit mb-2">
