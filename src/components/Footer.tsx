@@ -75,6 +75,7 @@ const Footer = () => {
               <li><Link to="/projetos" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Explorar Projetos</Link></li>
               <li><Link to="/criar-projeto" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Criar Projeto</Link></li>
               <li><Link to="/como-funciona" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Como Funciona</Link></li>
+              <li><Link to="/blog" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">Blog</Link></li>
               <li><Link to="/faq" className="text-raiz-light/80 hover:text-raiz-gold transition-colors text-sm md:text-base block py-1">FAQ</Link></li>
             </ul>
           </div>
