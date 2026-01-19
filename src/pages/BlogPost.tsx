@@ -94,7 +94,7 @@ export default function BlogPost() {
         {/* Open Graph */}
         <meta property="og:title" content={post.og_title || post.title} />
         <meta property="og:description" content={post.og_description || post.meta_description || post.excerpt || ''} />
-        {post.og_image_url && <meta property="og:image" content={post.og_image_url} />}
+        <meta property="og:image" content={post.og_image_url || post.featured_image_url || 'https://raiz-platform-dashboard.lovable.app/og-image.png'} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={shareUrl} />
         
@@ -102,7 +102,7 @@ export default function BlogPost() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.twitter_title || post.title} />
         <meta name="twitter:description" content={post.twitter_description || post.meta_description || post.excerpt || ''} />
-        {post.twitter_image_url && <meta name="twitter:image" content={post.twitter_image_url} />}
+        <meta name="twitter:image" content={post.twitter_image_url || post.featured_image_url || 'https://raiz-platform-dashboard.lovable.app/og-image.png'} />
         
         {/* Article metadata */}
         {post.published_at && <meta property="article:published_time" content={post.published_at} />}
@@ -114,10 +114,10 @@ export default function BlogPost() {
 
       <div className="min-h-screen bg-background pt-16 md:pt-20">
         {/* Hero Header */}
-        <section className="relative bg-gradient-hero overflow-hidden">
+        <section className="relative bg-gradient-hero overflow-hidden min-h-[350px] md:min-h-[400px] flex flex-col justify-center">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23%238FBC8F%22%20fill-opacity%3D%220.1%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
           
-          <div className="container mx-auto px-4 py-10 md:py-12 relative z-10">
+          <div className="container mx-auto px-4 py-14 md:py-16 relative z-10">
             <div className="max-w-4xl mx-auto">
               {/* Back button */}
               <Link 
@@ -164,7 +164,7 @@ export default function BlogPost() {
 
           {/* Wave decoration */}
           <div className="absolute bottom-0 left-0 right-0">
-            <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-12 md:h-16">
               <path d="M0 80L60 70C120 60 240 40 360 30C480 20 600 20 720 25C840 30 960 40 1080 45C1200 50 1320 50 1380 50L1440 50V80H1380C1320 80 1200 80 1080 80C960 80 840 80 720 80C600 80 480 80 360 80C240 80 120 80 60 80H0Z" fill="hsl(var(--background))"/>
             </svg>
           </div>
