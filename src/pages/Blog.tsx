@@ -77,10 +77,10 @@ export default function Blog() {
 
       <div className="min-h-screen bg-background pt-16 md:pt-20">
         {/* Hero Section */}
-        <section className="relative bg-gradient-hero overflow-hidden">
+        <section className="relative bg-gradient-hero overflow-hidden min-h-[400px] md:min-h-[450px] flex flex-col justify-center">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23%238FBC8F%22%20fill-opacity%3D%220.1%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
           
-          <div className="container mx-auto px-4 py-12 md:py-16 relative z-10">
+          <div className="container mx-auto px-4 py-16 md:py-20 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <div className="inline-flex items-center space-x-2 bg-raiz-gold/20 text-raiz-gold px-4 py-2 rounded-full mb-6">
                 <BookOpen className="w-4 h-4" />
@@ -93,18 +93,18 @@ export default function Blog() {
                 em realidade
               </h1>
               
-              <p className="text-lg md:text-xl text-raiz-light/80 mb-8 max-w-2xl mx-auto">
+              <p className="text-lg md:text-xl text-raiz-light/80 mb-10 max-w-2xl mx-auto">
                 Artigos, guias e insights sobre crowdfunding, empreendedorismo e como viabilizar projetos de impacto.
               </p>
 
               {/* Search Bar */}
-              <div className="relative max-w-xl mx-auto">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <div className="relative max-w-xl mx-auto mb-8">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/50" />
                 <Input
                   placeholder="Buscar artigos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-4 py-6 text-lg bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20"
+                  className="pl-12 pr-4 py-6 text-lg bg-white/10 border-white/30 text-white placeholder:text-white/50 focus:bg-white/20 focus:border-raiz-gold rounded-xl"
                 />
               </div>
             </div>
@@ -112,8 +112,8 @@ export default function Blog() {
 
           {/* Wave decoration */}
           <div className="absolute bottom-0 left-0 right-0">
-            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="hsl(var(--background))"/>
+            <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-12 md:h-16">
+              <path d="M0 80L60 70C120 60 240 40 360 30C480 20 600 20 720 25C840 30 960 40 1080 45C1200 50 1320 50 1380 50L1440 50V80H1380C1320 80 1200 80 1080 80C960 80 840 80 720 80C600 80 480 80 360 80C240 80 120 80 60 80H0Z" fill="hsl(var(--background))"/>
             </svg>
           </div>
         </section>
