@@ -75,12 +75,12 @@ export default function Blog() {
         <link rel="canonical" href="https://raiztoken.com.br/blog" />
       </Helmet>
 
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pt-16 md:pt-20">
         {/* Hero Section */}
         <section className="relative bg-gradient-hero overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23%238FBC8F%22%20fill-opacity%3D%220.1%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
           
-          <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
+          <div className="container mx-auto px-4 py-12 md:py-16 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <div className="inline-flex items-center space-x-2 bg-raiz-gold/20 text-raiz-gold px-4 py-2 rounded-full mb-6">
                 <BookOpen className="w-4 h-4" />
@@ -236,7 +236,7 @@ export default function Blog() {
               {remainingPosts.length > 0 && (
                 <div>
                   <h3 className="text-2xl font-bold mb-6">Mais artigos</h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {remainingPosts.map(post => (
                       <Link key={post.id} to={`/blog/${post.slug}`}>
                         <Card className="h-full hover:shadow-lg transition-all duration-300 overflow-hidden group border-0 shadow-md">
