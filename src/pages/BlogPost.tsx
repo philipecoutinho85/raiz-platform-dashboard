@@ -47,13 +47,13 @@ export default function BlogPost() {
   const ogImage = getAbsoluteImageUrl(post?.og_image_url || post?.featured_image_url);
   const twitterImage = getAbsoluteImageUrl(post?.twitter_image_url || post?.featured_image_url);
 
-  const handleShare = (platform: 'facebook' | 'twitter' | 'linkedin') => {
+  const getShareUrl = (platform: 'facebook' | 'twitter' | 'linkedin') => {
     const urls = {
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
       twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`,
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
     };
-    window.open(urls[platform], '_blank', 'width=600,height=400');
+    return urls[platform];
   };
 
   if (isLoading) {
@@ -250,26 +250,32 @@ export default function BlogPost() {
               <Button 
                 variant="outline" 
                 size="icon"
-                onClick={() => handleShare('facebook')}
+                asChild
                 className="hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-colors"
               >
-                <Facebook className="h-4 w-4" />
+                <a href={getShareUrl('facebook')} target="_blank" rel="noopener noreferrer">
+                  <Facebook className="h-4 w-4" />
+                </a>
               </Button>
               <Button 
                 variant="outline" 
                 size="icon"
-                onClick={() => handleShare('twitter')}
+                asChild
                 className="hover:bg-[#1DA1F2] hover:text-white hover:border-[#1DA1F2] transition-colors"
               >
-                <Twitter className="h-4 w-4" />
+                <a href={getShareUrl('twitter')} target="_blank" rel="noopener noreferrer">
+                  <Twitter className="h-4 w-4" />
+                </a>
               </Button>
               <Button 
                 variant="outline" 
                 size="icon"
-                onClick={() => handleShare('linkedin')}
+                asChild
                 className="hover:bg-[#0A66C2] hover:text-white hover:border-[#0A66C2] transition-colors"
               >
-                <Linkedin className="h-4 w-4" />
+                <a href={getShareUrl('linkedin')} target="_blank" rel="noopener noreferrer">
+                  <Linkedin className="h-4 w-4" />
+                </a>
               </Button>
             </div>
           </div>
@@ -285,7 +291,7 @@ export default function BlogPost() {
               Explore mais artigos ou comece seu projeto na Raiz Token agora mesmo.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-raiz-primary">
+              <Button asChild size="lg" className="bg-white text-raiz-primary hover:bg-white/90">
                 <Link to="/blog">
                   Ver mais artigos
                 </Link>
