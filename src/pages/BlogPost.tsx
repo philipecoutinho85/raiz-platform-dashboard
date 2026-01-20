@@ -32,7 +32,12 @@ export default function BlogPost() {
 
   // Use absolute URL for social sharing - production domain
   const baseUrl = 'https://raiztoken.com.br';
+  const supabaseUrl = 'https://oefkzjyqjjfzfrmovfdt.supabase.co';
+  
+  // Canonical URL for the blog post
   const shareUrl = `${baseUrl}/blog/${slug}`;
+  // URL that serves proper OG meta tags for social media crawlers
+  const ogPreviewUrl = `${supabaseUrl}/functions/v1/blog-og-preview?slug=${slug}`;
   const shareTitle = post?.title || '';
   
   // Ensure absolute URLs for images
@@ -48,10 +53,11 @@ export default function BlogPost() {
   const twitterImage = getAbsoluteImageUrl(post?.twitter_image_url || post?.featured_image_url);
 
   const getShareUrl = (platform: 'facebook' | 'twitter' | 'linkedin') => {
+    // Use the OG preview URL for sharing - it serves proper meta tags and redirects to actual page
     const urls = {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
-      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogPreviewUrl)}`,
+      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(ogPreviewUrl)}&text=${encodeURIComponent(shareTitle)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ogPreviewUrl)}`,
     };
     return urls[platform];
   };
