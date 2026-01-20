@@ -30,8 +30,22 @@ export default function BlogPost() {
     enabled: !!slug,
   });
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  // Use absolute URL for social sharing - production domain
+  const baseUrl = 'https://raiztoken.com.br';
+  const shareUrl = `${baseUrl}/blog/${slug}`;
   const shareTitle = post?.title || '';
+  
+  // Ensure absolute URLs for images
+  const getAbsoluteImageUrl = (url: string | null | undefined): string => {
+    if (!url) return `${baseUrl}/og-image.png`;
+    // If it's already an absolute URL, return as-is
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    // Otherwise, prepend the base URL
+    return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+  
+  const ogImage = getAbsoluteImageUrl(post?.og_image_url || post?.featured_image_url);
+  const twitterImage = getAbsoluteImageUrl(post?.twitter_image_url || post?.featured_image_url);
 
   const handleShare = (platform: 'facebook' | 'twitter' | 'linkedin') => {
     const urls = {
@@ -94,15 +108,19 @@ export default function BlogPost() {
         {/* Open Graph */}
         <meta property="og:title" content={post.og_title || post.title} />
         <meta property="og:description" content={post.og_description || post.meta_description || post.excerpt || ''} />
-        <meta property="og:image" content={post.og_image_url || post.featured_image_url || 'https://raiz-platform-dashboard.lovable.app/og-image.png'} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={shareUrl} />
+        <meta property="og:site_name" content="Raiz Token" />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@raiz_platform" />
         <meta name="twitter:title" content={post.twitter_title || post.title} />
         <meta name="twitter:description" content={post.twitter_description || post.meta_description || post.excerpt || ''} />
-        <meta name="twitter:image" content={post.twitter_image_url || post.featured_image_url || 'https://raiz-platform-dashboard.lovable.app/og-image.png'} />
+        <meta name="twitter:image" content={twitterImage} />
         
         {/* Article metadata */}
         {post.published_at && <meta property="article:published_time" content={post.published_at} />}
