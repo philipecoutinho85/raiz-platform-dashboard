@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
   <meta property="og:type" content="article">
   <meta property="og:url" content="${postUrl}">
   <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:locale" content="pt_BR">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${absoluteImage}">
   <meta property="og:image:width" content="1200">
