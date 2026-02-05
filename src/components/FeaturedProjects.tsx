@@ -53,27 +53,23 @@ const FeaturedProjects = () => {
           deadline,
           project_type,
           platform_fee_percentage,
-          project_images!inner(image_url, is_featured)
+         project_images(image_url, is_featured)
         `)
         .eq('status', 'approved')
-        .eq('project_images.is_featured', true)
         .order('created_at', { ascending: false })
         .limit(6);
 
       if (error) {
         console.error('Error fetching projects:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar projetos.",
-          variant: "destructive"
-        });
         return;
       }
 
       // Formatar dados dos projetos
       const formattedProjects = projectsData?.map(project => ({
         ...project,
-        featured_image: project.project_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=250&fit=crop'
+       featured_image: project.project_images?.find((img: any) => img.is_featured)?.image_url || 
+                        project.project_images?.[0]?.image_url || 
+                        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=250&fit=crop'
       })) || [];
 
       setProjects(formattedProjects);

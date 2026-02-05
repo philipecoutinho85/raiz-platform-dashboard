@@ -5,13 +5,13 @@ const AnalyticsScripts = () => {
   useEffect(() => {
     const loadAnalytics = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('system_settings')
           .select('value')
           .eq('key', 'analytics')
-          .single();
+          .maybeSingle();
 
-        if (!data) return;
+        if (error || !data) return;
 
         const analytics = data.value as any;
 
