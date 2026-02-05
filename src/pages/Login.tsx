@@ -93,7 +93,13 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const mode = await checkMaintenanceMode();
+      // Check maintenance mode first
+      let mode = null;
+      try {
+        mode = await checkMaintenanceMode();
+      } catch (maintenanceError) {
+        console.warn('Could not check maintenance mode, proceeding with login:', maintenanceError);
+      }
       
       if (mode?.enabled) {
         // In maintenance mode, use signIn first then check admin status
@@ -101,10 +107,11 @@ const Login = () => {
         
         if (error) {
           let errorMessage = "Erro ao fazer login. Tente novamente.";
+          const errorText = error.message || error.toString() || '';
           
-          if (error.message?.includes('Invalid login credentials')) {
+          if (errorText.includes('Invalid login credentials') || errorText.includes('invalid_credentials')) {
             errorMessage = "E-mail ou senha incorretos.";
-          } else if (error.message?.includes('Email not confirmed')) {
+          } else if (errorText.includes('Email not confirmed') || errorText.includes('email_not_confirmed')) {
             errorMessage = "Por favor, confirme seu e-mail antes de fazer login.";
           }
           
@@ -147,11 +154,14 @@ const Login = () => {
       
       if (error) {
         let errorMessage = "Erro ao fazer login. Tente novamente.";
+        const errorText = error.message || error.toString() || '';
         
-        if (error.message?.includes('Invalid login credentials')) {
+        if (errorText.includes('Invalid login credentials') || errorText.includes('invalid_credentials')) {
           errorMessage = "E-mail ou senha incorretos.";
-        } else if (error.message?.includes('Email not confirmed')) {
+        } else if (errorText.includes('Email not confirmed') || errorText.includes('email_not_confirmed')) {
           errorMessage = "Por favor, confirme seu e-mail antes de fazer login.";
+        } else if (errorText.includes('User not found')) {
+          errorMessage = "Usuário não encontrado.";
         }
         
         toast({

@@ -21,7 +21,7 @@ const MaintenanceModal = () => {
         .from('system_settings')
         .select('value')
         .eq('key', 'maintenance_mode')
-        .single();
+        .maybeSingle();
       
       if (data) {
         const mode = data.value as any;
