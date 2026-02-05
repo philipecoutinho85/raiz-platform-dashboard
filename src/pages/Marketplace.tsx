@@ -87,11 +87,6 @@ const Marketplace = () => {
 
       if (error) {
         console.error('Error fetching projects:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar projetos.",
-          variant: "destructive"
-        });
         return;
       }
 
