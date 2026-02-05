@@ -30,18 +30,28 @@ const Login = () => {
 
   // Check maintenance mode on submit
   const checkMaintenanceMode = async () => {
-    const { data } = await supabase
-      .from('system_settings')
-      .select('value')
-      .eq('key', 'maintenance_mode')
-      .single();
-    
-    if (data) {
-      const mode = data.value as any;
-      setMaintenanceMode(mode);
-      return mode;
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'maintenance_mode')
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking maintenance mode:', error);
+        return null;
+      }
+      
+      if (data) {
+        const mode = data.value as any;
+        setMaintenanceMode(mode);
+        return mode;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error checking maintenance mode:', error);
+      return null;
     }
-    return null;
   };
 
   // Redirect if already authenticated - send to projects page instead of dashboard
@@ -62,44 +72,6 @@ const Login = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    const mode = await checkMaintenanceMode();
-    if (mode?.enabled) {
-      // Check if user is admin before allowing login during maintenance
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password
-      });
-      
-      if (user) {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        if (!roleData) {
-          await supabase.auth.signOut();
-          setLoading(false);
-          toast({
-            title: "Acesso Negado",
-            description: "Sistema em manutenção. Apenas administradores podem acessar.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        // Sync wallet for admin during maintenance
-        syncWalletOnLogin();
-      }
-      setLoading(false);
-      if (user) {
-        navigate('/projetos');
-        return;
-      }
-    }
-    
     if (!formData.email || !formData.password) {
       toast({
         title: "Erro",
@@ -119,6 +91,68 @@ const Login = () => {
     }
 
     setLoading(true);
+    
+    const mode = await checkMaintenanceMode();
+    
+    if (mode?.enabled) {
+      // In maintenance mode, use signIn first then check admin status
+      try {
+        const { error, session } = await signIn(formData.email, formData.password);
+        
+        if (error) {
+          let errorMessage = "Erro ao fazer login. Tente novamente.";
+          
+          if (error.message.includes('Invalid login credentials')) {
+            errorMessage = "E-mail ou senha incorretos.";
+          } else if (error.message.includes('Email not confirmed')) {
+            errorMessage = "Por favor, confirme seu e-mail antes de fazer login.";
+          }
+          
+          toast({
+            title: "Erro no Login",
+            description: errorMessage,
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+      
+        if (session?.user) {
+          // Check if user is admin
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          
+          if (!roleData) {
+            await supabase.auth.signOut();
+            setLoading(false);
+            toast({
+              title: "Acesso Negado",
+              description: "Sistema em manutenção. Apenas administradores podem acessar.",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          // Admin login successful during maintenance
+          syncWalletOnLogin();
+          navigate('/projetos');
+          return;
+        }
+      } catch (error) {
+        console.error('Login error during maintenance:', error);
+        toast({
+          title: "Erro",
+          description: "Erro inesperado. Tente novamente.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+    }
     
     try {
       const { error, session } = await signIn(formData.email, formData.password);
