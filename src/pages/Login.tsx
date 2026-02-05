@@ -69,7 +69,7 @@ const Login = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();
     
     if (!formData.email || !formData.password) {
@@ -91,20 +91,20 @@ const Login = () => {
     }
 
     setLoading(true);
-    
-    const mode = await checkMaintenanceMode();
-    
-    if (mode?.enabled) {
-      // In maintenance mode, use signIn first then check admin status
-      try {
+
+    try {
+      const mode = await checkMaintenanceMode();
+      
+      if (mode?.enabled) {
+        // In maintenance mode, use signIn first then check admin status
         const { error, session } = await signIn(formData.email, formData.password);
         
         if (error) {
           let errorMessage = "Erro ao fazer login. Tente novamente.";
           
-          if (error.message.includes('Invalid login credentials')) {
+          if (error.message?.includes('Invalid login credentials')) {
             errorMessage = "E-mail ou senha incorretos.";
-          } else if (error.message.includes('Email not confirmed')) {
+          } else if (error.message?.includes('Email not confirmed')) {
             errorMessage = "Por favor, confirme seu e-mail antes de fazer login.";
           }
           
@@ -113,10 +113,9 @@ const Login = () => {
             description: errorMessage,
             variant: "destructive"
           });
-          setLoading(false);
           return;
         }
-      
+        
         if (session?.user) {
           // Check if user is admin
           const { data: roleData } = await supabase
@@ -128,7 +127,6 @@ const Login = () => {
           
           if (!roleData) {
             await supabase.auth.signOut();
-            setLoading(false);
             toast({
               title: "Acesso Negado",
               description: "Sistema em manutenção. Apenas administradores podem acessar.",
@@ -140,29 +138,19 @@ const Login = () => {
           // Admin login successful during maintenance
           syncWalletOnLogin();
           navigate('/projetos');
-          return;
         }
-      } catch (error) {
-        console.error('Login error during maintenance:', error);
-        toast({
-          title: "Erro",
-          description: "Erro inesperado. Tente novamente.",
-          variant: "destructive"
-        });
-        setLoading(false);
         return;
       }
-    }
-    
-    try {
+      
+      // Normal login flow (no maintenance mode)
       const { error, session } = await signIn(formData.email, formData.password);
       
       if (error) {
         let errorMessage = "Erro ao fazer login. Tente novamente.";
         
-        if (error.message.includes('Invalid login credentials')) {
+        if (error.message?.includes('Invalid login credentials')) {
           errorMessage = "E-mail ou senha incorretos.";
-        } else if (error.message.includes('Email not confirmed')) {
+        } else if (error.message?.includes('Email not confirmed')) {
           errorMessage = "Por favor, confirme seu e-mail antes de fazer login.";
         }
         
@@ -171,14 +159,16 @@ const Login = () => {
           description: errorMessage,
           variant: "destructive"
         });
-      } else {
-        // Sync wallet after successful login (não bloqueia navegação)
-        if (session) {
-          syncWalletOnLogin();
-        }
+        return;
+      }
+      
+      // Login successful
+      if (session) {
+        syncWalletOnLogin();
         navigate('/projetos');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Login error:', err);
       toast({
         title: "Erro",
         description: "Erro inesperado. Tente novamente.",
