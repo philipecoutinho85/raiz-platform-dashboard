@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Calendar, Clock, Tag, Share2, Facebook, Twitter, Linkedin, BookOpen, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Tag, Share2, Facebook, Twitter, Linkedin, BookOpen, ArrowRight, Send, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Helmet } from 'react-helmet';
@@ -32,32 +32,30 @@ export default function BlogPost() {
 
   // Use absolute URL for social sharing - production domain
   const baseUrl = 'https://raiztoken.com.br';
-  const supabaseUrl = 'https://oefkzjyqjjfzfrmovfdt.supabase.co';
   
-  // Canonical URL for the blog post
+  // Canonical URL for the blog post - ALWAYS share this URL
   const shareUrl = `${baseUrl}/blog/${slug}`;
-  // URL that serves proper OG meta tags for social media crawlers
-  const ogPreviewUrl = `${supabaseUrl}/functions/v1/blog-og-preview?slug=${slug}`;
   const shareTitle = post?.title || '';
+  const shareDescription = post?.meta_description || post?.excerpt || '';
   
   // Ensure absolute URLs for images
   const getAbsoluteImageUrl = (url: string | null | undefined): string => {
     if (!url) return `${baseUrl}/og-image.png`;
-    // If it's already an absolute URL, return as-is
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    // Otherwise, prepend the base URL
     return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
   };
   
   const ogImage = getAbsoluteImageUrl(post?.og_image_url || post?.featured_image_url);
   const twitterImage = getAbsoluteImageUrl(post?.twitter_image_url || post?.featured_image_url);
 
-  const getShareUrl = (platform: 'facebook' | 'twitter' | 'linkedin') => {
-    // Use the OG preview URL for sharing - it serves proper meta tags and redirects to actual page
+  const getShareUrl = (platform: 'facebook' | 'twitter' | 'linkedin' | 'whatsapp') => {
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedTitle = encodeURIComponent(shareTitle);
     const urls = {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogPreviewUrl)}`,
-      twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(ogPreviewUrl)}&text=${encodeURIComponent(shareTitle)}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(ogPreviewUrl)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
     };
     return urls[platform];
   };
@@ -282,6 +280,26 @@ export default function BlogPost() {
                 <a href={getShareUrl('linkedin')} target="_blank" rel="noopener noreferrer">
                   <Linkedin className="h-4 w-4" />
                 </a>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon"
+                asChild
+                className="hover:bg-[#25D366] hover:text-white hover:border-[#25D366] transition-colors"
+              >
+                <a href={getShareUrl('whatsapp')} target="_blank" rel="noopener noreferrer">
+                  <Send className="h-4 w-4" />
+                </a>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl);
+                }}
+                className="hover:bg-muted transition-colors"
+              >
+                <Copy className="h-4 w-4" />
               </Button>
             </div>
           </div>
