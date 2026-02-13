@@ -204,6 +204,10 @@ export function BlogImageGallery({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Dimensões recomendadas: <strong>1200 × 630 px</strong> (proporção 1.91:1). Formatos: JPG, PNG ou WebP. Tamanho máximo: 5 MB.
+        </p>
+
         {/* Upload Area */}
         <div className="space-y-2">
           <Label>Upload de Imagem</Label>
