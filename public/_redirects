@@ -1,3 +1,2 @@
 /register    /registro    301
-/blog/*  https://oefkzjyqjjfzfrmovfdt.supabase.co/functions/v1/blog-og-preview?slug=:splat  200
 /*    /index.html   200

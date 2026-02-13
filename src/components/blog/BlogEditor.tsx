@@ -149,11 +149,32 @@ export function BlogEditor() {
       return;
     }
 
-    const dataToSave = {
-      ...formData,
+    const dataToSave: Partial<BlogPost> = {
+      title: formData.title,
+      slug: formData.slug,
+      content: formData.content,
+      excerpt: formData.excerpt || generateExcerpt(formData.content || ''),
+      featured_image_url: formData.featured_image_url,
+      featured_image_alt: formData.featured_image_alt,
       status: publish ? 'published' : formData.status,
       published_at: publish ? new Date().toISOString() : formData.published_at,
-      excerpt: formData.excerpt || generateExcerpt(formData.content || ''),
+      meta_title: formData.meta_title,
+      meta_description: formData.meta_description,
+      focus_keyword: formData.focus_keyword,
+      canonical_url: formData.canonical_url,
+      og_title: formData.og_title,
+      og_description: formData.og_description,
+      og_image_url: formData.og_image_url,
+      twitter_title: formData.twitter_title,
+      twitter_description: formData.twitter_description,
+      twitter_image_url: formData.twitter_image_url,
+      category: formData.category,
+      tags: formData.tags || [],
+      word_count: formData.word_count || 0,
+      reading_time_minutes: formData.reading_time_minutes || 0,
+      seo_score: formData.seo_score || 0,
+      readability_score: formData.readability_score || 0,
+      scheduled_at: formData.scheduled_at,
     };
 
     try {
