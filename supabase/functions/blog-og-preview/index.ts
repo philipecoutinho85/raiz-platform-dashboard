@@ -48,12 +48,30 @@ Deno.serve(async (req) => {
     
     const title = post.og_title || post.meta_title || post.title;
     const description = post.og_description || post.meta_description || post.excerpt || '';
-    const image = post.og_image_url || post.featured_image_url || `${baseUrl}/og-image.png`;
-    const twitterImage = post.twitter_image_url || image;
+    const fallbackImage = `${baseUrl}/og-image.png`;
     
-    // Ensure image is absolute URL
-    const absoluteImage = image.startsWith('http') ? image : `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
-    const absoluteTwitterImage = twitterImage.startsWith('http') ? twitterImage : `${baseUrl}${twitterImage.startsWith('/') ? '' : '/'}${twitterImage}`;
+    // Determine candidate image
+    const candidateImage = post.og_image_url || post.featured_image_url || fallbackImage;
+    const candidateTwitterImage = post.twitter_image_url || candidateImage;
+    
+    // Ensure absolute URLs
+    const toAbsolute = (url: string) => url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+    
+    // Validate image accessibility (HEAD request)
+    const validateImage = async (url: string): Promise<boolean> => {
+      try {
+        const res = await fetch(toAbsolute(url), { method: 'HEAD' });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    };
+    
+    const imageValid = await validateImage(candidateImage);
+    const absoluteImage = imageValid ? toAbsolute(candidateImage) : fallbackImage;
+    
+    const twitterImageValid = candidateTwitterImage === candidateImage ? imageValid : await validateImage(candidateTwitterImage);
+    const absoluteTwitterImage = twitterImageValid ? toAbsolute(candidateTwitterImage) : fallbackImage;
 
     // Try to fetch the SPA index.html to inject OG tags
     let spaHtml: string | null = null;
