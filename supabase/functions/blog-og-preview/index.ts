@@ -57,12 +57,27 @@ Deno.serve(async (req) => {
     // Ensure absolute URLs
     const toAbsolute = (url: string) => url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
     
-    // Validate image accessibility (HEAD request)
+    // Validate image accessibility (HEAD request + content-type check)
     const validateImage = async (url: string): Promise<boolean> => {
       try {
-        const res = await fetch(toAbsolute(url), { method: 'HEAD' });
-        return res.ok;
-      } catch {
+        const absoluteUrl = toAbsolute(url);
+        console.log('Validating image:', absoluteUrl);
+        const res = await fetch(absoluteUrl, { method: 'HEAD', redirect: 'follow' });
+        if (!res.ok) {
+          console.log('Image validation failed - status:', res.status);
+          return false;
+        }
+        // Supabase Storage may return 200 with XML error for missing files
+        const contentType = res.headers.get('content-type') || '';
+        const isImage = contentType.startsWith('image/');
+        if (!isImage) {
+          console.log('Image validation failed - content-type:', contentType);
+          return false;
+        }
+        console.log('Image validation OK:', absoluteUrl);
+        return true;
+      } catch (e) {
+        console.log('Image validation error:', e);
         return false;
       }
     };
