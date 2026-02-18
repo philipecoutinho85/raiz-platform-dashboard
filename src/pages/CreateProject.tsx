@@ -531,7 +531,7 @@ const CreateProject = () => {
                 Isso garante a segurança e confiabilidade de todos os projetos.
               </p>
               <Button 
-                onClick={() => navigate('/perfil')}
+                onClick={() => navigate('/perfil?tab=payouts')}
                 variant="outline" 
                 className="border-red-300 text-red-700 hover:bg-red-100"
               >
