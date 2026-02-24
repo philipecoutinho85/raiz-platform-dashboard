@@ -42,6 +42,7 @@ import CookiePolicy from "./pages/CookiePolicy";
 import RateSupportPage from "./pages/RateSupportPage";
 import ShortUrlRedirect from "./pages/ShortUrlRedirect";
 import CookieConsent from "./components/CookieConsent";
+import AIFaqChat from "./components/AIFaqChat";
 
 const queryClient = new QueryClient();
 
@@ -167,6 +168,7 @@ const App = () => (
               </Routes>
             </div>
             <MobileBottomNav />
+            <AIFaqChat />
           </BrowserRouter>
         </TokensProvider>
       </AuthProvider>
