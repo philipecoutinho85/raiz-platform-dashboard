@@ -103,6 +103,38 @@ const faqData: FaqCategory[] = [
         ]
       },
       {
+        id: 'nao-consigo-criar',
+        question: 'Não consigo criar meu projeto. O que fazer?',
+        keywords: ['não consigo', 'criar', 'erro', 'bloqueado', 'verificação', 'identidade', 'stripe', 'impedido', 'não posso'],
+        answer: [
+          '🚫 **Não consegue criar seu projeto? Veja as possíveis causas:**',
+          '',
+          '**1. Verificação de Identidade (Stripe Connect) pendente**',
+          'Antes de criar qualquer projeto, você precisa completar a verificação de identidade através do Stripe Connect.',
+          '',
+          '**Como resolver:**',
+          '• Acesse seu **Perfil** (clique no avatar no canto superior direito)',
+          '• Vá até a aba **"Recebimentos"**',
+          '• Clique em **"Completar Verificação"**',
+          '• Preencha seus dados bancários e envie os documentos solicitados (RG ou CNH)',
+          '• Aguarde a aprovação do Stripe (geralmente em poucos minutos)',
+          '',
+          '✅ Após a verificação, o botão de criar projeto será liberado automaticamente.',
+          '',
+          '**2. Você já possui um projeto ativo**',
+          'A plataforma permite apenas **1 projeto ativo por vez** (pendente ou aprovado).',
+          '',
+          '**Como resolver:**',
+          '• Verifique em **"Meus Projetos"** se há algum projeto pendente ou ativo',
+          '• O projeto anterior precisa estar cancelado, expirado ou com prestação de contas aprovada',
+          '',
+          '**3. Prestação de contas pendente**',
+          'Se você teve um projeto anterior finalizado, precisa ter a prestação de contas **aprovada** pelo admin antes de criar um novo.',
+          '',
+          '📩 Se nenhuma dessas opções resolver, entre em contato com nosso suporte!'
+        ]
+      },
+      {
         id: 'prestacao-contas',
         question: 'O que é a prestação de contas?',
         keywords: ['prestação', 'contas', 'accountability', 'comprovar', 'comprovante', 'relatório'],
