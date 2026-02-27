@@ -688,21 +688,15 @@ const AIFaqChat = () => {
       {/* Floating Button */}
       <div
         className={cn(
-          'fixed z-[60] flex flex-col items-center transition-all duration-300 animate-[float_3s_ease-in-out_infinite]',
+          'fixed z-[60] flex flex-col items-center transition-all duration-300',
           'bottom-20 right-4 md:bottom-6 md:right-6',
           isOpen && 'scale-0 opacity-0 pointer-events-none'
         )}
       >
-        <style>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-          }
-        `}</style>
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            'rounded-full shadow-lg transition-all duration-300 flex items-center justify-center overflow-hidden bg-white',
+            'rounded-full shadow-lg transition-all duration-300 flex items-center justify-center overflow-hidden bg-white border border-border',
             'hover:shadow-xl hover:scale-105',
             'w-20 h-20 md:w-24 md:h-24',
           )}
@@ -713,7 +707,7 @@ const AIFaqChat = () => {
             <Sparkles className="w-2.5 h-2.5 text-white" />
           </span>
         </button>
-        <span className="text-sm font-bold text-black mt-1 select-none">Dúvidas?</span>
+        <span className="text-sm font-medium text-black mt-1 select-none">Dúvidas?</span>
       </div>
 
       {/* Chat Window */}
