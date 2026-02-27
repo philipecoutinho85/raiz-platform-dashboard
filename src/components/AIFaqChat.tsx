@@ -696,9 +696,9 @@ const AIFaqChat = () => {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            'rounded-full shadow-lg transition-all duration-300 flex items-center justify-center overflow-hidden',
+            'rounded-full shadow-lg transition-all duration-300 flex items-center justify-center overflow-hidden bg-white',
             'hover:shadow-xl hover:scale-105',
-            'w-14 h-14 md:w-16 md:h-16',
+            'w-20 h-20 md:w-24 md:h-24',
           )}
           aria-label="Assistente virtual"
         >
@@ -707,7 +707,7 @@ const AIFaqChat = () => {
             <Sparkles className="w-2.5 h-2.5 text-white" />
           </span>
         </button>
-        <span className="text-[10px] font-semibold text-primary mt-1 select-none">Dúvidas?</span>
+        <span className="text-xs font-semibold text-black mt-1 select-none">Dúvidas?</span>
       </div>
 
       {/* Chat Window */}
