@@ -1,6 +1,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { MessageCircleQuestion, X, Send, ArrowLeft, Mail, ChevronRight, Search, Bot, Sparkles } from 'lucide-react';
+import { X, Send, ArrowLeft, Mail, ChevronRight, Search, Bot, Sparkles } from 'lucide-react';
+import mascoteDuvidas from '@/assets/mascote-duvidas.svg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
@@ -685,22 +686,29 @@ const AIFaqChat = () => {
   return (
     <>
       {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
+      <div
         className={cn(
-          'fixed z-[60] rounded-full shadow-lg transition-all duration-300 flex items-center justify-center',
-          'bg-primary text-primary-foreground hover:shadow-xl hover:scale-105',
-          'w-14 h-14 md:w-16 md:h-16',
+          'fixed z-[60] flex flex-col items-center transition-all duration-300',
           'bottom-20 right-4 md:bottom-6 md:right-6',
           isOpen && 'scale-0 opacity-0 pointer-events-none'
         )}
-        aria-label="Assistente virtual"
       >
-        <MessageCircleQuestion className="w-7 h-7" />
-        <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
-          <Sparkles className="w-2.5 h-2.5 text-white" />
-        </span>
-      </button>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            'rounded-full shadow-lg transition-all duration-300 flex items-center justify-center overflow-hidden',
+            'hover:shadow-xl hover:scale-105',
+            'w-14 h-14 md:w-16 md:h-16',
+          )}
+          aria-label="Assistente virtual"
+        >
+          <img src={mascoteDuvidas} alt="Assistente virtual" className="w-full h-full object-cover" />
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
+            <Sparkles className="w-2.5 h-2.5 text-white" />
+          </span>
+        </button>
+        <span className="text-[10px] font-semibold text-primary mt-1 select-none">Dúvidas?</span>
+      </div>
 
       {/* Chat Window */}
       <div
