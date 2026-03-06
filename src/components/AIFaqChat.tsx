@@ -525,6 +525,89 @@ const faqData: FaqCategory[] = [
         ]
       }
     ]
+  },
+  {
+    id: 'projeto-semente',
+    title: '🌱 Projeto Semente',
+    icon: '🌱',
+    items: [
+      {
+        id: 'o-que-e-projeto-semente',
+        question: 'O que é o Projeto Semente?',
+        keywords: ['semente', 'projeto semente', 'impacto', 'social', 'ambiental', 'isenção', 'taxa', 'programa'],
+        answer: [
+          '🌱 **O que é o Projeto Semente?**',
+          '',
+          'O **Projeto Semente** é um programa especial da Raiz Token criado para apoiar projetos que geram **impacto positivo na sociedade**.',
+          '',
+          'Ele é voltado para iniciativas com caráter:',
+          '• 🤝 **Social**',
+          '• 🌿 **Ambiental**',
+          '• 📚 **Educacional**',
+          '• 🏘️ **Comunitário**',
+          '• 🎭 **Cultural com impacto social**',
+          '',
+          'O objetivo do programa é incentivar projetos que tragam **benefícios reais para a sociedade**.',
+          '',
+          '---',
+          '',
+          '✅ **Benefício do Projeto Semente:**',
+          '',
+          'Projetos aprovados no Projeto Semente recebem **isenção da taxa administrativa** da plataforma Raiz Token.',
+          '',
+          '⚠️ **Importante:**',
+          'Essa isenção **não inclui** as taxas de pagamento, que são cobradas pelo sistema de processamento de pagamentos (Stripe) utilizado na plataforma.',
+          '',
+          'Ou seja:',
+          '• ✅ Taxa administrativa da Raiz Token → **isenta**',
+          '• 💳 Taxas de pagamento (Stripe) → **continuam sendo aplicadas**',
+          '',
+          '---',
+          '',
+          '🔒 **Vagas limitadas:**',
+          '',
+          'O Projeto Semente possui **vagas limitadas**. Todos os projetos enviados passam por uma **análise criteriosa** da equipe da Raiz Token. Nem todos os projetos são aprovados para o programa.'
+        ]
+      },
+      {
+        id: 'como-participar-semente',
+        question: 'Como participar do Projeto Semente?',
+        keywords: ['participar', 'semente', 'inscrever', 'candidatar', 'solicitar', 'como', 'entrar'],
+        answer: [
+          '📋 **Como participar do Projeto Semente:**',
+          '',
+          '**Passo a passo:**',
+          '',
+          '1. **Crie seu projeto** normalmente na plataforma Raiz Token',
+          '',
+          '2. Após criar o projeto, acesse o **Fale Conosco** da plataforma',
+          '',
+          '3. Envie uma mensagem informando que deseja **participar do Projeto Semente**',
+          '',
+          '4. Na mensagem, inclua **detalhes sobre o projeto criado** e o **impacto social ou ambiental** que ele pretende gerar',
+          '',
+          '5. O projeto será então encaminhado para **análise da equipe Raiz Token**',
+          '',
+          '---',
+          '',
+          '📩 **Resultado da análise:**',
+          '',
+          'Após a avaliação, o autor do projeto será comunicado pela plataforma ou por e-mail informando se o projeto foi:',
+          '• ✅ **Aprovado** para o Projeto Semente',
+          '• ❌ **Reprovado** para o Projeto Semente',
+          '',
+          '---',
+          '',
+          '⚠️ **Observação importante:**',
+          '',
+          'Para solicitar participação no Projeto Semente, é necessário:',
+          '• **Primeiro** criar o projeto na plataforma',
+          '• **Depois** entrar em contato pelo **Fale Conosco**, informando os detalhes do projeto e a solicitação de participação no programa',
+          '',
+          'Isso permite que a equipe da Raiz Token realize uma **avaliação mais completa** da iniciativa.'
+        ]
+      }
+    ]
   }
 ];
 
