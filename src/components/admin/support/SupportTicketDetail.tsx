@@ -21,8 +21,7 @@ import {
   CheckCircle,
   AlertCircle,
   Hourglass,
-  XCircle,
-  Star
+  XCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,8 +76,6 @@ const SupportTicketDetail = ({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [currentStatus, setCurrentStatus] = useState(ticket.status);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [closingRating, setClosingRating] = useState(ticket.rating || 0);
-  const [closingRatingComment, setClosingRatingComment] = useState(ticket.rating_comment || '');
 
   useEffect(() => {
     markAsRead();
@@ -139,27 +136,12 @@ const SupportTicketDetail = ({
   const handleStatusChange = async (newStatus: string) => {
     const isFinalStatus = newStatus === 'resolvido' || newStatus === 'fechado';
 
-    if (isFinalStatus && !ticket.rating && closingRating === 0) {
-      toast({
-        title: 'Classificação obrigatória',
-        description: 'Selecione de 1 a 5 estrelas antes de resolver ou fechar o chamado.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setUpdatingStatus(true);
     try {
       const updateData: any = { 
         status: newStatus,
         updated_at: new Date().toISOString()
       };
-
-      if (isFinalStatus && !ticket.rating) {
-        updateData.rating = closingRating;
-        updateData.rating_comment = closingRatingComment.trim() || null;
-        updateData.rated_at = new Date().toISOString();
-      }
 
       if (newStatus === 'resolvido' && !ticket.resolved_at) {
         updateData.resolved_at = new Date().toISOString();
@@ -179,12 +161,12 @@ const SupportTicketDetail = ({
 
       setCurrentStatus(newStatus);
 
-      // Send rating email when marked as resolved
-      if (newStatus === 'resolvido' && userEmail) {
+      // Send rating email when the ticket is finalized.
+      if (isFinalStatus && userEmail) {
         await sendRatingEmail();
         toast({
           title: 'Status atualizado',
-          description: 'Chamado resolvido e email de avaliação enviado ao usuário.',
+          description: 'Chamado finalizado e email de avaliação enviado ao usuário.',
         });
       } else {
         toast({
@@ -361,49 +343,6 @@ const SupportTicketDetail = ({
               </Select>
             </div>
 
-            {/* Closing Rating */}
-            <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
-              <div>
-                <p className="text-sm font-medium">Nota do atendimento</p>
-                <p className="text-xs text-muted-foreground">
-                  Obrigatória para resolver ou fechar; alimenta o painel NPS.
-                </p>
-              </div>
-
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => !ticket.rating && setClosingRating(star)}
-                    disabled={Boolean(ticket.rating)}
-                    className="rounded p-1 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-default disabled:hover:scale-100"
-                  >
-                    <Star
-                      className={`h-6 w-6 ${
-                        star <= closingRating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-muted-foreground'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              {ticket.rating ? (
-                <p className="text-xs text-muted-foreground">
-                  Avaliado em {ticket.rated_at ? format(new Date(ticket.rated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'data não registrada'}
-                </p>
-              ) : (
-                <Textarea
-                  value={closingRatingComment}
-                  onChange={(e) => setClosingRatingComment(e.target.value)}
-                  placeholder="Comentário opcional sobre o atendimento..."
-                  className="min-h-[72px] resize-none"
-                />
-              )}
-            </div>
-
             {/* Quick Actions */}
             <div className="space-y-2">
               <Button 
@@ -483,7 +422,7 @@ const SupportTicketDetail = ({
               </div>
             </ScrollArea>
 
-            {currentStatus !== 'fechado' && (
+            {currentStatus !== 'fechado' && currentStatus !== 'resolvido' && (
               <div className="shrink-0 p-4 border-t">
                 {attachments.length > 0 && (
                   <div className="flex gap-2 mb-2">

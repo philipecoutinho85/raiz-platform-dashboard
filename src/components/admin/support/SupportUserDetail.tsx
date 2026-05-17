@@ -49,8 +49,8 @@ const SupportUserDetail = ({ userId, conversations, messages, onBack }: SupportU
   }, [conversations, userId]);
 
   const stats = useMemo(() => {
-    const open = userConversations.filter(c => isSupportTicketOpen(c.status)).length;
-    const closed = userConversations.filter(c => !isSupportTicketOpen(c.status)).length;
+    const open = userConversations.filter(c => isSupportTicketOpen(c.status, c.closed_at, c.resolved_at)).length;
+    const closed = userConversations.filter(c => !isSupportTicketOpen(c.status, c.closed_at, c.resolved_at)).length;
 
     // Calculate average response time for this user
     let totalResponseTime = 0;
@@ -246,8 +246,8 @@ const SupportUserDetail = ({ userId, conversations, messages, onBack }: SupportU
                           {unreadCount > 0 && (
                             <Badge className="bg-orange-600">{unreadCount} nova{unreadCount > 1 ? 's' : ''}</Badge>
                           )}
-                          <Badge variant={isSupportTicketOpen(conv.status) ? 'default' : 'secondary'}>
-                            {getSupportTicketStatusLabel(conv.status)}
+                          <Badge variant={isSupportTicketOpen(conv.status, conv.closed_at, conv.resolved_at) ? 'default' : 'secondary'}>
+                            {getSupportTicketStatusLabel(conv.status, conv.closed_at, conv.resolved_at)}
                           </Badge>
                         </div>
                       </div>

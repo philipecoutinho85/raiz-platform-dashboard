@@ -126,9 +126,9 @@ const SupportDashboard = () => {
     // Status filter
     if (filters.status !== 'all') {
       if (filters.status === 'abertos') {
-        filtered = filtered.filter(c => isSupportTicketOpen(c.status));
+        filtered = filtered.filter(c => isSupportTicketOpen(c.status, c.closed_at, c.resolved_at));
       } else if (filters.status === 'fechados') {
-        filtered = filtered.filter(c => !isSupportTicketOpen(c.status));
+        filtered = filtered.filter(c => !isSupportTicketOpen(c.status, c.closed_at, c.resolved_at));
       } else {
         filtered = filtered.filter(c => c.status === filters.status);
       }

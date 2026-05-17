@@ -55,7 +55,7 @@ const SupportExport = ({ conversations, messages, metrics }: SupportExportProps)
         return [
           conv.id,
           `"${conv.subject.replace(/"/g, '""')}"`,
-          getSupportTicketStatusLabel(conv.status),
+          getSupportTicketStatusLabel(conv.status, conv.closed_at, conv.resolved_at),
           format(new Date(conv.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
           format(new Date(conv.updated_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
           conv.closed_at ? format(new Date(conv.closed_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-',
@@ -146,7 +146,7 @@ const SupportExport = ({ conversations, messages, metrics }: SupportExportProps)
         const msgCount = messages.filter(m => m.conversation_id === conv.id).length;
         return [
           conv.subject.substring(0, 40) + (conv.subject.length > 40 ? '...' : ''),
-          getSupportTicketStatusLabel(conv.status),
+          getSupportTicketStatusLabel(conv.status, conv.closed_at, conv.resolved_at),
           format(new Date(conv.created_at), 'dd/MM/yyyy', { locale: ptBR }),
           msgCount.toString()
         ];

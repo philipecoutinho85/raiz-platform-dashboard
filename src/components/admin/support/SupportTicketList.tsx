@@ -92,12 +92,12 @@ const SupportTicketList = ({ conversations, messages, onUserClick }: SupportTick
       let totalTime: number | undefined;
       if (conv.closed_at) {
         totalTime = new Date(conv.closed_at).getTime() - new Date(conv.created_at).getTime();
-      } else if (isSupportTicketOpen(conv.status)) {
+      } else if (isSupportTicketOpen(conv.status, conv.closed_at, conv.resolved_at)) {
         totalTime = Date.now() - new Date(conv.created_at).getTime();
       }
 
       // Check SLA breach
-      const isSlaBreach = isSupportTicketOpen(conv.status) && !firstAdminMsg && 
+      const isSlaBreach = isSupportTicketOpen(conv.status, conv.closed_at, conv.resolved_at) && !firstAdminMsg && 
         (Date.now() - new Date(conv.created_at).getTime()) > SLA_FIRST_RESPONSE;
 
       return {
@@ -260,8 +260,8 @@ const SupportTicketList = ({ conversations, messages, onUserClick }: SupportTick
                               {ticket.unreadCount} nova{ticket.unreadCount > 1 ? 's' : ''}
                             </Badge>
                           )}
-                          <Badge variant={isSupportTicketOpen(ticket.status) ? 'default' : 'secondary'}>
-                            {getSupportTicketStatusLabel(ticket.status)}
+                          <Badge variant={isSupportTicketOpen(ticket.status, ticket.closed_at, ticket.resolved_at) ? 'default' : 'secondary'}>
+                            {getSupportTicketStatusLabel(ticket.status, ticket.closed_at, ticket.resolved_at)}
                           </Badge>
                         </div>
                         
