@@ -183,7 +183,7 @@ const FeaturedProjects = () => {
           <p className="text-xl text-raiz-secondary max-w-3xl mx-auto">
             {hasRealProjects
               ? 'Explore iniciativas sociais, ambientais e culturais que utilizam a Raiz Token para ampliar alcance e viabilizar resultados reais.'
-              : 'Conheça exemplos de projetos que mostram como a Raiz Token conecta pessoas, propósito e impacto real.'}
+              : 'Inspire-se nos exemplos abaixo e crie seu próprio projeto para transformar uma boa ideia em impacto real.'}
           </p>
         </div>
         
