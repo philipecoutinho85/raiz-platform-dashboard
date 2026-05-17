@@ -53,39 +53,16 @@ const TokensTab = ({ stats, refetchData }: TokensTabProps) => {
         return;
       }
 
-      // Buscar saldo atual
-      const { data: currentTokens } = await supabase
-        .from('user_tokens')
-        .select('balance')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const { error: adjustmentError } = await supabase.rpc(
+        'admin_adjust_user_tokens' as never,
+        {
+          p_target_user_id: userId,
+          p_amount: amount,
+          p_reason: `Credito de ${amount} tokens de teste pelo admin`
+        } as never
+      ) as { error: { message: string } | null };
 
-      const currentBalance = currentTokens?.balance || 0;
-      const newBalance = currentBalance + amount;
-
-      // Atualizar ou inserir tokens
-      const { error: updateError } = await supabase
-        .from('user_tokens')
-        .upsert({
-          user_id: userId,
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-
-      if (updateError) throw updateError;
-
-      // Criar transação no histórico
-      const { error: transactionError } = await supabase
-        .from('token_transactions')
-        .insert({
-          user_id: userId,
-          amount: amount,
-          transaction_type: 'admin_credit',
-          description: `Crédito de ${amount} tokens de teste pelo admin`,
-          balance_after: newBalance
-        });
-
-      if (transactionError) throw transactionError;
+      if (adjustmentError) throw adjustmentError;
 
       toast.success(`${amount} tokens de teste adicionados para ${profile.nome} ${profile.sobrenome}`);
       setTokenAmount('');
@@ -133,29 +110,16 @@ const TokensTab = ({ stats, refetchData }: TokensTabProps) => {
         return;
       }
 
-      // Zerar tokens
-      const { error: updateError } = await supabase
-        .from('user_tokens')
-        .update({
-          balance: 0,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId);
+      const { error: adjustmentError } = await supabase.rpc(
+        'admin_adjust_user_tokens' as never,
+        {
+          p_target_user_id: userId,
+          p_amount: -currentBalance,
+          p_reason: `Remocao de ${currentBalance} tokens de teste pelo admin`
+        } as never
+      ) as { error: { message: string } | null };
 
-      if (updateError) throw updateError;
-
-      // Criar transação no histórico
-      const { error: transactionError } = await supabase
-        .from('token_transactions')
-        .insert({
-          user_id: userId,
-          amount: -currentBalance,
-          transaction_type: 'admin_debit',
-          description: `Remoção de ${currentBalance} tokens de teste pelo admin`,
-          balance_after: 0
-        });
-
-      if (transactionError) throw transactionError;
+      if (adjustmentError) throw adjustmentError;
 
       toast.success(`${currentBalance} tokens removidos de ${profile.nome} ${profile.sobrenome}`);
       setUserId('');

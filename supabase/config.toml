@@ -1,7 +1,7 @@
 project_id = "oefkzjyqjjfzfrmovfdt"
 
 [functions.send-admin-alert]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-expired-projects]
 verify_jwt = false
@@ -34,7 +34,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.delete-completed-projects]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-contact-email]
 verify_jwt = false
@@ -43,7 +43,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.check-support-alerts]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-boleto-expiration]
 verify_jwt = false
@@ -55,7 +55,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-boleto-refund-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-welcome-email]
 verify_jwt = false

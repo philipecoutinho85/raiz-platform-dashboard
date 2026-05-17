@@ -87,9 +87,12 @@ const SupportFilters = ({ filters, onFiltersChange }: SupportFiltersProps) => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos</SelectItem>
-          <SelectItem value="open">Abertos</SelectItem>
-          <SelectItem value="closed">Fechados</SelectItem>
-          <SelectItem value="in_progress">Em Andamento</SelectItem>
+          <SelectItem value="abertos">Abertos</SelectItem>
+          <SelectItem value="fechados">Fechados</SelectItem>
+          <SelectItem value="novo">Novos</SelectItem>
+          <SelectItem value="em_andamento">Em Andamento</SelectItem>
+          <SelectItem value="aguardando_usuario">Aguardando Usuário</SelectItem>
+          <SelectItem value="resolvido">Resolvidos</SelectItem>
         </SelectContent>
       </Select>
 

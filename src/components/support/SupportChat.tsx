@@ -5,13 +5,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, ArrowLeft, ImagePlus, X, Loader2 } from 'lucide-react';
+import { Send, ArrowLeft, ImagePlus, X, Loader2, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { sanitizeUserContent } from '@/lib/sanitize';
+import { getSupportConversationStatusLabel, isSupportTicketOpen } from '@/lib/supportStatus';
 
 interface Message {
   id: string;
@@ -28,6 +29,13 @@ interface Conversation {
   subject: string;
   status: string;
   user_id: string;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  resolved_at: string | null;
+  rating: number | null;
+  rating_comment: string | null;
+  rated_at: string | null;
 }
 
 interface SupportChatProps {
@@ -46,6 +54,9 @@ const SupportChat = ({ conversationId, onBack, isAdminView = false }: SupportCha
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     fetchConversation();
@@ -166,6 +177,45 @@ const SupportChat = ({ conversationId, onBack, isAdminView = false }: SupportCha
     setAttachments(prev => [...prev, ...files]);
   };
 
+  const handleSubmitRating = async () => {
+    if (!conversation || rating === 0) return;
+
+    setSubmittingRating(true);
+    try {
+      const { error } = await supabase.rpc(
+        'rate_support_conversation' as never,
+        {
+          p_conversation_id: conversation.id,
+          p_rating: rating,
+          p_comment: ratingComment || null,
+        } as never
+      );
+
+      if (error) throw error;
+
+      setConversation({
+        ...conversation,
+        rating,
+        rating_comment: ratingComment || null,
+        rated_at: new Date().toISOString(),
+      });
+
+      toast({
+        title: 'Obrigado pela avaliação!',
+        description: 'Sua opinião foi registrada com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error submitting support rating:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível registrar sua avaliação.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -174,7 +224,8 @@ const SupportChat = ({ conversationId, onBack, isAdminView = false }: SupportCha
     );
   }
 
-  const isClosed = conversation?.status === 'closed';
+  const isClosed = !isSupportTicketOpen(conversation?.status, conversation?.closed_at, conversation?.resolved_at);
+  const closedAt = conversation?.closed_at || conversation?.resolved_at || null;
 
   return (
     <Card className="flex flex-col h-[500px]">
@@ -186,8 +237,16 @@ const SupportChat = ({ conversationId, onBack, isAdminView = false }: SupportCha
           <div className="flex-1">
             <CardTitle className="text-lg">{conversation?.subject}</CardTitle>
             <Badge variant={isClosed ? 'secondary' : 'outline'} className="mt-1">
-              {isClosed ? 'Fechada' : 'Aberta'}
+              {getSupportConversationStatusLabel(conversation?.status, conversation?.closed_at, conversation?.resolved_at)}
             </Badge>
+            {conversation?.created_at && (
+              <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                <p>Aberto em {format(new Date(conversation.created_at), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}</p>
+                {closedAt && (
+                  <p>Fechado em {format(new Date(closedAt), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -243,6 +302,76 @@ const SupportChat = ({ conversationId, onBack, isAdminView = false }: SupportCha
             })}
           </div>
         </ScrollArea>
+
+        {isClosed && conversation && (
+          <div className="shrink-0 p-4 border-t bg-muted/20">
+            {conversation.rating ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Atendimento avaliado</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-5 w-5 ${
+                        star <= conversation.rating!
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-muted-foreground'
+                      }`}
+                    />
+                  ))}
+                </div>
+                {conversation.rated_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Avaliado em {format(new Date(conversation.rated_at), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Avalie o atendimento</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sua nota ajuda o time técnico a melhorar o suporte.
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className="rounded p-1 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <Star
+                        className={`h-7 w-7 ${
+                          star <= rating
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-muted-foreground'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <Textarea
+                  value={ratingComment}
+                  onChange={(e) => setRatingComment(e.target.value)}
+                  placeholder="Comentário opcional sobre o atendimento..."
+                  className="min-h-[72px] resize-none"
+                />
+                <Button
+                  onClick={handleSubmitRating}
+                  disabled={rating === 0 || submittingRating}
+                  className="w-full"
+                >
+                  {submittingRating ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  Enviar avaliação
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {!isClosed && (
           <div className="shrink-0 p-4 border-t">

@@ -166,7 +166,7 @@ const BackupSettings = () => {
       setProgress(20);
 
       const response = await fetch(
-        `https://oefkzjyqjjfzfrmovfdt.supabase.co/functions/v1/generate-backup`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-backup`,
         {
           method: 'POST',
           headers: {

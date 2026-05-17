@@ -38,6 +38,7 @@ const NewConversationModal = ({ open, onClose, onCreated }: NewConversationModal
   const [attachment, setAttachment] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [ticketNumber, setTicketNumber] = useState<string | null>(null);
+  const [createdConversationId, setCreatedConversationId] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,6 +81,7 @@ const NewConversationModal = ({ open, onClose, onCreated }: NewConversationModal
     setDescription('');
     setAttachment(null);
     setTicketNumber(null);
+    setCreatedConversationId(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -122,6 +124,8 @@ const NewConversationModal = ({ open, onClose, onCreated }: NewConversationModal
           description: sanitizeUserContent(description),
           attachments: attachmentUrls,
           status: 'novo',
+          closed_at: null,
+          resolved_at: null,
         })
         .select('id, ticket_number')
         .single();
@@ -142,6 +146,7 @@ const NewConversationModal = ({ open, onClose, onCreated }: NewConversationModal
       if (msgError) throw msgError;
 
       // Show success with ticket number
+      setCreatedConversationId(conv.id);
       setTicketNumber(conv.ticket_number);
 
     } catch (error) {
@@ -156,12 +161,11 @@ const NewConversationModal = ({ open, onClose, onCreated }: NewConversationModal
   };
 
   const handleSuccessClose = () => {
-    const convId = ticketNumber;
+    const convId = createdConversationId;
     resetForm();
     onClose();
-    // Navigate to the conversation
     if (convId) {
-      // The onCreated will handle navigation
+      onCreated(convId);
     }
   };
 

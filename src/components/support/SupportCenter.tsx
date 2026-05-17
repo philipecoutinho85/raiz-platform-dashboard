@@ -10,9 +10,11 @@ interface SupportCenterProps {
 const SupportCenter = ({ isAdminView = false }: SupportCenterProps) => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
+  const [conversationListRefreshKey, setConversationListRefreshKey] = useState(0);
 
   const handleConversationCreated = (id: string) => {
     setShowNewModal(false);
+    setConversationListRefreshKey((current) => current + 1);
     setSelectedConversation(id);
   };
 
@@ -32,6 +34,7 @@ const SupportCenter = ({ isAdminView = false }: SupportCenterProps) => {
         onSelectConversation={setSelectedConversation}
         onNewConversation={() => setShowNewModal(true)}
         selectedId={selectedConversation || undefined}
+        refreshKey={conversationListRefreshKey}
       />
 
       <NewConversationModal

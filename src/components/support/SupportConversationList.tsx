@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,9 @@ interface Conversation {
   status: string;
   created_at: string;
   updated_at: string;
+  closed_at?: string | null;
+  resolved_at?: string | null;
+  rating?: number | null;
   unread_count?: number;
 }
 
@@ -22,24 +25,26 @@ interface SupportConversationListProps {
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
   selectedId?: string;
+  refreshKey?: number;
 }
 
 const SupportConversationList = ({ 
   onSelectConversation, 
   onNewConversation,
-  selectedId 
+  selectedId,
+  refreshKey = 0
 }: SupportConversationListProps) => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchConversations();
+  const fetchConversations = useCallback(async () => {
+    if (!user) {
+      setConversations([]);
+      setLoading(false);
+      return;
     }
-  }, [user]);
 
-  const fetchConversations = async () => {
     try {
       const { data, error } = await supabase
         .from('support_conversations')
@@ -47,7 +52,7 @@ const SupportConversationList = ({
           *,
           support_messages(id, is_read, sender_type)
         `)
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
@@ -65,7 +70,42 @@ const SupportConversationList = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations, refreshKey]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`support-conversations-user-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'support_conversations',
+          filter: `user_id=eq.${user.id}`,
+        },
+        fetchConversations
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'support_messages',
+        },
+        fetchConversations
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchConversations, user]);
 
   if (loading) {
     return (
@@ -99,44 +139,57 @@ const SupportConversationList = ({
         ) : (
           <ScrollArea className="h-[300px]">
             <div className="divide-y">
-              {conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => onSelectConversation(conv.id)}
-                  className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
-                    selectedId === conv.id ? 'bg-muted' : ''
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">
-                          {conv.subject}
-                        </span>
-                        {conv.unread_count > 0 && (
-                          <Badge variant="destructive" className="h-5 px-1.5">
-                            {conv.unread_count}
-                          </Badge>
-                        )}
+              {conversations.map((conv) => {
+                const closedAt = conv.closed_at || conv.resolved_at || null;
+                const isOpen = !closedAt;
+
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => onSelectConversation(conv.id)}
+                    className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
+                      selectedId === conv.id ? 'bg-muted' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">
+                            {conv.subject}
+                          </span>
+                          {conv.unread_count > 0 && (
+                            <Badge variant="destructive" className="h-5 px-1.5">
+                              {conv.unread_count}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                          <p>Aberto em {format(new Date(conv.created_at), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}</p>
+                          {closedAt ? (
+                            <p>Fechado em {format(new Date(closedAt), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}</p>
+                          ) : (
+                            <p>Última atualização em {format(new Date(conv.updated_at), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}</p>
+                          )}
+                          {!isOpen && !conv.rating && (
+                            <p className="font-medium text-primary">Abra o chamado para avaliar o atendimento</p>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {format(new Date(conv.updated_at), "d 'de' MMM", { locale: ptBR })}
-                      </p>
+                      {isOpen ? (
+                        <Badge variant="outline" className="shrink-0">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Aberta
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="shrink-0">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Fechada
+                        </Badge>
+                      )}
                     </div>
-                    {conv.status === 'open' ? (
-                      <Badge variant="outline" className="shrink-0">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Aberta
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="shrink-0">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Fechada
-                      </Badge>
-                    )}
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </ScrollArea>
         )}

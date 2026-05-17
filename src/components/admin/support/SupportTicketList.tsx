@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { SupportConversation, SupportMessage } from './SupportDashboard';
 import SupportTicketDetail from './SupportTicketDetail';
+import { getSupportTicketStatusLabel, isSupportTicketOpen } from '@/lib/supportStatus';
 import { 
   MessageCircle, 
   User, 
@@ -91,12 +92,12 @@ const SupportTicketList = ({ conversations, messages, onUserClick }: SupportTick
       let totalTime: number | undefined;
       if (conv.closed_at) {
         totalTime = new Date(conv.closed_at).getTime() - new Date(conv.created_at).getTime();
-      } else if (conv.status === 'open') {
+      } else if (isSupportTicketOpen(conv.status)) {
         totalTime = Date.now() - new Date(conv.created_at).getTime();
       }
 
       // Check SLA breach
-      const isSlaBreach = conv.status === 'open' && !firstAdminMsg && 
+      const isSlaBreach = isSupportTicketOpen(conv.status) && !firstAdminMsg && 
         (Date.now() - new Date(conv.created_at).getTime()) > SLA_FIRST_RESPONSE;
 
       return {
@@ -259,8 +260,8 @@ const SupportTicketList = ({ conversations, messages, onUserClick }: SupportTick
                               {ticket.unreadCount} nova{ticket.unreadCount > 1 ? 's' : ''}
                             </Badge>
                           )}
-                          <Badge variant={ticket.status === 'open' ? 'default' : 'secondary'}>
-                            {ticket.status === 'open' ? 'Aberto' : 'Fechado'}
+                          <Badge variant={isSupportTicketOpen(ticket.status) ? 'default' : 'secondary'}>
+                            {getSupportTicketStatusLabel(ticket.status)}
                           </Badge>
                         </div>
                         

@@ -11,6 +11,7 @@ import SupportUserDetail from './SupportUserDetail';
 import SupportStatistics from './SupportStatistics';
 import SupportNPSDashboard from './SupportNPSDashboard';
 import { BarChart3, MessageCircle, Lightbulb, Users, Settings, TrendingUp, Star } from 'lucide-react';
+import { isSupportTicketOpen } from '@/lib/supportStatus';
 
 export interface SupportConversation {
   id: string;
@@ -58,7 +59,7 @@ export interface SupportMetrics {
 }
 
 export interface FilterState {
-  status: 'all' | 'novo' | 'em_andamento' | 'aguardando_usuario' | 'resolvido' | 'fechado';
+  status: 'all' | 'abertos' | 'fechados' | 'novo' | 'em_andamento' | 'aguardando_usuario' | 'resolvido' | 'fechado';
   period: 'today' | '7days' | '30days' | 'custom';
   startDate?: Date;
   endDate?: Date;
@@ -124,7 +125,13 @@ const SupportDashboard = () => {
 
     // Status filter
     if (filters.status !== 'all') {
-      filtered = filtered.filter(c => c.status === filters.status);
+      if (filters.status === 'abertos') {
+        filtered = filtered.filter(c => isSupportTicketOpen(c.status));
+      } else if (filters.status === 'fechados') {
+        filtered = filtered.filter(c => !isSupportTicketOpen(c.status));
+      } else {
+        filtered = filtered.filter(c => c.status === filters.status);
+      }
     }
 
     // Category filter

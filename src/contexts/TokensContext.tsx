@@ -224,46 +224,24 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
         }
       }
 
-      const newBalance = tokens - amount;
+      type SupportProjectResult = { contribution_id: string; new_balance: number };
+      const { data, error } = await supabase.rpc(
+        'support_project_with_tokens' as never,
+        {
+          p_project_id: projectId,
+          p_amount: amount,
+          p_description: description
+        } as never
+      ) as { data: SupportProjectResult[] | null; error: { message: string } | null };
 
-      // Criar contribuição
-      const { error: contributionError } = await supabase
-        .from('project_contributions')
-        .insert({
-          project_id: projectId,
-          user_id: user.id,
-          amount,
-          status: 'completed'
-        });
+      if (error) throw error;
 
-      if (contributionError) throw contributionError;
-
-      // Atualizar saldo
-      const { error: updateError } = await supabase
-        .from('user_tokens')
-        .update({
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
-
-      // Criar transação
-      const { error: transactionError } = await supabase
-        .from('token_transactions')
-        .insert({
-          user_id: user.id,
-          amount: -amount,
-          transaction_type: 'support',
-          reference_id: projectId,
-          description,
-          balance_after: newBalance
-        });
-
-      if (transactionError) throw transactionError;
-
-      setTokens(newBalance);
+      const newBalance = data?.[0]?.new_balance;
+      if (typeof newBalance === 'number') {
+        setTokens(newBalance);
+      } else {
+        await fetchTokens();
+      }
       
       toast({
         title: "Apoio realizado!",
@@ -271,6 +249,7 @@ export const TokensProvider = ({ children }: TokensProviderProps) => {
       });
 
       return true;
+
     } catch (error) {
       console.error('Erro ao apoiar projeto:', error);
       toast({

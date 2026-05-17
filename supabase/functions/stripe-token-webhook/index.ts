@@ -127,9 +127,10 @@ serve(async (req) => {
     logStep("Webhook received");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    const webhookSecret = Deno.env.get("STRIPE_TOKEN_WEBHOOK_SECRET") ?? Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
+    if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET not configured");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     
@@ -138,20 +139,22 @@ serve(async (req) => {
 
     let event: Stripe.Event;
 
-    if (webhookSecret && signature) {
-      try {
-        event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-        logStep("Webhook signature verified");
-      } catch (err: any) {
-        logStep("Webhook signature verification failed", { error: err.message });
-        return new Response(
-          JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    } else {
-      event = JSON.parse(body);
-      logStep("Webhook received without signature verification");
+    if (!signature) {
+      return new Response(
+        JSON.stringify({ error: "No Stripe signature" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    try {
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+      logStep("Webhook signature verified");
+    } catch (err: any) {
+      logStep("Webhook signature verification failed", { error: err.message });
+      return new Response(
+        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     logStep("Event type", { type: event.type });

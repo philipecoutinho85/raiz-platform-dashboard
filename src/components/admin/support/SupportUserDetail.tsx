@@ -16,6 +16,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import SupportChat from '@/components/support/SupportChat';
+import { getSupportTicketStatusLabel, isSupportTicketOpen } from '@/lib/supportStatus';
 
 interface SupportUserDetailProps {
   userId: string;
@@ -48,8 +49,8 @@ const SupportUserDetail = ({ userId, conversations, messages, onBack }: SupportU
   }, [conversations, userId]);
 
   const stats = useMemo(() => {
-    const open = userConversations.filter(c => c.status === 'open').length;
-    const closed = userConversations.filter(c => c.status === 'closed').length;
+    const open = userConversations.filter(c => isSupportTicketOpen(c.status)).length;
+    const closed = userConversations.filter(c => !isSupportTicketOpen(c.status)).length;
 
     // Calculate average response time for this user
     let totalResponseTime = 0;
@@ -245,8 +246,8 @@ const SupportUserDetail = ({ userId, conversations, messages, onBack }: SupportU
                           {unreadCount > 0 && (
                             <Badge className="bg-orange-600">{unreadCount} nova{unreadCount > 1 ? 's' : ''}</Badge>
                           )}
-                          <Badge variant={conv.status === 'open' ? 'default' : 'secondary'}>
-                            {conv.status === 'open' ? 'Aberto' : 'Fechado'}
+                          <Badge variant={isSupportTicketOpen(conv.status) ? 'default' : 'secondary'}>
+                            {getSupportTicketStatusLabel(conv.status)}
                           </Badge>
                         </div>
                       </div>

@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getSupportTicketStatusLabel } from '@/lib/supportStatus';
 
 interface SupportExportProps {
   conversations: SupportConversation[];
@@ -54,7 +55,7 @@ const SupportExport = ({ conversations, messages, metrics }: SupportExportProps)
         return [
           conv.id,
           `"${conv.subject.replace(/"/g, '""')}"`,
-          conv.status === 'open' ? 'Aberto' : 'Fechado',
+          getSupportTicketStatusLabel(conv.status),
           format(new Date(conv.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
           format(new Date(conv.updated_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
           conv.closed_at ? format(new Date(conv.closed_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-',
@@ -145,7 +146,7 @@ const SupportExport = ({ conversations, messages, metrics }: SupportExportProps)
         const msgCount = messages.filter(m => m.conversation_id === conv.id).length;
         return [
           conv.subject.substring(0, 40) + (conv.subject.length > 40 ? '...' : ''),
-          conv.status === 'open' ? 'Aberto' : 'Fechado',
+          getSupportTicketStatusLabel(conv.status),
           format(new Date(conv.created_at), 'dd/MM/yyyy', { locale: ptBR }),
           msgCount.toString()
         ];

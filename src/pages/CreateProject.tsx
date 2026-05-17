@@ -408,44 +408,17 @@ const CreateProject = () => {
           });
         } else {
           try {
-            const newBalance = tokens - investAmount;
+            const { error: investmentError } = await supabase.rpc(
+              'support_project_with_tokens' as never,
+              {
+                p_project_id: project.id,
+                p_amount: investAmount,
+                p_description: `Investimento inicial no projeto: ${data.title}`
+              } as never
+            ) as { error: { message: string } | null };
 
-            // Criar contribuição
-            const { error: contributionError } = await supabase
-              .from('project_contributions')
-              .insert({
-                project_id: project.id,
-                user_id: user?.id,
-                amount: investAmount,
-                status: 'completed'
-              });
+            if (investmentError) throw investmentError;
 
-            if (contributionError) throw contributionError;
-
-            // Atualizar saldo
-            const { error: updateError } = await supabase
-              .from('user_tokens')
-              .update({
-                balance: newBalance,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', user?.id);
-
-            if (updateError) throw updateError;
-
-            // Criar transação
-            const { error: transactionError } = await supabase
-              .from('token_transactions')
-              .insert({
-                user_id: user?.id,
-                amount: -investAmount,
-                transaction_type: 'support',
-                reference_id: project.id,
-                description: `Investimento inicial no projeto: ${data.title}`,
-                balance_after: newBalance
-              });
-
-            if (transactionError) throw transactionError;
 
             toast({
               title: 'Sucesso!',
