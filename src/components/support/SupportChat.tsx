@@ -325,6 +325,11 @@ const SupportChat = ({ conversationId, onBack, isAdminView = false }: SupportCha
                     Avaliado em {format(new Date(conversation.rated_at), "d 'de' MMM 'às' HH:mm", { locale: ptBR })}
                   </p>
                 )}
+                {conversation.rating_comment && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {conversation.rating_comment}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-3">

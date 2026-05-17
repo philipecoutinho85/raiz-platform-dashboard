@@ -21,7 +21,8 @@ import {
   CheckCircle,
   AlertCircle,
   Hourglass,
-  XCircle
+  XCircle,
+  Star
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -342,6 +343,34 @@ const SupportTicketDetail = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {ticket.rating && (
+              <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
+                <div>
+                  <p className="text-sm font-medium">Feedback do usuário</p>
+                  {ticket.rated_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Avaliado em {format(new Date(ticket.rated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-5 w-5 ${
+                        star <= ticket.rating!
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-muted-foreground'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {ticket.rating_comment || 'Usuário não deixou comentário.'}
+                </p>
+              </div>
+            )}
 
             {/* Quick Actions */}
             <div className="space-y-2">

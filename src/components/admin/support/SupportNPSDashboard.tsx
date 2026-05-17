@@ -142,6 +142,13 @@ const SupportNPSDashboard = ({ conversations, messages, metrics }: SupportNPSDas
     ];
   }, [metrics]);
 
+  const recentFeedback = useMemo(() => {
+    return conversations
+      .filter(c => c.rating !== null && c.rating_comment?.trim())
+      .sort((a, b) => new Date(b.rated_at || b.updated_at).getTime() - new Date(a.rated_at || a.updated_at).getTime())
+      .slice(0, 6);
+  }, [conversations]);
+
   const getNPSLabel = (score: number) => {
     if (score >= 50) return { label: 'Excelente', color: 'text-green-600' };
     if (score >= 0) return { label: 'Bom', color: 'text-amber-600' };
@@ -304,6 +311,50 @@ const SupportNPSDashboard = ({ conversations, messages, metrics }: SupportNPSDas
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Feedback dos Usuários</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentFeedback.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Nenhum comentário recebido
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentFeedback.map((item) => (
+                <div key={item.id} className="rounded-lg border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{item.subject}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.ticket_number || item.id}
+                        {item.rated_at ? ` • ${format(new Date(item.rated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-4 w-4 ${
+                            star <= item.rating!
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-muted-foreground'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {item.rating_comment}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Satisfaction Metrics */}
       <Card>
