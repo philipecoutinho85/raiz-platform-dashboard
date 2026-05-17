@@ -77,8 +77,8 @@ const SupportTicketDetail = ({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [currentStatus, setCurrentStatus] = useState(ticket.status);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [adminRating, setAdminRating] = useState(ticket.admin_rating || 0);
-  const [adminRatingComment, setAdminRatingComment] = useState(ticket.admin_rating_comment || '');
+  const [closingRating, setClosingRating] = useState(ticket.rating || 0);
+  const [closingRatingComment, setClosingRatingComment] = useState(ticket.rating_comment || '');
 
   useEffect(() => {
     markAsRead();
@@ -139,7 +139,7 @@ const SupportTicketDetail = ({
   const handleStatusChange = async (newStatus: string) => {
     const isFinalStatus = newStatus === 'resolvido' || newStatus === 'fechado';
 
-    if (isFinalStatus && !ticket.admin_rating && adminRating === 0) {
+    if (isFinalStatus && !ticket.rating && closingRating === 0) {
       toast({
         title: 'Classificação obrigatória',
         description: 'Selecione de 1 a 5 estrelas antes de resolver ou fechar o chamado.',
@@ -155,11 +155,10 @@ const SupportTicketDetail = ({
         updated_at: new Date().toISOString()
       };
 
-      if (isFinalStatus && !ticket.admin_rating) {
-        updateData.admin_rating = adminRating;
-        updateData.admin_rating_comment = adminRatingComment.trim() || null;
-        updateData.admin_rated_at = new Date().toISOString();
-        updateData.admin_rated_by = user?.id;
+      if (isFinalStatus && !ticket.rating) {
+        updateData.rating = closingRating;
+        updateData.rating_comment = closingRatingComment.trim() || null;
+        updateData.rated_at = new Date().toISOString();
       }
 
       if (newStatus === 'resolvido' && !ticket.resolved_at) {
@@ -362,12 +361,12 @@ const SupportTicketDetail = ({
               </Select>
             </div>
 
-            {/* Admin Rating */}
+            {/* Closing Rating */}
             <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
               <div>
-                <p className="text-sm font-medium">Classificação técnica</p>
+                <p className="text-sm font-medium">Nota do atendimento</p>
                 <p className="text-xs text-muted-foreground">
-                  Obrigatória para resolver ou fechar o chamado.
+                  Obrigatória para resolver ou fechar; alimenta o painel NPS.
                 </p>
               </div>
 
@@ -376,13 +375,13 @@ const SupportTicketDetail = ({
                   <button
                     key={star}
                     type="button"
-                    onClick={() => !ticket.admin_rating && setAdminRating(star)}
-                    disabled={Boolean(ticket.admin_rating)}
+                    onClick={() => !ticket.rating && setClosingRating(star)}
+                    disabled={Boolean(ticket.rating)}
                     className="rounded p-1 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-default disabled:hover:scale-100"
                   >
                     <Star
                       className={`h-6 w-6 ${
-                        star <= adminRating
+                        star <= closingRating
                           ? 'fill-yellow-400 text-yellow-400'
                           : 'text-muted-foreground'
                       }`}
@@ -391,15 +390,15 @@ const SupportTicketDetail = ({
                 ))}
               </div>
 
-              {ticket.admin_rating ? (
+              {ticket.rating ? (
                 <p className="text-xs text-muted-foreground">
-                  Classificado em {ticket.admin_rated_at ? format(new Date(ticket.admin_rated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'data não registrada'}
+                  Avaliado em {ticket.rated_at ? format(new Date(ticket.rated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'data não registrada'}
                 </p>
               ) : (
                 <Textarea
-                  value={adminRatingComment}
-                  onChange={(e) => setAdminRatingComment(e.target.value)}
-                  placeholder="Comentário interno opcional..."
+                  value={closingRatingComment}
+                  onChange={(e) => setClosingRatingComment(e.target.value)}
+                  placeholder="Comentário opcional sobre o atendimento..."
                   className="min-h-[72px] resize-none"
                 />
               )}
