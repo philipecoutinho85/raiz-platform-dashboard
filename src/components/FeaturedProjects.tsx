@@ -25,6 +25,45 @@ interface Project {
   platform_fee_percentage?: number;
 }
 
+const demoProjects: Project[] = [
+  {
+    id: 'demo-agrofloresta',
+    title: 'Agrofloresta Comunitaria do Vale',
+    description: 'Implantacao de hortas agroflorestais, capacitacao de familias produtoras e distribuicao de alimentos frescos para escolas publicas da regiao.',
+    category: 'Meio ambiente',
+    goal: 85000,
+    raised_amount: 61200,
+    backers_count: 184,
+    created_at: new Date().toISOString(),
+    deadline: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000).toISOString(),
+    featured_image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=520&fit=crop',
+  },
+  {
+    id: 'demo-lab-digital',
+    title: 'Laboratorio Digital para Jovens',
+    description: 'Um espaco de tecnologia com computadores, internet e mentoria para jovens aprenderem programacao, design e empreendedorismo social.',
+    category: 'Educacao',
+    goal: 120000,
+    raised_amount: 94000,
+    backers_count: 267,
+    created_at: new Date().toISOString(),
+    deadline: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
+    featured_image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=520&fit=crop',
+  },
+  {
+    id: 'demo-cultura-raiz',
+    title: 'Circuito Cultura Raiz',
+    description: 'Producao de oficinas, apresentacoes e registros audiovisuais para preservar a memoria cultural de mestres, artistas e coletivos locais.',
+    category: 'Cultura',
+    goal: 65000,
+    raised_amount: 65000,
+    backers_count: 143,
+    created_at: new Date().toISOString(),
+    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    featured_image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&h=520&fit=crop',
+  },
+];
+
 const FeaturedProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +139,9 @@ const FeaturedProjects = () => {
     return Math.min((project.raised_amount / goal) * 100, 100);
   };
 
+  const hasRealProjects = projects.length > 0;
+  const displayProjects = hasRealProjects ? projects : demoProjects;
+
   if (loading) {
     return (
       <section className="py-20 bg-white">
@@ -113,7 +155,7 @@ const FeaturedProjects = () => {
     );
   }
 
-  if (projects.length === 0) {
+  if (projects.length === 0 && demoProjects.length === 0) {
     return (
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
@@ -135,15 +177,18 @@ const FeaturedProjects = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold text-raiz-dark mb-6">
-            Projetos que fortalecem comunidades e geram <span className="text-gradient">impacto verdadeiro</span>
+            {hasRealProjects ? 'Projetos que fortalecem comunidades e geram ' : 'Projetos em '}
+            <span className="text-gradient">{hasRealProjects ? 'impacto verdadeiro' : 'Destaque'}</span>
           </h2>
           <p className="text-xl text-raiz-secondary max-w-3xl mx-auto">
-            Explore iniciativas sociais, ambientais e culturais que utilizam a Raiz Token para ampliar alcance e viabilizar resultados reais.
+            {hasRealProjects
+              ? 'Explore iniciativas sociais, ambientais e culturais que utilizam a Raiz Token para ampliar alcance e viabilizar resultados reais.'
+              : 'Em breve teremos projetos incriveis para voce apoiar. Enquanto isso, veja exemplos do tipo de impacto que a Raiz Token pode impulsionar.'}
           </p>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {projects.map((project, index) => {
+          {displayProjects.map((project, index) => {
             const progressPercentage = getProgressPercentage(project);
             const daysLeft = getDaysLeft(project.deadline);
             const isNearGoal = progressPercentage >= 70 && progressPercentage < 100;
@@ -152,11 +197,13 @@ const FeaturedProjects = () => {
             return (
               <Card 
                 key={project.id} 
-                className={`overflow-hidden border-raiz-accent/20 group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-raiz-primary/40 ${
+                className={`overflow-hidden border-raiz-accent/20 group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:border-raiz-primary/40 ${
+                  hasRealProjects ? 'cursor-pointer' : ''
+                } ${
                   isNearGoal ? 'ring-2 ring-orange-400/50' : ''
                 } ${isCompleted ? 'ring-2 ring-green-500/50' : ''}`}
                 style={{ animationDelay: `${index * 0.2}s` }}
-                onClick={() => navigate(`/projeto/${project.id}`)}
+                onClick={() => hasRealProjects && navigate(`/projeto/${project.id}`)}
               >
                 <div className="relative overflow-hidden">
                   <img 
@@ -168,6 +215,11 @@ const FeaturedProjects = () => {
                   <Badge className="absolute top-4 left-4 bg-raiz-gold text-raiz-dark hover:bg-raiz-gold/90 transition-transform group-hover:scale-105">
                     {project.category}
                   </Badge>
+                  {!hasRealProjects && (
+                    <Badge variant="secondary" className="absolute bottom-4 left-4 bg-white/90 text-raiz-dark">
+                      Projeto demonstrativo
+                    </Badge>
+                  )}
                   
                   {/* Indicador de projeto próximo da meta */}
                   {isNearGoal && (
@@ -216,7 +268,7 @@ const FeaturedProjects = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-raiz-secondary">
-                        {formatTokens(project.raised_amount)} tokens arrecadados
+                        {formatTokens(project.raised_amount)} tokens {hasRealProjects ? 'arrecadados' : 'simulados'}
                       </span>
                       <span className={`font-bold text-lg ${
                         isCompleted ? 'text-green-500' : isNearGoal ? 'text-orange-500' : 'text-raiz-gold'
@@ -238,7 +290,7 @@ const FeaturedProjects = () => {
                     </div>
                     
                     <div className="text-xs text-raiz-secondary text-center">
-                      Meta: {formatTokens(project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal)} tokens
+                      {hasRealProjects ? 'Meta' : 'Meta ilustrativa'}: {formatTokens(project.custom_goal && project.custom_goal > 0 ? project.custom_goal : project.goal)} tokens
                     </div>
                   </div>
                   
@@ -257,7 +309,9 @@ const FeaturedProjects = () => {
                   </div>
                   
                   <Button 
-                    className={`w-full font-medium py-3 rounded-lg transform transition-all duration-300 group-hover:scale-[1.02] ${
+                    className={`w-full font-medium py-3 rounded-lg transform transition-all duration-300 ${
+                      hasRealProjects ? 'group-hover:scale-[1.02]' : 'cursor-default'
+                    } ${
                       isCompleted 
                         ? 'bg-green-500 hover:bg-green-600 text-white' 
                         : isNearGoal 
@@ -266,10 +320,12 @@ const FeaturedProjects = () => {
                     }`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/projeto/${project.id}`);
+                      if (hasRealProjects) {
+                        navigate(`/projeto/${project.id}`);
+                      }
                     }}
                   >
-                    {isCompleted ? 'Ver Projeto Completo' : isNearGoal ? 'Ajude a Completar!' : 'Ver Projeto'}
+                    {hasRealProjects ? (isCompleted ? 'Ver Projeto Completo' : isNearGoal ? 'Ajude a Completar!' : 'Ver Projeto') : 'Exemplo de projeto'}
                   </Button>
                 </CardContent>
               </Card>
