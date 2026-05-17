@@ -21,7 +21,8 @@ import {
   CheckCircle,
   AlertCircle,
   Hourglass,
-  XCircle
+  XCircle,
+  Star
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,6 +77,8 @@ const SupportTicketDetail = ({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [currentStatus, setCurrentStatus] = useState(ticket.status);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [adminRating, setAdminRating] = useState(ticket.admin_rating || 0);
+  const [adminRatingComment, setAdminRatingComment] = useState(ticket.admin_rating_comment || '');
 
   useEffect(() => {
     markAsRead();
@@ -134,12 +137,30 @@ const SupportTicketDetail = ({
   };
 
   const handleStatusChange = async (newStatus: string) => {
+    const isFinalStatus = newStatus === 'resolvido' || newStatus === 'fechado';
+
+    if (isFinalStatus && !ticket.admin_rating && adminRating === 0) {
+      toast({
+        title: 'Classificação obrigatória',
+        description: 'Selecione de 1 a 5 estrelas antes de resolver ou fechar o chamado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUpdatingStatus(true);
     try {
       const updateData: any = { 
         status: newStatus,
         updated_at: new Date().toISOString()
       };
+
+      if (isFinalStatus && !ticket.admin_rating) {
+        updateData.admin_rating = adminRating;
+        updateData.admin_rating_comment = adminRatingComment.trim() || null;
+        updateData.admin_rated_at = new Date().toISOString();
+        updateData.admin_rated_by = user?.id;
+      }
 
       if (newStatus === 'resolvido' && !ticket.resolved_at) {
         updateData.resolved_at = new Date().toISOString();
@@ -339,6 +360,49 @@ const SupportTicketDetail = ({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Admin Rating */}
+            <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
+              <div>
+                <p className="text-sm font-medium">Classificação técnica</p>
+                <p className="text-xs text-muted-foreground">
+                  Obrigatória para resolver ou fechar o chamado.
+                </p>
+              </div>
+
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => !ticket.admin_rating && setAdminRating(star)}
+                    disabled={Boolean(ticket.admin_rating)}
+                    className="rounded p-1 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-default disabled:hover:scale-100"
+                  >
+                    <Star
+                      className={`h-6 w-6 ${
+                        star <= adminRating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-muted-foreground'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {ticket.admin_rating ? (
+                <p className="text-xs text-muted-foreground">
+                  Classificado em {ticket.admin_rated_at ? format(new Date(ticket.admin_rated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'data não registrada'}
+                </p>
+              ) : (
+                <Textarea
+                  value={adminRatingComment}
+                  onChange={(e) => setAdminRatingComment(e.target.value)}
+                  placeholder="Comentário interno opcional..."
+                  className="min-h-[72px] resize-none"
+                />
+              )}
             </div>
 
             {/* Quick Actions */}

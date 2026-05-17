@@ -24,6 +24,10 @@ export interface SupportConversation {
   rating: number | null;
   rating_comment: string | null;
   rated_at: string | null;
+  admin_rating: number | null;
+  admin_rating_comment: string | null;
+  admin_rated_at: string | null;
+  admin_rated_by: string | null;
   first_response_at: string | null;
   resolved_at: string | null;
   created_at: string;
