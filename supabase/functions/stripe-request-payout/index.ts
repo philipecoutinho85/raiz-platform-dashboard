@@ -42,6 +42,8 @@ serve(async (req) => {
     if (!amount || amount <= 0) throw new Error("Invalid amount");
 
     const amountCents = Math.round(amount * 100);
+    const payoutScope = projectId || 'general';
+    const payoutIdempotencyKey = `creator-payout-${user.id}-${payoutScope}-${amountCents}`;
     logStep("Payout request", { projectId, amountCents });
 
     // Get user profile with Stripe account
@@ -105,16 +107,42 @@ serve(async (req) => {
         amount: amountCents,
         currency: 'brl',
         metadata: {
-          user_id: user.id,
-          project_id: projectId || 'general',
+            user_id: user.id,
+            project_id: payoutScope,
         },
       },
       {
         stripeAccount: profile.stripe_account_id,
+        idempotencyKey: payoutIdempotencyKey,
       }
     );
 
     logStep("Payout created", { payoutId: payout.id, status: payout.status });
+
+    const { data: existingPayout } = await supabase
+      .from('creator_payouts')
+      .select('id, status')
+      .eq('stripe_payout_id', payout.id)
+      .maybeSingle();
+
+    if (existingPayout) {
+      logStep("Payout already recorded", { payoutId: payout.id, localId: existingPayout.id });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          alreadyProcessed: true,
+          payoutId: payout.id,
+          status: existingPayout.status,
+          amount: amountCents / 100,
+          message: 'Saque ja estava registrado e em processamento.'
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
 
     // Record payout request
     await supabase.from('creator_payouts').insert({

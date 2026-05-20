@@ -222,30 +222,38 @@ const BoletoRefundsTab = () => {
     setActionLoading(true);
 
     try {
-      const updates: any = {
-        status: newStatus,
-        updated_at: new Date().toISOString()
+      const actionMap: Record<string, string> = {
+        em_analise: 'analyze',
+        aprovado: 'approve',
+        rejeitado: 'reject'
       };
+      const refundAction = actionMap[newStatus];
 
-      if (newStatus === 'em_analise') {
-        updates.analyzed_at = new Date().toISOString();
-        updates.analyzed_by = user.id;
+      if (!refundAction) {
+        throw new Error('Status de reembolso invalido');
       }
 
-      if (adminNotes) {
-        updates.admin_notes = adminNotes;
-      }
-
-      if (newStatus === 'rejeitado' && rejectionReason) {
-        updates.rejection_reason = rejectionReason;
-      }
-
-      const { error } = await supabase
-        .from('refund_requests')
-        .update(updates)
-        .eq('id', refundId);
+      const { error } = await supabase.rpc('process_admin_refund_atomic' as never, {
+        p_refund_id: refundId,
+        p_source: 'refund_requests',
+        p_action: refundAction,
+        p_rejection_reason: newStatus === 'rejeitado' ? rejectionReason : null,
+        p_admin_notes: adminNotes || null,
+        p_proof_url: null
+      } as never);
 
       if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Status atualizado com sucesso.'
+      });
+
+      setDetailsOpen(false);
+      setAdminNotes('');
+      setRejectionReason('');
+      fetchRefunds();
+      return;
 
       // Save status history
       const { error: historyError } = await supabase.from('refund_status_history').insert({
@@ -258,11 +266,6 @@ const BoletoRefundsTab = () => {
 
       if (historyError) {
         console.error('Error saving refund history:', historyError);
-      }
-
-      // If status is 'aprovado', debit tokens from user
-      if (newStatus === 'aprovado' && selectedRefund) {
-        await debitTokensForRefund(selectedRefund);
       }
 
       // Log admin action
@@ -316,63 +319,16 @@ const BoletoRefundsTab = () => {
   // Function to debit tokens when refund is approved
   const debitTokensForRefund = async (refund: RefundRequest) => {
     try {
-      // Get purchase details to know how many tokens to debit
-      const { data: purchase } = await supabase
-        .from('token_purchases')
-        .select('amount')
-        .eq('id', refund.transaction_id)
-        .single();
+      const { error } = await supabase.rpc('process_admin_refund_atomic' as never, {
+        p_refund_id: refund.id,
+        p_source: 'refund_requests',
+        p_action: 'approve',
+        p_rejection_reason: null,
+        p_admin_notes: adminNotes || null,
+        p_proof_url: null
+      } as never);
 
-      if (!purchase) {
-        console.error('Purchase not found for refund');
-        return;
-      }
-
-      const tokensToDebit = purchase.amount;
-
-      // Get current user balance
-      const { data: userTokens } = await supabase
-        .from('user_tokens')
-        .select('balance')
-        .eq('user_id', refund.user_id)
-        .single();
-
-      const currentBalance = userTokens?.balance || 0;
-      const newBalance = Math.max(0, currentBalance - tokensToDebit);
-
-      // Update user token balance
-      const { error: updateError } = await supabase
-        .from('user_tokens')
-        .upsert({
-          user_id: refund.user_id,
-          balance: newBalance,
-          updated_at: new Date().toISOString()
-        });
-
-      if (updateError) throw updateError;
-
-      // Create token transaction record
-      await supabase.from('token_transactions').insert({
-        user_id: refund.user_id,
-        amount: -tokensToDebit,
-        transaction_type: 'refund',
-        reference_id: refund.id,
-        description: `Reembolso aprovado - ${tokensToDebit} tokens devolvidos`,
-        balance_after: newBalance
-      });
-
-      // Create ledger movement for financial tracking
-      await supabase.from('ledger_movements').insert({
-        movement_type: 'refund_debit',
-        amount: Number(refund.amount),
-        description: `Reembolso aprovado - ${tokensToDebit} tokens`,
-        reference_type: 'refund_request',
-        reference_id: refund.id,
-        from_entity: refund.user_id,
-        to_entity: 'platform'
-      });
-
-      console.log(`Debited ${tokensToDebit} tokens from user ${refund.user_id} for refund ${refund.id}`);
+      if (error) throw error;
     } catch (error) {
       console.error('Error debiting tokens for refund:', error);
       throw error;
@@ -466,6 +422,44 @@ const BoletoRefundsTab = () => {
     try {
       const previousStatus = selectedRefund.status;
 
+      const { error: refundError } = await supabase.rpc('process_admin_refund_atomic' as never, {
+        p_refund_id: selectedRefund.id,
+        p_source: 'refund_requests',
+        p_action: 'complete',
+        p_rejection_reason: null,
+        p_admin_notes: adminNotes || selectedRefund.admin_notes || null,
+        p_proof_url: selectedRefund.proof_of_payment_url
+      } as never);
+
+      if (refundError) throw refundError;
+
+      try {
+        await supabase.functions.invoke('send-boleto-refund-email', {
+          body: {
+            type: 'payment_confirmation',
+            refundId: selectedRefund.id
+          }
+        });
+      } catch (emailError) {
+        console.error('Error sending payment confirmation email:', emailError);
+        toast({
+          title: 'Aviso',
+          description: 'Pagamento confirmado, mas houve um erro ao enviar o e-mail.',
+          variant: 'default'
+        });
+      }
+
+      toast({
+        title: 'Pagamento confirmado',
+        description: 'O reembolso foi marcado como realizado.'
+      });
+
+      setPaymentDialogOpen(false);
+      setSelectedRefund(null);
+      setAdminNotes('');
+      fetchRefunds();
+      return;
+
       const { error } = await supabase
         .from('refund_requests')
         .update({
@@ -492,22 +486,6 @@ const BoletoRefundsTab = () => {
       if (historyError) {
         console.error('Error saving refund history:', historyError);
       }
-
-      // If tokens were not debited yet (status was not 'aprovado'), debit now
-      if (previousStatus !== 'aprovado') {
-        await debitTokensForRefund(selectedRefund);
-      }
-
-      // Create final ledger movement for completed refund
-      await supabase.from('ledger_movements').insert({
-        movement_type: 'refund_completed',
-        amount: Number(selectedRefund.amount),
-        description: `Reembolso realizado - R$ ${Number(selectedRefund.amount).toFixed(2)}`,
-        reference_type: 'refund_request',
-        reference_id: selectedRefund.id,
-        from_entity: 'platform',
-        to_entity: selectedRefund.user_id
-      });
 
       // Send email with attachment
       try {

@@ -167,56 +167,16 @@ export function RefundsDisputesPanel() {
     try {
       setProcessingRefund(true);
 
-      const newStatus = action === 'approve' ? 'completed' : 'rejected';
-
-      const { error } = await supabase
-        .from('refunds')
-        .update({
-          status: newStatus,
-          processed_by: user?.id,
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', refundId);
+      const { error } = await supabase.rpc('process_admin_refund_atomic' as never, {
+        p_refund_id: refundId,
+        p_source: 'refunds',
+        p_action: action,
+        p_rejection_reason: null,
+        p_admin_notes: null,
+        p_proof_url: null
+      } as never);
 
       if (error) throw error;
-
-      // If approving, also credit the tokens back
-      if (action === 'approve' && selectedRefund) {
-        // Update user tokens
-        const { data: currentTokens, error: fetchError } = await supabase
-          .from('user_tokens')
-          .select('balance')
-          .eq('user_id', selectedRefund.user_id)
-          .single();
-
-        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
-
-        const newBalance = (currentTokens?.balance || 0) + selectedRefund.amount;
-
-        const { error: updateError } = await supabase
-          .from('user_tokens')
-          .upsert({
-            user_id: selectedRefund.user_id,
-            balance: newBalance,
-            updated_at: new Date().toISOString()
-          });
-
-        if (updateError) throw updateError;
-
-        // Log the transaction
-        const { error: txnError } = await supabase
-          .from('token_transactions')
-          .insert({
-            user_id: selectedRefund.user_id,
-            amount: selectedRefund.amount,
-            balance_after: newBalance,
-            transaction_type: 'refund',
-            description: `Reembolso de ${selectedRefund.amount} tokens`,
-            reference_id: refundId
-          });
-
-        if (txnError) throw txnError;
-      }
 
       toast({
         title: 'Sucesso',

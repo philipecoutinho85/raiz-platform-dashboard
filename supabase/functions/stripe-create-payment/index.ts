@@ -59,6 +59,12 @@ serve(async (req) => {
 
     if (projectError) throw new Error(`Project error: ${projectError.message}`);
     if (!project) throw new Error("Project not found");
+    if (project.status !== 'approved') {
+      throw new Error("Projeto nao esta aprovado para receber pagamentos");
+    }
+    if (project.user_id === user.id) {
+      throw new Error("Criador nao pode apoiar o proprio projeto por pagamento Stripe");
+    }
 
     const creatorProfile = project.profiles;
     if (!creatorProfile?.stripe_account_id) {

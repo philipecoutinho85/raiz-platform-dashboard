@@ -219,6 +219,39 @@ const RefundsTab = () => {
         return;
       }
 
+      const { error: refundError } = await supabase.rpc('process_admin_refund_atomic' as never, {
+        p_refund_id: selectedRefund.id,
+        p_source: selectedRefund.source || 'refund_requests',
+        p_action: 'complete',
+        p_rejection_reason: null,
+        p_admin_notes: null,
+        p_proof_url: proofPath
+      } as never);
+
+      if (refundError) throw refundError;
+
+      try {
+        await supabase.functions.invoke('send-boleto-refund-email', {
+          body: {
+            type: 'payment_confirmation',
+            refundId: selectedRefund.id
+          }
+        });
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Reembolso concluido! O usuario foi notificado.",
+      });
+
+      setShowCompleteModal(false);
+      setSelectedRefund(null);
+      setProofFile(null);
+      fetchRefunds();
+      return;
+
       // Atualizar status na tabela correta
       if (selectedRefund.source === 'refund_requests') {
         const { error } = await supabase
@@ -314,6 +347,28 @@ const RefundsTab = () => {
       setProcessingAction(true);
 
       const previousStatus = selectedRefund.status;
+
+      const { error: refundError } = await supabase.rpc('process_admin_refund_atomic' as never, {
+        p_refund_id: selectedRefund.id,
+        p_source: selectedRefund.source || 'refund_requests',
+        p_action: 'reject',
+        p_rejection_reason: rejectionReason,
+        p_admin_notes: null,
+        p_proof_url: null
+      } as never);
+
+      if (refundError) throw refundError;
+
+      toast({
+        title: "Reembolso Rejeitado",
+        description: "O usuario foi notificado sobre a rejeicao.",
+      });
+
+      setShowRejectModal(false);
+      setSelectedRefund(null);
+      setRejectionReason('');
+      fetchRefunds();
+      return;
 
       // Atualizar status na tabela correta
       if (selectedRefund.source === 'refund_requests') {
@@ -490,6 +545,8 @@ const RefundsTab = () => {
     try {
       setProcessingAction(true);
       const previousStatus = refund.status;
+      await handleApproveRefundSecure(refund);
+      return;
 
       // 1. Subtrair tokens do usuário
       const { data: currentBalance, error: balanceError } = await supabase
@@ -563,6 +620,33 @@ const RefundsTab = () => {
     setSelectedRefund(refund);
     setProofFile(null);
     setShowCompleteModal(true);
+  };
+
+  const handleApproveRefundSecure = async (refund: Refund) => {
+    if (!user) return;
+
+    try {
+      setProcessingAction(true);
+
+      const { error } = await supabase.rpc('process_admin_refund_atomic' as never, {
+        p_refund_id: refund.id,
+        p_source: refund.source || 'refund_requests',
+        p_action: 'approve',
+        p_rejection_reason: null,
+        p_admin_notes: null,
+        p_proof_url: null
+      } as never);
+
+      if (error) throw error;
+
+      toast({ title: "Sucesso", description: "Reembolso aprovado com processamento financeiro seguro." });
+      fetchRefunds();
+    } catch (error) {
+      console.error('Error:', error);
+      toast({ title: "Erro", description: "Erro ao aprovar reembolso.", variant: "destructive" });
+    } finally {
+      setProcessingAction(false);
+    }
   };
 
   const getReasonLabel = (reason: string) => {
@@ -673,7 +757,7 @@ const RefundsTab = () => {
                             size="sm"
                             variant="outline"
                             className="text-green-600 border-green-600 hover:bg-green-50"
-                            onClick={() => handleApproveAnalysis(refund)}
+                            onClick={() => handleApproveRefundSecure(refund)}
                             disabled={processingAction}
                           >
                             <CheckCircle className="w-4 h-4" />

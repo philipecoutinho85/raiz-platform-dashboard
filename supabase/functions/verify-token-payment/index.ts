@@ -8,85 +8,9 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[VERIFY-TOKEN-PAYMENT] ${step}${detailsStr}`);
 };
-
-async function processTokenPurchase(supabase: any, purchaseId: string, userId: string, tokensAmount: number) {
-  logStep("Processing token purchase", { purchaseId, userId, tokensAmount });
-
-  // Check if already processed
-  const { data: existingPurchase } = await supabase
-    .from('token_purchases')
-    .select('status')
-    .eq('id', purchaseId)
-    .single();
-
-  if (existingPurchase?.status === 'paid') {
-    logStep("Purchase already processed, skipping");
-    return { alreadyProcessed: true };
-  }
-
-  // Update purchase status to paid
-  await supabase
-    .from('token_purchases')
-    .update({ 
-      status: 'paid',
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', purchaseId);
-
-  logStep("Purchase status updated to paid");
-
-  // Get current user balance
-  const { data: userTokens } = await supabase
-    .from('user_tokens')
-    .select('balance')
-    .eq('user_id', userId)
-    .single();
-
-  const currentBalance = userTokens?.balance || 0;
-  const newBalance = currentBalance + tokensAmount;
-
-  // Update user balance
-  await supabase
-    .from('user_tokens')
-    .upsert({
-      user_id: userId,
-      balance: newBalance,
-      updated_at: new Date().toISOString()
-    });
-
-  logStep("User balance updated", { oldBalance: currentBalance, newBalance });
-
-  // Create transaction record
-  await supabase
-    .from('token_transactions')
-    .insert({
-      user_id: userId,
-      amount: tokensAmount,
-      transaction_type: 'purchase',
-      reference_id: purchaseId,
-      description: `Compra de ${tokensAmount} tokens via Stripe`,
-      balance_after: newBalance
-    });
-
-  logStep("Transaction record created");
-
-  // Create notification
-  await supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      type: 'token_purchase',
-      title: 'Compra de Tokens Confirmada! 🎉',
-      message: `Sua compra de ${tokensAmount} tokens foi confirmada e já está disponível em sua carteira!`,
-      related_id: purchaseId
-    });
-
-  logStep("Notification created");
-  return { success: true, newBalance };
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -103,153 +27,176 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new Error("Usuário não autenticado");
+      throw new Error("Usuario nao autenticado");
     }
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
-      auth: { autoRefreshToken: false, persistSession: false }
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
     const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
-      throw new Error("Usuário não autenticado");
+      throw new Error("Usuario nao autenticado");
     }
 
     logStep("User authenticated", { userId: user.id });
 
     const { sessionId, purchaseId } = await req.json();
-    
+
     if (!sessionId && !purchaseId) {
-      throw new Error("sessionId ou purchaseId é obrigatório");
+      throw new Error("sessionId ou purchaseId e obrigatorio");
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Get the purchase record
     let purchase;
     if (purchaseId) {
       const { data } = await supabase
-        .from('token_purchases')
-        .select('*')
-        .eq('id', purchaseId)
-        .eq('user_id', user.id)
+        .from("token_purchases")
+        .select("*")
+        .eq("id", purchaseId)
+        .eq("user_id", user.id)
         .single();
       purchase = data;
     } else if (sessionId) {
       const { data } = await supabase
-        .from('token_purchases')
-        .select('*')
-        .eq('pagarme_transaction_id', sessionId)
-        .eq('user_id', user.id)
+        .from("token_purchases")
+        .select("*")
+        .eq("pagarme_transaction_id", sessionId)
+        .eq("user_id", user.id)
         .single();
       purchase = data;
     }
 
     if (!purchase) {
-      throw new Error("Compra não encontrada");
+      throw new Error("Compra nao encontrada");
     }
 
-    logStep("Purchase found", { 
-      purchaseId: purchase.id, 
+    logStep("Purchase found", {
+      purchaseId: purchase.id,
       status: purchase.status,
-      sessionId: purchase.pagarme_transaction_id 
+      sessionId: purchase.pagarme_transaction_id,
     });
 
-    // If already paid, just return success
-    if (purchase.status === 'paid') {
+    if (purchase.status === "paid") {
       logStep("Purchase already paid");
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          status: 'paid',
-          message: 'Pagamento já foi processado'
+        JSON.stringify({
+          success: true,
+          status: "paid",
+          alreadyProcessed: true,
+          message: "Pagamento ja foi processado",
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
       );
     }
 
-    // Check payment status in Stripe
     const stripeSessionId = purchase.pagarme_transaction_id;
     if (!stripeSessionId) {
-      throw new Error("ID da sessão Stripe não encontrado");
+      throw new Error("ID da sessao Stripe nao encontrado");
     }
 
     const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
-    logStep("Stripe session retrieved", { 
+    logStep("Stripe session retrieved", {
       paymentStatus: session.payment_status,
-      status: session.status
+      status: session.status,
     });
 
-    // Check if payment is complete
-    if (session.payment_status === 'paid') {
-      logStep("Payment confirmed in Stripe, processing tokens");
-      
-      const result = await processTokenPurchase(
-        supabase, 
-        purchase.id, 
-        user.id, 
-        purchase.amount
-      );
+    if (session.metadata?.purchase_id && session.metadata.purchase_id !== purchase.id) {
+      throw new Error("Stripe metadata purchase mismatch");
+    }
+
+    if (session.metadata?.user_id && session.metadata.user_id !== user.id) {
+      throw new Error("Stripe metadata user mismatch");
+    }
+
+    if (session.metadata?.tokens_amount && Number(session.metadata.tokens_amount) !== purchase.amount) {
+      throw new Error("Stripe metadata amount mismatch");
+    }
+
+    if (session.currency && session.currency.toLowerCase() !== "brl") {
+      throw new Error("Moeda invalida para compra de tokens");
+    }
+
+    if (session.payment_status === "paid") {
+      logStep("Payment confirmed in Stripe, processing through atomic RPC");
+
+      const { data, error } = await supabase.rpc("process_token_purchase_atomic", {
+        p_purchase_id: purchase.id,
+        p_user_id: user.id,
+        p_tokens_amount: purchase.amount,
+        p_stripe_session_id: stripeSessionId,
+        p_stripe_payment_status: session.payment_status,
+        p_payment_type: session.payment_method_types?.includes("boleto") ? "boleto" : "card",
+        p_expires_at: null,
+        p_event_id: null,
+      });
+
+      if (error) throw error;
+
+      const result = data?.[0] || {};
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          status: 'paid',
-          message: 'Pagamento confirmado e tokens creditados!',
-          ...result
+        JSON.stringify({
+          success: true,
+          status: "paid",
+          message: result.already_processed
+            ? "Pagamento ja foi processado"
+            : "Pagamento confirmado e tokens creditados!",
+          alreadyProcessed: result.already_processed,
+          newBalance: result.new_balance,
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    } else if (session.payment_status === 'unpaid' && session.status === 'open') {
-      // Payment still pending (boleto not paid yet)
-      logStep("Payment still pending");
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          status: 'pending',
-          message: 'Pagamento ainda não confirmado. Aguardando pagamento do boleto.'
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    } else if (session.status === 'expired') {
-      // Session expired
-      await supabase
-        .from('token_purchases')
-        .update({ status: 'failed', updated_at: new Date().toISOString() })
-        .eq('id', purchase.id);
-
-      logStep("Payment expired");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          status: 'expired',
-          message: 'Sessão de pagamento expirou'
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
       );
     }
 
-    // Unknown status
+    if (session.payment_status === "unpaid" && session.status === "open") {
+      logStep("Payment still pending");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: "pending",
+          message: "Pagamento ainda nao confirmado. Aguardando pagamento do boleto.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
+    if (session.status === "expired") {
+      await supabase.rpc("fail_token_purchase_if_unpaid", {
+        p_purchase_id: purchase.id,
+        p_stripe_session_id: stripeSessionId,
+      });
+
+      logStep("Payment expired");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: "expired",
+          message: "Sessao de pagamento expirou",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         status: session.payment_status,
         stripeStatus: session.status,
-        message: 'Status do pagamento verificado'
+        message: "Status do pagamento verificado",
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
-
   } catch (error: any) {
     logStep("ERROR", { message: error.message });
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
     );
   }
 });

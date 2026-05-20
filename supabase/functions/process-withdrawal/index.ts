@@ -12,6 +12,9 @@ const logStep = (step: string, details?: any) => {
   console.log(`[PROCESS-WITHDRAWAL] ${step}${detailsStr}`);
 };
 
+const allowedAdminTypes = new Set(['master', 'financial']);
+const processableStatuses = new Set(['pending', 'pending_manual']);
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,8 +38,48 @@ serve(async (req) => {
       throw new Error('Authorization header missing');
     }
 
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      logStep("Auth failed", { error: authError?.message });
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+
+    const { data: adminRole, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role, admin_type')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !adminRole || !allowedAdminTypes.has(adminRole.admin_type || '')) {
+      logStep("Forbidden withdrawal processing attempt", {
+        userId: user.id,
+        adminType: adminRole?.admin_type ?? null,
+        roleError: roleError?.message,
+      });
+
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: financial administrator role required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
+    const adminId = user?.id;
     const { withdrawalId, action, rejectionReason } = await req.json();
-    logStep("Processing", { withdrawalId, action });
+
+    if (!withdrawalId || !['approve', 'reject'].includes(action)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid withdrawal request' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    logStep("Processing", { withdrawalId, action, adminId, adminType: adminRole.admin_type });
 
     // Fetch withdrawal with project data
     const { data: withdrawal, error: withdrawalError } = await supabase
@@ -56,27 +99,59 @@ serve(async (req) => {
 
     const projectData = withdrawal.projects as any;
 
+    if (action === 'approve' && withdrawal.status === 'approved') {
+      logStep("Withdrawal already approved", {
+        withdrawalId,
+        payoutId: withdrawal.pagarme_transfer_id,
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          alreadyProcessed: true,
+          message: 'Resgate ja estava aprovado',
+          payout_id: withdrawal.pagarme_transfer_id,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'reject' && withdrawal.status === 'rejected') {
+      logStep("Withdrawal already rejected", { withdrawalId });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          alreadyProcessed: true,
+          message: 'Resgate ja estava rejeitado',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!processableStatuses.has(withdrawal.status)) {
+      logStep("Withdrawal is not processable", { withdrawalId, status: withdrawal.status });
+
+      return new Response(
+        JSON.stringify({ error: `Resgate nao pode ser processado no status atual: ${withdrawal.status}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+      );
+    }
+
     // Fetch creator profile
     let creatorName = 'Criador';
-    let creatorEmail = 'sem-email@raiztoken.com.br';
 
     if (projectData?.user_id) {
       const { data: creatorProfile } = await supabase
         .from('profiles')
-        .select('nome, sobrenome, email, stripe_account_id')
+        .select('nome, sobrenome')
         .eq('id', projectData.user_id)
         .maybeSingle();
 
       if (creatorProfile) {
-        creatorName = `${creatorProfile.nome} ${creatorProfile.sobrenome}`;
-        creatorEmail = creatorProfile.email || creatorEmail;
+        creatorName = `${creatorProfile.nome} ${creatorProfile.sobrenome}`.trim() || creatorName;
       }
     }
-
-    // Get admin user from token
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
-    const adminId = user?.id;
 
     if (action === 'reject') {
       logStep("Rejecting withdrawal");
@@ -89,7 +164,8 @@ serve(async (req) => {
           reviewed_at: new Date().toISOString(),
           rejection_reason: rejectionReason
         })
-        .eq('id', withdrawalId);
+        .eq('id', withdrawalId)
+        .in('status', Array.from(processableStatuses));
 
       if (updateError) throw updateError;
 
@@ -121,7 +197,8 @@ serve(async (req) => {
             reviewed_at: new Date().toISOString(),
             rejection_reason: 'Criador não possui conta Stripe configurada. Configure a conta Stripe primeiro.'
           })
-          .eq('id', withdrawalId);
+          .eq('id', withdrawalId)
+          .in('status', Array.from(processableStatuses));
 
         return new Response(
           JSON.stringify({
@@ -144,7 +221,8 @@ serve(async (req) => {
             reviewed_at: new Date().toISOString(),
             rejection_reason: 'Verificação da conta Stripe do criador ainda não está completa.'
           })
-          .eq('id', withdrawalId);
+          .eq('id', withdrawalId)
+          .in('status', Array.from(processableStatuses));
 
         return new Response(
           JSON.stringify({
@@ -183,7 +261,8 @@ serve(async (req) => {
               reviewed_at: new Date().toISOString(),
               rejection_reason: `Saldo insuficiente na conta Stripe do criador. Disponível: R$ ${(availableBalance / 100).toFixed(2)}`
             })
-            .eq('id', withdrawalId);
+            .eq('id', withdrawalId)
+            .in('status', Array.from(processableStatuses));
 
           return new Response(
             JSON.stringify({
@@ -207,13 +286,16 @@ serve(async (req) => {
               creator_name: creatorName
             }
           },
-          { stripeAccount: creatorProfile.stripe_account_id }
+          {
+            stripeAccount: creatorProfile.stripe_account_id,
+            idempotencyKey: `withdrawal-${withdrawalId}-approve`,
+          }
         );
 
         logStep("Stripe payout created", { payoutId: payout.id });
 
         // Update withdrawal status
-        await supabase
+        const { data: updatedWithdrawal, error: approveUpdateError } = await supabase
           .from('withdrawals')
           .update({
             status: 'approved',
@@ -221,7 +303,29 @@ serve(async (req) => {
             reviewed_at: new Date().toISOString(),
             pagarme_transfer_id: payout.id // Reusing field for Stripe payout ID
           })
-          .eq('id', withdrawalId);
+          .eq('id', withdrawalId)
+          .in('status', Array.from(processableStatuses))
+          .select('id')
+          .maybeSingle();
+
+        if (approveUpdateError) throw approveUpdateError;
+
+        if (!updatedWithdrawal) {
+          logStep("Withdrawal was processed concurrently after Stripe idempotency", {
+            withdrawalId,
+            payoutId: payout.id,
+          });
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              alreadyProcessed: true,
+              message: 'Resgate ja foi processado por outra execucao',
+              payout_id: payout.id
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
         // Create notification
         await supabase
@@ -254,7 +358,8 @@ serve(async (req) => {
             reviewed_at: new Date().toISOString(),
             rejection_reason: `Erro Stripe: ${stripeError.message}`
           })
-          .eq('id', withdrawalId);
+          .eq('id', withdrawalId)
+          .in('status', Array.from(processableStatuses));
 
         return new Response(
           JSON.stringify({
