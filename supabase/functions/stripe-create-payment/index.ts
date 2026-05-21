@@ -45,20 +45,31 @@ serve(async (req) => {
     if (amountCents < 500) throw new Error("Minimum amount is R$5.00");
     logStep("Payment request", { projectId, amount, amountCents });
 
-    // Get project and creator info
+    // Get project using only columns that exist in production.
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .select(`
-        *,
-        profiles:user_id (
-          id, nome, sobrenome, email, stripe_account_id, stripe_onboarding_complete
-        )
+        id,
+        user_id,
+        title,
+        status,
+        goal,
+        platform_fee_percentage,
+        project_type
       `)
       .eq('id', projectId)
       .single();
 
     if (projectError) throw new Error(`Project error: ${projectError.message}`);
     if (!project) throw new Error("Project not found");
+    logStep("Project loaded", {
+      projectId: project.id,
+      creatorId: project.user_id,
+      status: project.status,
+      goal: project.goal,
+      projectType: project.project_type,
+    });
+
     if (project.status !== 'approved') {
       throw new Error("Projeto nao esta aprovado para receber pagamentos");
     }
@@ -66,7 +77,15 @@ serve(async (req) => {
       throw new Error("Criador nao pode apoiar o proprio projeto por pagamento Stripe");
     }
 
-    const creatorProfile = project.profiles;
+    const { data: creatorProfile, error: creatorError } = await supabase
+      .from('profiles')
+      .select('id, nome, sobrenome, email, stripe_account_id, stripe_onboarding_complete')
+      .eq('id', project.user_id)
+      .single();
+
+    if (creatorError) throw new Error(`Creator profile error: ${creatorError.message}`);
+    if (!creatorProfile) throw new Error("Perfil do criador nao encontrado");
+
     if (!creatorProfile?.stripe_account_id) {
       throw new Error("Criador ainda não configurou a conta para receber pagamentos");
     }
@@ -153,7 +172,7 @@ serve(async (req) => {
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
     // Record payment intent (pending)
-    await supabase.from('stripe_payments').insert({
+    const { error: paymentInsertError } = await supabase.from('stripe_payments').insert({
       user_id: user.id,
       project_id: projectId,
       stripe_session_id: session.id,
@@ -162,6 +181,10 @@ serve(async (req) => {
       creator_amount: creatorAmountCents,
       status: 'pending'
     });
+
+    if (paymentInsertError) {
+      throw new Error(`Stripe payment insert error: ${paymentInsertError.message}`);
+    }
 
     return new Response(
       JSON.stringify({ url: session.url, sessionId: session.id }),
@@ -172,9 +195,17 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
+    const errorName = error instanceof Error ? error.name : "UnknownError";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logStep("ERROR", { name: errorName, message: errorMessage, stack: errorStack });
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({
+        error: errorMessage,
+        details: {
+          name: errorName,
+          phase: "stripe-create-payment",
+        },
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
