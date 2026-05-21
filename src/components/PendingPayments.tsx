@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock, AlertTriangle, CheckCircle, XCircle, FileText, RefreshCw } from 'lucide-react';
+import { Clock, AlertTriangle, CheckCircle, XCircle, FileText, RefreshCw, CreditCard } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -14,10 +14,12 @@ interface PendingPayment {
   amount: number;
   price: number;
   status: string;
-  payment_type: string;
+  payment_type: string | null;
+  payment_method?: string | null;
   created_at: string;
   expires_at: string | null;
   updated_at: string;
+  pagarme_transaction_id?: string | null;
 }
 
 const PendingPayments = () => {
@@ -35,13 +37,12 @@ const PendingPayments = () => {
         .select('*')
         .eq('user_id', user.id)
         .in('status', ['pending', 'expired'])
-        .eq('payment_type', 'boleto')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setPayments(data || []);
     } catch (error) {
-      console.error('Erro ao buscar pagamentos:', error);
+      console.error('Erro ao buscar pagamentos pendentes:', error);
     } finally {
       setLoading(false);
     }
@@ -51,12 +52,11 @@ const PendingPayments = () => {
     fetchPayments();
   }, [user?.id]);
 
-  // Realtime subscription
   useEffect(() => {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel('pending-payments')
+      .channel(`pending-token-purchases-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -75,6 +75,18 @@ const PendingPayments = () => {
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
+
+  const getPaymentLabel = (payment: PendingPayment) => {
+    if (payment.payment_type === 'boleto') return 'Boleto pendente';
+    if (payment.payment_type === 'card') return 'Pagamento com cartão pendente';
+    if (payment.payment_type === 'pix') return 'PIX pendente';
+    return 'Pagamento iniciado';
+  };
+
+  const getPaymentIcon = (payment: PendingPayment) => {
+    if (payment.payment_type === 'boleto') return <FileText className="h-5 w-5 text-muted-foreground" />;
+    return <CreditCard className="h-5 w-5 text-muted-foreground" />;
+  };
 
   const getStatusBadge = (payment: PendingPayment) => {
     if (payment.status === 'expired') {
@@ -119,10 +131,13 @@ const PendingPayments = () => {
   };
 
   const getExpirationText = (payment: PendingPayment) => {
-    if (!payment.expires_at) return 'Sem data de vencimento';
+    if (payment.payment_type !== 'boleto') {
+      return 'Finalize o checkout para confirmar ou descarte esta tentativa.';
+    }
+
+    if (!payment.expires_at) return 'Aguardando confirmação do boleto pela Stripe.';
 
     const expiresAt = new Date(payment.expires_at);
-    
     if (isPast(expiresAt)) {
       return `Venceu ${formatDistanceToNow(expiresAt, { locale: ptBR, addSuffix: true })}`;
     }
@@ -135,8 +150,8 @@ const PendingPayments = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Boletos Pendentes
+            <Clock className="h-5 w-5" />
+            Pagamentos Pendentes
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -153,15 +168,15 @@ const PendingPayments = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Boletos Pendentes
+            <Clock className="h-5 w-5" />
+            Pagamentos Pendentes
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <CheckCircle className="h-12 w-12 mb-4 text-green-500" />
-            <p className="text-lg font-medium">Nenhum boleto pendente</p>
-            <p className="text-sm">Você não possui boletos aguardando pagamento.</p>
+            <p className="text-lg font-medium">Nenhum pagamento pendente</p>
+            <p className="text-sm text-center">Você não possui compras de tokens aguardando conclusão ou compensação.</p>
           </div>
         </CardContent>
       </Card>
@@ -172,8 +187,8 @@ const PendingPayments = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Boletos Pendentes ({payments.length})
+          <Clock className="h-5 w-5" />
+          Pagamentos Pendentes ({payments.length})
         </CardTitle>
         <Button variant="ghost" size="sm" onClick={fetchPayments}>
           <RefreshCw className="h-4 w-4" />
@@ -185,24 +200,29 @@ const PendingPayments = () => {
             key={payment.id}
             className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-4"
           >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{payment.amount} Tokens</span>
-                {getStatusBadge(payment)}
+            <div className="flex items-start gap-3 space-y-1">
+              {getPaymentIcon(payment)}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold">{payment.amount} Tokens</span>
+                  {getStatusBadge(payment)}
+                </div>
+                <p className="text-sm font-medium text-raiz-dark">
+                  {getPaymentLabel(payment)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  R$ {Number(payment.price).toFixed(2)} • Gerado em {format(new Date(payment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {getExpirationText(payment)}
+                </p>
+                {payment.pagarme_transaction_id && (
+                  <p className="text-xs text-muted-foreground break-all">
+                    Sessão Stripe: {payment.pagarme_transaction_id}
+                  </p>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                R$ {payment.price.toFixed(2)} • Gerado em {format(new Date(payment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-              </p>
-              <p className="text-sm font-medium text-muted-foreground">
-                {getExpirationText(payment)}
-              </p>
             </div>
-            
-            {payment.status === 'pending' && payment.expires_at && !isPast(new Date(payment.expires_at)) && (
-              <Button variant="outline" size="sm" className="shrink-0">
-                Ver Boleto
-              </Button>
-            )}
           </div>
         ))}
       </CardContent>
