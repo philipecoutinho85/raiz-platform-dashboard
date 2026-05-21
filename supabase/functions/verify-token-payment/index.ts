@@ -82,22 +82,39 @@ serve(async (req) => {
       sessionId: purchase.pagarme_transaction_id,
     });
 
+    const stripeSessionId = purchase.pagarme_transaction_id;
+    if (!stripeSessionId) {
+      throw new Error("ID da sessao Stripe nao encontrado");
+    }
+
     if (purchase.status === "paid") {
-      logStep("Purchase already paid");
+      logStep("Purchase already paid, reconciling through atomic RPC");
+
+      const { data, error } = await supabase.rpc("process_token_purchase_atomic", {
+        p_purchase_id: purchase.id,
+        p_user_id: user.id,
+        p_tokens_amount: purchase.amount,
+        p_stripe_session_id: stripeSessionId,
+        p_stripe_payment_status: "paid",
+        p_payment_type: purchase.payment_type || null,
+        p_expires_at: null,
+        p_event_id: null,
+      });
+
+      if (error) throw error;
+
+      const result = data?.[0] || {};
+
       return new Response(
         JSON.stringify({
           success: true,
           status: "paid",
-          alreadyProcessed: true,
+          alreadyProcessed: result.already_processed ?? true,
+          newBalance: result.new_balance,
           message: "Pagamento ja foi processado",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
       );
-    }
-
-    const stripeSessionId = purchase.pagarme_transaction_id;
-    if (!stripeSessionId) {
-      throw new Error("ID da sessao Stripe nao encontrado");
     }
 
     const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
