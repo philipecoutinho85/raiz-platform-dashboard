@@ -49,6 +49,7 @@ jobs:
           set -euo pipefail
 
           functions=(
+            "stripe-token-checkout"
             "stripe-token-webhook"
             "verify-token-payment"
             "stripe-webhook"
