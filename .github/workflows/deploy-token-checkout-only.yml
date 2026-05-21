@@ -1,0 +1,62 @@
+name: Deploy Token Checkout Function Only
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-token-checkout:
+    name: Deploy stripe-token-checkout
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "::error::Missing required secret SUPABASE_ACCESS_TOKEN"
+            exit 1
+          fi
+
+          if [ -z "${SUPABASE_PROJECT_REF:-}" ]; then
+            echo "::error::Missing required secret SUPABASE_PROJECT_REF"
+            exit 1
+          fi
+
+          echo "Required secrets are present."
+
+      - name: Verify function directory exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f supabase/functions/stripe-token-checkout/index.ts
+          echo "Found supabase/functions/stripe-token-checkout/index.ts"
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Show Supabase CLI version
+        run: supabase --version
+
+      - name: Deploy stripe-token-checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "DEPLOY_TARGET=stripe-token-checkout"
+          supabase functions deploy stripe-token-checkout \
+            --project-ref "${SUPABASE_PROJECT_REF}" \
+            --use-api \
+            --debug
+          echo "DEPLOY_DONE=stripe-token-checkout"
