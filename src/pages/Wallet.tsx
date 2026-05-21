@@ -32,6 +32,7 @@ interface Purchase {
   price: number;
   payment_method: string;
   payment_type: string | null;
+  pagarme_transaction_id: string | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -71,9 +72,11 @@ const Wallet = () => {
 
   // Verify pending payments with Stripe
   const verifyPendingPayments = async () => {
-    if (!user) return;
+    if (!user || verifyingPayment) return;
     
     try {
+      setVerifyingPayment(true);
+
       // Get pending purchases
       const { data: pendingPurchases } = await supabase
         .from('token_purchases')
@@ -83,42 +86,78 @@ const Wallet = () => {
         .not('pagarme_transaction_id', 'is', null);
 
       if (!pendingPurchases || pendingPurchases.length === 0) {
+        console.log('[Wallet] verify-token-payment: nenhum pagamento pendente encontrado');
         return;
       }
 
-      console.log(`Verifying ${pendingPurchases.length} pending payments...`);
-      setVerifyingPayment(true);
+      console.log(`[Wallet] verify-token-payment: verificando ${pendingPurchases.length} pagamento(s) pendente(s)`);
 
       let anyUpdated = false;
 
       for (const purchase of pendingPurchases) {
         try {
+          console.log('[Wallet] verify-token-payment: iniciando compra', {
+            purchaseId: purchase.id,
+            sessionId: purchase.pagarme_transaction_id,
+            status: purchase.status,
+            amount: purchase.amount,
+          });
+
           const { data, error } = await supabase.functions.invoke('verify-token-payment', {
-            body: { purchaseId: purchase.id }
+            body: {
+              purchaseId: purchase.id,
+              sessionId: purchase.pagarme_transaction_id
+            }
           });
 
           if (error) {
-            console.warn('Error verifying payment:', error);
+            console.warn('[Wallet] verify-token-payment: erro retornado pela function', {
+              purchaseId: purchase.id,
+              sessionId: purchase.pagarme_transaction_id,
+              error,
+            });
             continue;
           }
+
+          console.log('[Wallet] verify-token-payment: resposta recebida', {
+            purchaseId: purchase.id,
+            sessionId: purchase.pagarme_transaction_id,
+            response: data,
+          });
 
           if (data?.status === 'paid' && !data?.alreadyProcessed) {
             anyUpdated = true;
             toast.success(`Pagamento confirmado! ${purchase.amount} tokens creditados.`);
+          } else if (data?.status === 'paid') {
+            anyUpdated = true;
+            console.log('[Wallet] verify-token-payment: compra paga ja processada/reconciliada', {
+              purchaseId: purchase.id,
+              sessionId: purchase.pagarme_transaction_id,
+            });
+          } else if (data?.status === 'pending') {
+            console.log('[Wallet] verify-token-payment: compra ainda pendente', {
+              purchaseId: purchase.id,
+              sessionId: purchase.pagarme_transaction_id,
+            });
           }
         } catch (err) {
-          console.warn('Error verifying purchase:', purchase.id, err);
+          console.warn('[Wallet] verify-token-payment: excecao ao verificar compra', {
+            purchaseId: purchase.id,
+            sessionId: purchase.pagarme_transaction_id,
+            error: err,
+          });
         }
       }
 
       if (anyUpdated) {
-        // Refresh all data
-        await fetchWalletData();
-        await fetchTokens();
+        toast.success('Pagamentos verificados. Carteira atualizada.');
       }
     } catch (error) {
-      console.error('Error verifying pending payments:', error);
+      console.error('[Wallet] verify-token-payment: erro geral', error);
+      toast.error('Erro ao verificar pagamentos pendentes.');
     } finally {
+      await fetchWalletData();
+      await fetchTokens();
       setVerifyingPayment(false);
     }
   };
@@ -193,9 +232,20 @@ const Wallet = () => {
 
   useEffect(() => {
     if (user) {
-      fetchWalletData();
-      // Verify pending payments when page loads
-      verifyPendingPayments();
+      let cancelled = false;
+
+      const loadWallet = async () => {
+        await fetchWalletData();
+        if (!cancelled) {
+          await verifyPendingPayments();
+        }
+      };
+
+      loadWallet();
+
+      return () => {
+        cancelled = true;
+      };
     }
   }, [user]);
 
@@ -211,15 +261,25 @@ const Wallet = () => {
         body: { sessionId }
       }).then(({ data, error }) => {
         if (error) {
-          console.error('Error verifying payment:', error);
+          console.error('[Wallet] verify-token-payment URL success: erro retornado pela function', {
+            sessionId,
+            error,
+          });
           return;
         }
-        
+        console.log('[Wallet] verify-token-payment URL success: resposta recebida', {
+          sessionId,
+          response: data,
+        });
+
         if (data?.status === 'paid' && !data?.alreadyProcessed) {
           toast.success('Pagamento confirmado! Seus tokens foram creditados.');
         } else if (data?.status === 'pending') {
           toast.info('Pagamento pendente. Aguardando confirmação do boleto.');
         }
+
+        fetchWalletData();
+        fetchTokens();
 
         // Remove URL params
         window.history.replaceState({}, '', window.location.pathname);
@@ -450,21 +510,19 @@ const Wallet = () => {
                 </p>
               </div>
               <div className="flex gap-2">
-                {purchases.some(p => p.status === 'pending') && (
-                  <Button 
-                    onClick={verifyPendingPayments} 
-                    variant="default" 
-                    size="sm"
-                    disabled={verifyingPayment}
-                  >
-                    {verifyingPayment ? (
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                    )}
-                    Verificar Pagamentos
-                  </Button>
-                )}
+                <Button 
+                  onClick={verifyPendingPayments} 
+                  variant="default" 
+                  size="sm"
+                  disabled={verifyingPayment}
+                >
+                  {verifyingPayment ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                  )}
+                  Verificar pagamentos pendentes
+                </Button>
                 <Button onClick={fetchWalletData} variant="outline" size="sm">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Atualizar
@@ -528,6 +586,19 @@ const Wallet = () => {
                     }}
                   >
                     Limpar Filtros
+                  </Button>
+
+                  <Button
+                    onClick={verifyPendingPayments}
+                    variant="outline"
+                    disabled={verifyingPayment}
+                  >
+                    {verifyingPayment ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                    )}
+                    Verificar pagamentos pendentes
                   </Button>
                 </div>
 
