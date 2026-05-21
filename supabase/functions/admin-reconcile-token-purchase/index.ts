@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-reconcile-secret",
 };
 
 const allowedAdminTypes = new Set(["master", "financial"]);
@@ -31,44 +31,60 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const adminReconcileSecret = Deno.env.get("ADMIN_RECONCILE_SECRET");
 
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
     if (!supabaseUrl) throw new Error("SUPABASE_URL not configured");
     if (!supabaseServiceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
-
-    const token = authHeader.replace("Bearer ", "").trim();
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { data: authData, error: authError } = await supabase.auth.getUser(token);
-    const caller = authData?.user;
+    const internalSecretHeader = req.headers.get("x-admin-reconcile-secret")?.trim();
+    const isInternalAdmin = Boolean(
+      adminReconcileSecret &&
+      internalSecretHeader &&
+      internalSecretHeader === adminReconcileSecret,
+    );
 
-    if (authError || !caller) {
-      logStep("Auth failed", { error: authError?.message });
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    let callerId = "internal_admin";
 
-    const { data: adminRole, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role, admin_type")
-      .eq("user_id", caller.id)
-      .eq("role", "admin")
-      .maybeSingle();
+    if (isInternalAdmin) {
+      logStep("Internal secret authentication accepted");
+    } else {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
 
-    if (roleError || !adminRole || !allowedAdminTypes.has(adminRole.admin_type || "")) {
-      logStep("Forbidden reconciliation attempt", {
-        callerId: caller.id,
-        adminType: adminRole?.admin_type ?? null,
-        roleError: roleError?.message,
-      });
+      const token = authHeader.replace("Bearer ", "").trim();
+      const { data: authData, error: authError } = await supabase.auth.getUser(token);
+      const caller = authData?.user;
 
-      return jsonResponse({ error: "Forbidden: financial administrator role required" }, 403);
+      if (authError || !caller) {
+        logStep("Auth failed", { error: authError?.message });
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+
+      callerId = caller.id;
+
+      const { data: adminRole, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role, admin_type")
+        .eq("user_id", caller.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (roleError || !adminRole || !allowedAdminTypes.has(adminRole.admin_type || "")) {
+        logStep("Forbidden reconciliation attempt", {
+          callerId: caller.id,
+          adminType: adminRole?.admin_type ?? null,
+          roleError: roleError?.message,
+        });
+
+        return jsonResponse({ error: "Forbidden: financial administrator role required" }, 403);
+      }
     }
 
     const { purchaseId, sessionId } = await req.json();
@@ -104,7 +120,8 @@ serve(async (req) => {
     logStep("Purchase found", {
       purchaseId: purchase.id,
       status: purchase.status,
-      adminId: caller.id,
+      adminId: callerId,
+      authMode: isInternalAdmin ? "internal_secret" : "jwt_admin",
     });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
