@@ -12,32 +12,48 @@ const logStep = (step: string, details?: any) => {
   console.log(`[STRIPE-CREATE-PAYMENT] ${step}${detailsStr}`);
 };
 
+const enrichError = (message: string, sourceError?: any) => {
+  return Object.assign(new Error(message), {
+    code: sourceError?.code,
+    details: sourceError?.details,
+    hint: sourceError?.hint,
+  });
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let currentStep = "Function started";
+
   try {
+    currentStep = "Function started";
     logStep("Function started");
 
+    currentStep = "Validate Stripe secret";
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
 
+    currentStep = "Initialize Supabase client";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    currentStep = "Read authorization header";
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header");
 
+    currentStep = "Authenticate user";
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    if (userError) throw new Error(`Auth error: ${userError.message}`);
+    if (userError) throw enrichError(`Auth error: ${userError.message}`, userError);
     
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    currentStep = "Parse payment request";
     const { projectId, amount } = await req.json();
     if (!projectId || !amount) throw new Error("Missing projectId or amount");
     
@@ -46,6 +62,7 @@ serve(async (req) => {
     logStep("Payment request", { projectId, amount, amountCents });
 
     // Get project using only columns that exist in production.
+    currentStep = "Load project";
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .select(`
@@ -60,7 +77,7 @@ serve(async (req) => {
       .eq('id', projectId)
       .single();
 
-    if (projectError) throw new Error(`Project error: ${projectError.message}`);
+    if (projectError) throw enrichError(`Project error: ${projectError.message}`, projectError);
     if (!project) throw new Error("Project not found");
     logStep("Project loaded", {
       projectId: project.id,
@@ -77,13 +94,14 @@ serve(async (req) => {
       throw new Error("Criador nao pode apoiar o proprio projeto por pagamento Stripe");
     }
 
+    currentStep = "Load creator profile";
     const { data: creatorProfile, error: creatorError } = await supabase
       .from('profiles')
       .select('id, nome, sobrenome, email, stripe_account_id, stripe_onboarding_complete')
       .eq('id', project.user_id)
       .single();
 
-    if (creatorError) throw new Error(`Creator profile error: ${creatorError.message}`);
+    if (creatorError) throw enrichError(`Creator profile error: ${creatorError.message}`, creatorError);
     if (!creatorProfile) throw new Error("Perfil do criador nao encontrado");
 
     if (!creatorProfile?.stripe_account_id) {
@@ -103,6 +121,7 @@ serve(async (req) => {
 
     // Calculate platform fee and creator amount based on project type
     // Seed projects: 0% fee, Regular projects: 10% fee (or custom)
+    currentStep = "Calculate payment fees";
     const projectType = project.project_type || 'regular';
     const platformFeePercent = projectType === 'seed' ? 0 : (project.platform_fee_percentage || 10);
     const platformFeeCents = Math.round(amountCents * (platformFeePercent / 100));
@@ -118,6 +137,7 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Check if customer exists
+    currentStep = "Find Stripe customer";
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
@@ -127,6 +147,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "https://raiztoken.com.br";
 
     // Create Checkout Session with transfer to connected account
+    currentStep = "Create Stripe checkout session";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -172,6 +193,7 @@ serve(async (req) => {
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
     // Record payment intent (pending)
+    currentStep = "Insert stripe_payments pending record";
     const { error: paymentInsertError } = await supabase.from('stripe_payments').insert({
       user_id: user.id,
       project_id: projectId,
@@ -183,9 +205,10 @@ serve(async (req) => {
     });
 
     if (paymentInsertError) {
-      throw new Error(`Stripe payment insert error: ${paymentInsertError.message}`);
+      throw enrichError(`Stripe payment insert error: ${paymentInsertError.message}`, paymentInsertError);
     }
 
+    currentStep = "Return checkout URL";
     return new Response(
       JSON.stringify({ url: session.url, sessionId: session.id }),
       {
@@ -194,17 +217,26 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorName = error instanceof Error ? error.name : "UnknownError";
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    logStep("ERROR", { name: errorName, message: errorMessage, stack: errorStack });
+    const safeError = error as any;
+    const errorMessage = safeError?.message ?? String(error);
+    const errorCode = safeError?.code ?? null;
+    const errorDetails = safeError?.details ?? null;
+    const errorHint = safeError?.hint ?? null;
+
+    console.error("[STRIPE-CREATE-PAYMENT] ERROR", {
+      step: currentStep,
+      message: errorMessage,
+      code: errorCode,
+      details: errorDetails,
+      hint: errorHint,
+    });
+
     return new Response(
       JSON.stringify({
         error: errorMessage,
-        details: {
-          name: errorName,
-          phase: "stripe-create-payment",
-        },
+        step: currentStep,
+        code: errorCode,
+        details: errorDetails,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
