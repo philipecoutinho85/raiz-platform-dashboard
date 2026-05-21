@@ -89,11 +89,27 @@ serve(async (req) => {
 
     logStep("Event type", { type: event.type, id: event.id });
 
+    const eventObject = event.data.object as any;
+    const eventMetadata = eventObject?.metadata || {};
+
+    if (eventMetadata.type !== "token_purchase") {
+      logStep("Ignoring non-token event before idempotency registration", {
+        eventId: event.id,
+        type: event.type,
+        objectId: eventObject?.id,
+      });
+
+      return new Response(JSON.stringify({ received: true, ignored: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const objectId = (event.data.object as any)?.id ?? null;
+    const objectId = eventObject?.id ?? null;
     const { data: shouldProcess, error: eventError } = await supabase.rpc(
       "record_stripe_event_once",
       {

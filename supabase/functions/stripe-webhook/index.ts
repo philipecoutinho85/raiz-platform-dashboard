@@ -46,7 +46,23 @@ serve(async (req) => {
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
     logStep("Webhook received", { type: event.type, id: event.id });
 
-    const objectId = (event.data.object as any)?.id ?? null;
+    const eventObject = event.data.object as any;
+    const eventMetadata = eventObject?.metadata || {};
+
+    if (event.type.startsWith("checkout.session.") && !eventMetadata.project_id) {
+      logStep("Ignoring non-project checkout event before idempotency registration", {
+        eventId: event.id,
+        type: event.type,
+        objectId: eventObject?.id,
+      });
+
+      return new Response(JSON.stringify({ received: true, ignored: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    const objectId = eventObject?.id ?? null;
     const { data: shouldProcess, error: eventError } = await supabase.rpc(
       "record_stripe_event_once",
       {
