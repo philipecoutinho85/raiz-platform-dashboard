@@ -153,7 +153,7 @@ serve(async (req) => {
         expiresAt = expireDate.toISOString();
       }
 
-      await supabase.rpc("process_token_purchase_atomic", {
+      const { data, error } = await supabase.rpc("process_token_purchase_atomic", {
         p_purchase_id: metadata.purchase_id,
         p_user_id: metadata.user_id,
         p_tokens_amount: Number.parseInt(metadata.tokens_amount || "0", 10),
@@ -164,8 +164,10 @@ serve(async (req) => {
         p_event_id: event.id,
       });
 
+      if (error) throw error;
+
       if (session.payment_status === "paid") {
-        logStep("Immediate payment confirmed, token purchase processed");
+        logStep("Immediate payment confirmed, token purchase processed", data?.[0] || {});
       } else {
         logStep("Async payment method, metadata updated and waiting for confirmation", {
           paymentStatus: session.payment_status,
