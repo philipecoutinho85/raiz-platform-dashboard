@@ -55,6 +55,7 @@ jobs:
             "stripe-create-payment"
             "process-withdrawal"
             "stripe-request-payout"
+            "admin-reconcile-token-purchase"
           )
 
           for function_name in "${functions[@]}"; do
