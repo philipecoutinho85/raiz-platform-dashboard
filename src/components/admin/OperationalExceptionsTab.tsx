@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search, X, Eye } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search, X, Eye, Copy } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 
@@ -93,10 +93,32 @@ const searchableText = (item: OperationalException) => [
   safeMetadataPreview(item.metadata),
 ].filter(Boolean).join(' ').toLowerCase();
 
-const DetailRow = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
+const copyToClipboard = async (label: string, value: string | number | null | undefined) => {
+  if (!value) {
+    toast.info(`${label} não informado`);
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(String(value));
+    toast.success(`${label} copiado`);
+  } catch (error) {
+    console.error('Erro ao copiar para área de transferência:', error);
+    toast.error('Não foi possível copiar');
+  }
+};
+
+const DetailRow = ({ label, value, copyable = false }: { label: string; value: string | number | null | undefined; copyable?: boolean }) => (
   <div className="space-y-1">
     <p className="text-xs font-medium text-muted-foreground">{label}</p>
-    <p className="break-all rounded-md bg-muted px-3 py-2 text-sm">{value || 'Não informado'}</p>
+    <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm">
+      <p className="min-w-0 flex-1 break-all">{value || 'Não informado'}</p>
+      {copyable && value && (
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => copyToClipboard(label, value)}>
+          <Copy className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
   </div>
 );
 
@@ -395,11 +417,36 @@ const OperationalExceptionsTab = () => {
                 <Badge variant="outline">{selectedException.source}</Badge>
               </div>
 
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard('ID da exceção', selectedException.id)} className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  Copiar ID
+                </Button>
+                {selectedException.source_id && (
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard('Source ID', selectedException.source_id)} className="gap-2">
+                    <Copy className="h-4 w-4" />
+                    Copiar source
+                  </Button>
+                )}
+                {selectedException.user_id && (
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard('Usuário', selectedException.user_id)} className="gap-2">
+                    <Copy className="h-4 w-4" />
+                    Copiar usuário
+                  </Button>
+                )}
+                {selectedException.project_id && (
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard('Projeto', selectedException.project_id)} className="gap-2">
+                    <Copy className="h-4 w-4" />
+                    Copiar projeto
+                  </Button>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailRow label="ID da exceção" value={selectedException.id} />
-                <DetailRow label="Source ID" value={selectedException.source_id} />
-                <DetailRow label="Usuário" value={selectedException.user_id} />
-                <DetailRow label="Projeto" value={selectedException.project_id} />
+                <DetailRow label="ID da exceção" value={selectedException.id} copyable />
+                <DetailRow label="Source ID" value={selectedException.source_id} copyable />
+                <DetailRow label="Usuário" value={selectedException.user_id} copyable />
+                <DetailRow label="Projeto" value={selectedException.project_id} copyable />
                 <DetailRow label="Criada em" value={formatToBrasilia(selectedException.created_at)} />
                 <DetailRow label="Atualizada em" value={formatToBrasilia(selectedException.updated_at)} />
                 <DetailRow label="Próximo retry" value={selectedException.next_retry_at ? formatToBrasilia(selectedException.next_retry_at) : null} />
