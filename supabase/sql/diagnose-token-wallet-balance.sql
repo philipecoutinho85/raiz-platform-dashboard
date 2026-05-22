@@ -1,8 +1,12 @@
 -- Token wallet balance diagnostic script.
--- Read-only. Replace <USER_ID_AQUI> with the user_id to investigate.
+-- Read-only.
+-- Replace <EMAIL_DO_USUARIO> with the email used in the token purchase.
 
 WITH target_user AS (
-  SELECT '<USER_ID_AQUI>'::uuid AS user_id
+  SELECT id AS user_id, email
+  FROM auth.users
+  WHERE lower(email) = lower('<EMAIL_DO_USUARIO>')
+  LIMIT 1
 ), tx AS (
   SELECT
     user_id,
@@ -22,6 +26,7 @@ WITH target_user AS (
   GROUP BY user_id
 )
 SELECT
+  t.email,
   t.user_id,
   COALESCE(ut.balance, 0) AS wallet_balance,
   COALESCE(tx.transactions_net_balance, 0) AS transactions_net_balance,
@@ -38,29 +43,31 @@ LEFT JOIN tx ON tx.user_id = t.user_id
 LEFT JOIN purchases p ON p.user_id = t.user_id;
 
 SELECT
-  id,
-  amount,
-  transaction_type,
-  reference_id,
-  description,
-  balance_after,
-  created_at
-FROM public.token_transactions
-WHERE user_id = '<USER_ID_AQUI>'::uuid
-ORDER BY created_at DESC
+  tt.id,
+  tt.user_id,
+  tt.amount,
+  tt.transaction_type,
+  tt.reference_id,
+  tt.description,
+  tt.balance_after,
+  tt.created_at
+FROM public.token_transactions tt
+WHERE tt.user_id = (SELECT id FROM auth.users WHERE lower(email) = lower('<EMAIL_DO_USUARIO>') LIMIT 1)
+ORDER BY tt.created_at DESC
 LIMIT 20;
 
 SELECT
-  id,
-  amount,
-  price,
-  payment_method,
-  payment_type,
-  status,
-  pagarme_transaction_id,
-  created_at,
-  updated_at
-FROM public.token_purchases
-WHERE user_id = '<USER_ID_AQUI>'::uuid
-ORDER BY created_at DESC
+  tp.id,
+  tp.user_id,
+  tp.amount,
+  tp.price,
+  tp.payment_method,
+  tp.payment_type,
+  tp.status,
+  tp.pagarme_transaction_id,
+  tp.created_at,
+  tp.updated_at
+FROM public.token_purchases tp
+WHERE tp.user_id = (SELECT id FROM auth.users WHERE lower(email) = lower('<EMAIL_DO_USUARIO>') LIMIT 1)
+ORDER BY tp.created_at DESC
 LIMIT 20;
