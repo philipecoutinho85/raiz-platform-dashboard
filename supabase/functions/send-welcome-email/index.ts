@@ -1,19 +1,31 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const allowedOrigins = new Set([
+  "https://raiztoken.com.br",
+  "https://www.raiztoken.com.br",
+  "http://localhost:5173",
+  "http://localhost:3000",
+]);
+
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://raiztoken.com.br",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
 };
 
 const MAILGUN_API_KEY = Deno.env.get("MAILGUN_API_KEY");
 const MAILGUN_DOMAIN = "raiztoken.com.br";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 interface WelcomeEmailRequest {
-  email: string;
-  fullName: string;
+  email?: string;
+  fullName?: string;
 }
 
 const getClientIp = (req: Request) =>
@@ -42,15 +54,17 @@ const assertRateLimit = async (
 
   if (error) {
     console.error("Rate limit check failed:", error.message);
-    throw new Error("Rate limit unavailable");
+    throw new Error("RATE_LIMIT_UNAVAILABLE");
   }
 
   if (data !== true) {
-    throw new Error("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+    throw new Error("RATE_LIMITED");
   }
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -63,30 +77,52 @@ serve(async (req) => {
       });
     }
 
-    if (!MAILGUN_API_KEY) {
-      console.error("MAILGUN_API_KEY not configured");
+    if (!MAILGUN_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
+      console.error("Required environment variable not configured");
       return new Response(
-        JSON.stringify({ error: "Mailgun API key not configured" }),
+        JSON.stringify({ error: "Email service unavailable" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { email, fullName } = (await req.json()) as WelcomeEmailRequest;
-    const safeEmail = String(email || "").trim().toLowerCase();
-    const safeFullName = String(fullName || "Apoiador").trim().slice(0, 120);
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    if (!isValidEmail(safeEmail)) {
+    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+    const user = userData?.user;
+
+    if (userError || !user?.email) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = (await req.json()) as WelcomeEmailRequest;
+    const safeEmail = String(body.email || user.email || "").trim().toLowerCase();
+    const safeFullName = String(body.fullName || user.user_metadata?.full_name || "Apoiador").trim().slice(0, 120);
+
+    if (!isValidEmail(safeEmail) || safeEmail !== String(user.email).toLowerCase()) {
       return new Response(
-        JSON.stringify({ error: "Email is required" }),
+        JSON.stringify({ error: "Invalid email target" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const clientIp = getClientIp(req);
-    await assertRateLimit("send-welcome-email:ip", clientIp, 10, 60 * 60);
-    await assertRateLimit("send-welcome-email:email", safeEmail, 2, 24 * 60 * 60);
-
-    console.log("Sending welcome email");
+    await assertRateLimit("send-welcome-email:ip", clientIp, 5, 60 * 60);
+    await assertRateLimit("send-welcome-email:user", user.id, 1, 24 * 60 * 60);
+    await assertRateLimit("send-welcome-email:email", safeEmail, 1, 24 * 60 * 60);
 
     const formData = new FormData();
     formData.append("from", "Raiz Token <tato@raiztoken.com.br>");
@@ -106,46 +142,31 @@ serve(async (req) => {
       }
     );
 
-    const responseText = await response.text();
-
     if (!response.ok) {
       console.error(`Mailgun error: ${response.status}`);
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to send welcome email",
-        }),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Failed to send welcome email" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      result = { message: responseText };
-    }
-
-    console.log("Welcome email sent successfully");
-
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Welcome email sent successfully",
-        mailgunResponse: result,
-      }),
+      JSON.stringify({ success: true, message: "Welcome email sent successfully" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Error sending welcome email:", message);
+
+    const status = message === "RATE_LIMITED" ? 429 : 500;
+    const publicMessage = message === "RATE_LIMITED"
+      ? "Muitas tentativas. Aguarde e tente novamente."
+      : "Email service unavailable";
+
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: message,
-      }),
+      JSON.stringify({ success: false, error: publicMessage }),
       {
-        status: message.includes("Muitas tentativas") ? 429 : 500,
+        status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
