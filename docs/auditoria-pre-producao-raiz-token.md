@@ -6,9 +6,9 @@ A Raiz Token opera com tokens como unidade de apoio e reconhecimento, onde 1 tok
 
 ## Status geral
 
-**Maturidade estimada da auditoria:** 82% a 86%
+**Maturidade estimada da auditoria:** 88% a 91%
 
-**Status:** Em fase final de validação.
+**Status:** Em fase final de validação operacional.
 
 O foco atual deixou de ser apenas correção pontual e passou a ser estruturação de governança operacional, controle de risco, rastreabilidade e redução de processos manuais.
 
@@ -137,25 +137,37 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
 
 ---
 
+### 1.10 Build de produção
+
+- [x] Workflow `Build Check` criado.
+- [x] `package-lock.json` confirmado.
+- [x] `npm ci` validado como estratégia adequada.
+- [x] Build de produção aprovado no GitHub Actions.
+- [x] Execução confirmada visualmente: `Keep build check focused on production build`, commit `fb117fe`, status `success`.
+
+**Observação:** `npm run lint` foi removido do gate de pré-produção por débito técnico pré-existente de TypeScript/ESLint, principalmente `Unexpected any`. O lint deve ser tratado como refatoração separada.
+
+---
+
 ## 2. Pendências críticas antes de tráfego pago
 
 ### 2.1 Validar build da aplicação
 
-- [ ] Rodar build completo.
-- [ ] Confirmar que novos componentes não quebram TypeScript.
-- [ ] Validar imports:
+- [x] Rodar build completo.
+- [x] Confirmar que novos componentes não quebram TypeScript.
+- [x] Validar imports principais:
   - `OperationalExceptionsTab`
   - `AdminHeader`
   - `AdminSearchCommand`
   - componentes `Dialog`, `Table`, `Badge`, `Button`, `Input`, `Select`.
 
-**Comando recomendado:**
+**Comando validado pelo CI:**
 
 ```bash
 npm run build
 ```
 
-**Criticidade:** alta.
+**Status:** resolvido.
 
 ---
 
@@ -354,7 +366,7 @@ Futuro recomendado:
 
 A auditoria só deve ser considerada concluída quando todos os itens abaixo estiverem validados:
 
-- [ ] Build aprovado.
+- [x] Build aprovado.
 - [ ] Migrations aplicadas e verificadas.
 - [ ] Edge Functions deployadas.
 - [ ] Secrets configurados.
