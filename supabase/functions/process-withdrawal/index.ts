@@ -20,6 +20,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let withdrawalIdForRecovery: string | null = null;
+
   try {
     logStep("Function started");
 
@@ -32,7 +34,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Get auth token from header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('Authorization header missing');
@@ -69,8 +70,9 @@ serve(async (req) => {
       );
     }
 
-    const adminId = user?.id;
+    const adminId = user.id;
     const { withdrawalId, action, rejectionReason } = await req.json();
+    withdrawalIdForRecovery = withdrawalId || null;
 
     if (!withdrawalId || !['approve', 'reject'].includes(action)) {
       return new Response(
@@ -81,19 +83,14 @@ serve(async (req) => {
 
     logStep("Processing", { withdrawalId, action, adminId, adminType: adminRole.admin_type });
 
-    // Fetch withdrawal with project data
     const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawals')
       .select(`*, projects(title, user_id)`)
       .eq('id', withdrawalId)
       .single();
 
-    if (withdrawalError) {
-      logStep("Error fetching withdrawal", { error: withdrawalError });
-      throw new Error(`Withdrawal not found: ${withdrawalError.message}`);
-    }
-
-    if (!withdrawal) {
+    if (withdrawalError || !withdrawal) {
+      logStep("Error fetching withdrawal", { error: withdrawalError?.message });
       throw new Error('Withdrawal not found');
     }
 
@@ -129,6 +126,14 @@ serve(async (req) => {
       );
     }
 
+    if (withdrawal.status === 'processing') {
+      logStep("Withdrawal already being processed", { withdrawalId });
+      return new Response(
+        JSON.stringify({ error: 'Resgate ja esta em processamento. Aguarde a conclusao.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+      );
+    }
+
     if (!processableStatuses.has(withdrawal.status)) {
       logStep("Withdrawal is not processable", { withdrawalId, status: withdrawal.status });
 
@@ -138,7 +143,6 @@ serve(async (req) => {
       );
     }
 
-    // Fetch creator profile
     let creatorName = 'Criador';
 
     if (projectData?.user_id) {
@@ -156,18 +160,27 @@ serve(async (req) => {
     if (action === 'reject') {
       logStep("Rejecting withdrawal");
       
-      const { error: updateError } = await supabase
+      const { data: rejectedWithdrawal, error: updateError } = await supabase
         .from('withdrawals')
         .update({
           status: 'rejected',
           reviewed_by: adminId,
           reviewed_at: new Date().toISOString(),
-          rejection_reason: rejectionReason
+          rejection_reason: rejectionReason || 'Resgate rejeitado pelo administrador'
         })
         .eq('id', withdrawalId)
-        .in('status', Array.from(processableStatuses));
+        .in('status', Array.from(processableStatuses))
+        .select('id')
+        .maybeSingle();
 
       if (updateError) throw updateError;
+
+      if (!rejectedWithdrawal) {
+        return new Response(
+          JSON.stringify({ error: 'Resgate ja foi processado por outra execucao' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+        );
+      }
 
       return new Response(
         JSON.stringify({ success: true, message: 'Resgate rejeitado' }),
@@ -175,11 +188,34 @@ serve(async (req) => {
       );
     }
 
-    // Process approval via Stripe
     if (action === 'approve') {
+      logStep("Locking withdrawal before Stripe payout");
+
+      const { data: lockedWithdrawal, error: lockError } = await supabase
+        .from('withdrawals')
+        .update({
+          status: 'processing',
+          reviewed_by: adminId,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: null
+        })
+        .eq('id', withdrawalId)
+        .in('status', Array.from(processableStatuses))
+        .select('id')
+        .maybeSingle();
+
+      if (lockError) throw lockError;
+
+      if (!lockedWithdrawal) {
+        logStep("Withdrawal lock failed", { withdrawalId });
+        return new Response(
+          JSON.stringify({ error: 'Resgate ja esta sendo processado ou foi concluido por outra execucao.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+        );
+      }
+
       logStep("Approving withdrawal via Stripe");
 
-      // Get creator's Stripe account
       const { data: creatorProfile } = await supabase
         .from('profiles')
         .select('stripe_account_id, stripe_onboarding_complete')
@@ -198,7 +234,7 @@ serve(async (req) => {
             rejection_reason: 'Criador não possui conta Stripe configurada. Configure a conta Stripe primeiro.'
           })
           .eq('id', withdrawalId)
-          .in('status', Array.from(processableStatuses));
+          .eq('status', 'processing');
 
         return new Response(
           JSON.stringify({
@@ -222,7 +258,7 @@ serve(async (req) => {
             rejection_reason: 'Verificação da conta Stripe do criador ainda não está completa.'
           })
           .eq('id', withdrawalId)
-          .in('status', Array.from(processableStatuses));
+          .eq('status', 'processing');
 
         return new Response(
           JSON.stringify({
@@ -242,7 +278,6 @@ serve(async (req) => {
       });
 
       try {
-        // Check Stripe account balance
         const balance = await stripe.balance.retrieve({
           stripeAccount: creatorProfile.stripe_account_id
         });
@@ -262,7 +297,7 @@ serve(async (req) => {
               rejection_reason: `Saldo insuficiente na conta Stripe do criador. Disponível: R$ ${(availableBalance / 100).toFixed(2)}`
             })
             .eq('id', withdrawalId)
-            .in('status', Array.from(processableStatuses));
+            .eq('status', 'processing');
 
           return new Response(
             JSON.stringify({
@@ -274,7 +309,6 @@ serve(async (req) => {
           );
         }
 
-        // Create payout
         const payout = await stripe.payouts.create(
           {
             amount: amountInCents,
@@ -294,24 +328,23 @@ serve(async (req) => {
 
         logStep("Stripe payout created", { payoutId: payout.id });
 
-        // Update withdrawal status
         const { data: updatedWithdrawal, error: approveUpdateError } = await supabase
           .from('withdrawals')
           .update({
             status: 'approved',
             reviewed_by: adminId,
             reviewed_at: new Date().toISOString(),
-            pagarme_transfer_id: payout.id // Reusing field for Stripe payout ID
+            pagarme_transfer_id: payout.id
           })
           .eq('id', withdrawalId)
-          .in('status', Array.from(processableStatuses))
+          .eq('status', 'processing')
           .select('id')
           .maybeSingle();
 
         if (approveUpdateError) throw approveUpdateError;
 
         if (!updatedWithdrawal) {
-          logStep("Withdrawal was processed concurrently after Stripe idempotency", {
+          logStep("Withdrawal status changed after Stripe idempotent payout", {
             withdrawalId,
             payoutId: payout.id,
           });
@@ -320,21 +353,20 @@ serve(async (req) => {
             JSON.stringify({
               success: true,
               alreadyProcessed: true,
-              message: 'Resgate ja foi processado por outra execucao',
+              message: 'Pagamento criado com idempotencia Stripe; status local sera reconciliado manualmente',
               payout_id: payout.id
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Create notification
         await supabase
           .from('notifications')
           .insert({
             user_id: withdrawal.user_id,
             type: 'withdrawal_approved',
             title: 'Resgate Aprovado! 💰',
-            message: `Seu resgate de R$ ${withdrawal.net_amount.toFixed(2)} foi aprovado e será depositado em breve.`,
+            message: `Seu resgate de R$ ${Number(withdrawal.net_amount).toFixed(2)} foi aprovado e será depositado em breve.`,
             related_id: withdrawalId
           });
 
@@ -356,16 +388,16 @@ serve(async (req) => {
             status: 'pending_manual',
             reviewed_by: adminId,
             reviewed_at: new Date().toISOString(),
-            rejection_reason: `Erro Stripe: ${stripeError.message}`
+            rejection_reason: `Falha ao processar Stripe. Revisar manualmente. Código: ${stripeError.code || 'stripe_error'}`
           })
           .eq('id', withdrawalId)
-          .in('status', Array.from(processableStatuses));
+          .eq('status', 'processing');
 
         return new Response(
           JSON.stringify({
             success: false,
             requiresManual: true,
-            message: `Erro ao processar pagamento via Stripe: ${stripeError.message}`
+            message: 'Não foi possível processar o pagamento via Stripe. O resgate foi enviado para análise manual.'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
@@ -378,9 +410,9 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    logStep("ERROR", { message: error.message });
+    logStep("ERROR", { message: error.message, withdrawalId: withdrawalIdForRecovery });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Erro ao processar resgate. Verifique os logs administrativos.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
