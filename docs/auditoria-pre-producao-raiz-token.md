@@ -6,9 +6,9 @@ A Raiz Token opera com tokens como unidade de apoio e reconhecimento, onde 1 tok
 
 ## Status geral
 
-**Maturidade estimada da auditoria:** 92% a 94%
+**Maturidade estimada da auditoria:** 95% a 96%
 
-**Status:** Em fase final de validação operacional.
+**Status:** Em fase final de testes ponta a ponta e validação de secrets.
 
 O foco atual deixou de ser apenas correção pontual e passou a ser estruturação de governança operacional, controle de risco, rastreabilidade e redução de processos manuais.
 
@@ -84,6 +84,7 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
 - [x] RLS habilitado.
 - [x] Políticas administrativas de leitura.
 - [x] Campos de severidade, status, retry, metadata e resolução.
+- [x] Verificação no banco real concluída via `supabase/sql/verify-audit-migrations.sql`.
 
 **Impacto:** transforma falhas operacionais em registros rastreáveis e auditáveis.
 
@@ -124,6 +125,7 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
 - [x] Idempotência por evento Stripe.
 - [x] Integração com processamento atômico de disputas.
 - [x] Deploy da função incluído no workflow auditado e confirmado visualmente.
+- [x] Tabelas, funções e policies de suporte ao lifecycle de risco verificadas no banco real.
 
 **Ponto de atenção:** ainda precisa confirmar configuração real do endpoint no dashboard da Stripe e env var `STRIPE_RISK_WEBHOOK_SECRET`.
 
@@ -135,6 +137,7 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
 - [x] Workflow GitHub Actions para chamada recorrente.
 - [x] Configuração de `verify_jwt = false` para chamada cron protegida por secret.
 - [x] Deploy da função incluído no workflow auditado e confirmado visualmente.
+- [x] Tabela e funções de fila operacional verificadas no banco real.
 
 **Limitação atual:** a função reabre saques agendados para processamento, mas não executa payout completo automaticamente. Isso foi mantido assim por segurança.
 
@@ -149,6 +152,19 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
 - [x] Execução confirmada visualmente: `Keep build check focused on production build`, commit `fb117fe`, status `success`.
 
 **Observação:** `npm run lint` foi removido do gate de pré-produção por débito técnico pré-existente de TypeScript/ESLint, principalmente `Unexpected any`. O lint deve ser tratado como refatoração separada.
+
+---
+
+### 1.11 Migrations críticas
+
+- [x] `20260522150000_chargeback_project_lifecycle_hardening.sql` aplicada e verificada.
+- [x] `20260522153000_block_risk_flagged_token_usage.sql` aplicada e verificada.
+- [x] `20260522154500_operational_exception_queue.sql` aplicada e verificada.
+- [x] Script `supabase/sql/verify-audit-migrations.sql` executado.
+- [x] Todas as tabelas críticas retornaram `ok`.
+- [x] Todas as funções RPC críticas retornaram `ok`.
+- [x] Todas as policies RLS críticas retornaram `ok`.
+- [x] Todos os índices críticos retornaram `ok`.
 
 ---
 
@@ -176,13 +192,14 @@ npm run build
 
 ### 2.2 Confirmar migrations aplicadas no Supabase
 
-- [ ] Confirmar migration da fila operacional.
-- [ ] Confirmar migration de bloqueio de uso de tokens por risk flags.
-- [ ] Revisar migration de lifecycle de chargeback antes de aplicar, caso ainda esteja pendente.
+- [x] Confirmar migration da fila operacional.
+- [x] Confirmar migration de bloqueio de uso de tokens por risk flags.
+- [x] Confirmar migration de lifecycle de chargeback.
+- [x] Confirmar funções RPC críticas.
+- [x] Confirmar policies RLS críticas.
+- [x] Confirmar índices críticos.
 
-**Atenção:** a migration de chargeback/lifecycle teve inconsistências anteriores envolvendo valores de CHECK constraint e colunas inexistentes. Deve ser revisada antes de aplicação em produção.
-
-**Criticidade:** alta.
+**Status:** resolvido.
 
 ---
 
@@ -362,7 +379,7 @@ Futuro recomendado:
 A auditoria só deve ser considerada concluída quando todos os itens abaixo estiverem validados:
 
 - [x] Build aprovado.
-- [ ] Migrations aplicadas e verificadas.
+- [x] Migrations aplicadas e verificadas.
 - [x] Edge Functions deployadas.
 - [ ] Secrets configurados.
 - [x] Compra mínima oficial corrigida.
