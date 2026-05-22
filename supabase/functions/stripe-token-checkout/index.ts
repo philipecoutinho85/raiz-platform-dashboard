@@ -2,9 +2,20 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const allowedOrigins = new Set([
+  "https://raiztoken.com.br",
+  "https://www.raiztoken.com.br",
+  "http://localhost:5173",
+  "http://localhost:3000",
+]);
+
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://raiztoken.com.br",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
 };
 
 const logStep = (step: string, details?: any) => {
@@ -13,11 +24,28 @@ const logStep = (step: string, details?: any) => {
 };
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 405,
+      });
+    }
+
+    const requestOrigin = req.headers.get("origin") || "";
+    if (requestOrigin && !allowedOrigins.has(requestOrigin)) {
+      return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
     logStep("Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -31,10 +59,9 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       logStep("Auth error", { error: "No valid authorization header" });
-      throw new Error("Usuário não autenticado. Faça login novamente.");
+      throw new Error("AUTH_ERROR:Usuário não autenticado. Faça login novamente.");
     }
     
-    // Create auth client with user's JWT to validate the token
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: { Authorization: authHeader },
@@ -48,7 +75,6 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
       logStep("Auth error", { error: userError?.message || "User not found" });
-      // Check if error is related to expired token
       const errorMessage = userError?.message?.toLowerCase() || '';
       if (errorMessage.includes('expired') || errorMessage.includes('invalid') || errorMessage.includes('jwt')) {
         throw new Error("TOKEN_EXPIRED:Sua sessão expirou. Por favor, faça login novamente.");
@@ -56,29 +82,27 @@ serve(async (req) => {
       throw new Error("AUTH_ERROR:Usuário não autenticado. Faça login novamente.");
     }
     
-    // Create service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    if (!user.email) throw new Error("Email do usuário não disponível");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    if (!user.email) throw new Error("AUTH_ERROR:Email do usuário não disponível");
+    logStep("User authenticated", { userId: user.id });
 
     const { amount } = await req.json();
+    const tokenAmount = Number(amount);
     
-    if (!amount || amount < 5) {
-      throw new Error("Valor mínimo é 5 tokens (R$ 5,00)");
+    if (!Number.isInteger(tokenAmount) || tokenAmount < 5 || tokenAmount > 1000000) {
+      throw new Error("Valor inválido para compra de tokens");
     }
 
-    // 1 token = R$ 1,00
-    const priceInCents = amount * 100;
-    logStep("Price calculated", { tokens: amount, priceInCents });
+    const priceInCents = tokenAmount * 100;
+    logStep("Price calculated", { tokens: tokenAmount, priceInCents });
 
-    // Create pending purchase record
     const { data: purchase, error: purchaseError } = await supabase
       .from('token_purchases')
       .insert({
         user_id: user.id,
-        amount,
-        price: amount,
+        amount: tokenAmount,
+        price: tokenAmount,
         payment_method: 'stripe',
         status: 'pending'
       })
@@ -86,21 +110,19 @@ serve(async (req) => {
       .single();
 
     if (purchaseError) {
-      logStep("Error creating purchase", { error: purchaseError });
-      throw purchaseError;
+      logStep("Error creating purchase", { error: purchaseError.message });
+      throw new Error("Erro ao iniciar compra de tokens");
     }
     logStep("Purchase record created", { purchaseId: purchase.id });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Check for existing Stripe customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      logStep("Found existing Stripe customer", { customerId });
+      logStep("Found existing Stripe customer");
     } else {
-      // Create a new customer
       const newCustomer = await stripe.customers.create({
         email: user.email,
         metadata: {
@@ -108,12 +130,11 @@ serve(async (req) => {
         }
       });
       customerId = newCustomer.id;
-      logStep("Created new Stripe customer", { customerId });
+      logStep("Created new Stripe customer");
     }
 
-    const origin = req.headers.get("origin") || "https://raiztoken.com.br";
+    const origin = allowedOrigins.has(requestOrigin) ? requestOrigin : "https://raiztoken.com.br";
 
-    // Create Stripe Checkout session with embedded mode (ui_mode: 'embedded')
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -121,8 +142,8 @@ serve(async (req) => {
           price_data: {
             currency: "brl",
             product_data: {
-              name: `${amount} Raiz Tokens`,
-              description: `Compra de ${amount} tokens para apoiar projetos`,
+              name: `${tokenAmount} Raiz Tokens`,
+              description: `Compra de ${tokenAmount} tokens para apoiar projetos`,
             },
             unit_amount: priceInCents,
           },
@@ -141,14 +162,13 @@ serve(async (req) => {
       metadata: {
         purchase_id: purchase.id,
         user_id: user.id,
-        tokens_amount: amount.toString(),
+        tokens_amount: tokenAmount.toString(),
         type: "token_purchase"
       }
     });
 
     logStep("Checkout session created (embedded mode)", { sessionId: session.id });
 
-    // Update purchase with Stripe session ID
     await supabase
       .from('token_purchases')
       .update({ 
@@ -169,12 +189,14 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    logStep("ERROR", { message: error.message });
+    const message = String(error?.message || "Erro ao iniciar checkout");
+    logStep("ERROR", { message });
+    const isAuthError = message.startsWith("AUTH_ERROR") || message.startsWith("TOKEN_EXPIRED");
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: isAuthError ? message : "Erro ao iniciar checkout de tokens" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: isAuthError ? 401 : 500,
       }
     );
   }
