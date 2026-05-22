@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const MIN_TOKEN_PURCHASE = 1000;
+const MIN_TOKEN_PURCHASE = 5;
 const MAX_TOKEN_PURCHASE = 1000000;
 
 const allowedOrigins = new Set([
@@ -206,7 +206,7 @@ serve(async (req) => {
 
     const publicErrors: Record<string, string> = {
       INVALID_TOKEN_AMOUNT: "Valor inválido para compra de tokens.",
-      MIN_TOKEN_PURCHASE: "A compra mínima é de 1.000 tokens.",
+      MIN_TOKEN_PURCHASE: "A compra mínima é de 5 tokens.",
       MAX_TOKEN_PURCHASE: "Valor máximo de compra excedido.",
     };
 
