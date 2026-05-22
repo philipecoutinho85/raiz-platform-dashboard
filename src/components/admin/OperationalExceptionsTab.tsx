@@ -73,6 +73,7 @@ const OperationalExceptionsTab = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
 
   const fetchExceptions = async () => {
     setLoading(true);
@@ -112,6 +113,10 @@ const OperationalExceptionsTab = () => {
     };
   }, []);
 
+  const sourceOptions = useMemo(() => {
+    return Array.from(new Set(exceptions.map((item) => item.source).filter(Boolean))).sort();
+  }, [exceptions]);
+
   const filteredExceptions = useMemo(() => {
     return exceptions.filter((item) => {
       const matchesStatus = statusFilter === 'all'
@@ -119,9 +124,10 @@ const OperationalExceptionsTab = () => {
         || item.status === statusFilter;
 
       const matchesSeverity = severityFilter === 'all' || item.severity === severityFilter;
-      return matchesStatus && matchesSeverity;
+      const matchesSource = sourceFilter === 'all' || item.source === sourceFilter;
+      return matchesStatus && matchesSeverity && matchesSource;
     });
-  }, [exceptions, statusFilter, severityFilter]);
+  }, [exceptions, statusFilter, severityFilter, sourceFilter]);
 
   const stats = useMemo(() => {
     const active = exceptions.filter((item) => ['open', 'retry_scheduled'].includes(item.status)).length;
@@ -220,6 +226,18 @@ const OperationalExceptionsTab = () => {
                   <SelectItem value="high">Alta</SelectItem>
                   <SelectItem value="medium">Média</SelectItem>
                   <SelectItem value="low">Baixa</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas origens</SelectItem>
+                  {sourceOptions.map((source) => (
+                    <SelectItem key={source} value={source}>{source}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
