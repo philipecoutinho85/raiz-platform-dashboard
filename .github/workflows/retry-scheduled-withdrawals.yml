@@ -1,0 +1,18 @@
+name: Retry Scheduled Withdrawals
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  retry-scheduled-withdrawals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call retry scheduled withdrawals function
+        run: |
+          curl -fsS -X POST \
+            "https://oefkzjyqjjfzfrmovfdt.supabase.co/functions/v1/retry-scheduled-withdrawals" \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: ${{ secrets.RAIZ_CRON_SECRET }}" \
+            -d '{"source":"github_actions"}'
