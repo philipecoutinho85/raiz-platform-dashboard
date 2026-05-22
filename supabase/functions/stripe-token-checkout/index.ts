@@ -2,6 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
+const MIN_TOKEN_PURCHASE = 1000;
+const MAX_TOKEN_PURCHASE = 1000000;
+
 const allowedOrigins = new Set([
   "https://raiztoken.com.br",
   "https://www.raiztoken.com.br",
@@ -90,8 +93,16 @@ serve(async (req) => {
     const { amount } = await req.json();
     const tokenAmount = Number(amount);
     
-    if (!Number.isInteger(tokenAmount) || tokenAmount < 5 || tokenAmount > 1000000) {
-      throw new Error("Valor inválido para compra de tokens");
+    if (!Number.isInteger(tokenAmount)) {
+      throw new Error("INVALID_TOKEN_AMOUNT");
+    }
+
+    if (tokenAmount < MIN_TOKEN_PURCHASE) {
+      throw new Error("MIN_TOKEN_PURCHASE");
+    }
+
+    if (tokenAmount > MAX_TOKEN_PURCHASE) {
+      throw new Error("MAX_TOKEN_PURCHASE");
     }
 
     const priceInCents = tokenAmount * 100;
@@ -192,8 +203,19 @@ serve(async (req) => {
     const message = String(error?.message || "Erro ao iniciar checkout");
     logStep("ERROR", { message });
     const isAuthError = message.startsWith("AUTH_ERROR") || message.startsWith("TOKEN_EXPIRED");
+
+    const publicErrors: Record<string, string> = {
+      INVALID_TOKEN_AMOUNT: "Valor inválido para compra de tokens.",
+      MIN_TOKEN_PURCHASE: "A compra mínima é de 1.000 tokens.",
+      MAX_TOKEN_PURCHASE: "Valor máximo de compra excedido.",
+    };
+
+    const publicError = isAuthError
+      ? message
+      : publicErrors[message] || "Erro ao iniciar checkout de tokens";
+
     return new Response(
-      JSON.stringify({ error: isAuthError ? message : "Erro ao iniciar checkout de tokens" }),
+      JSON.stringify({ error: publicError }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: isAuthError ? 401 : 500,
