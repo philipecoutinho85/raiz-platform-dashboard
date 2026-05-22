@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 
@@ -68,12 +69,25 @@ const safeMetadataPreview = (metadata: Record<string, unknown> | null) => {
   return safeEntries.length ? safeEntries.join(' | ') : 'Metadados ocultos por segurança';
 };
 
+const searchableText = (item: OperationalException) => [
+  item.id,
+  item.source,
+  item.source_id,
+  item.user_id,
+  item.project_id,
+  item.status,
+  item.severity,
+  item.reason,
+  safeMetadataPreview(item.metadata),
+].filter(Boolean).join(' ').toLowerCase();
+
 const OperationalExceptionsTab = () => {
   const [exceptions, setExceptions] = useState<OperationalException[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchExceptions = async () => {
     setLoading(true);
@@ -118,6 +132,8 @@ const OperationalExceptionsTab = () => {
   }, [exceptions]);
 
   const filteredExceptions = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
     return exceptions.filter((item) => {
       const matchesStatus = statusFilter === 'all'
         || (statusFilter === 'active' && ['open', 'retry_scheduled'].includes(item.status))
@@ -125,9 +141,10 @@ const OperationalExceptionsTab = () => {
 
       const matchesSeverity = severityFilter === 'all' || item.severity === severityFilter;
       const matchesSource = sourceFilter === 'all' || item.source === sourceFilter;
-      return matchesStatus && matchesSeverity && matchesSource;
+      const matchesSearch = !normalizedSearch || searchableText(item).includes(normalizedSearch);
+      return matchesStatus && matchesSeverity && matchesSource && matchesSearch;
     });
-  }, [exceptions, statusFilter, severityFilter, sourceFilter]);
+  }, [exceptions, statusFilter, severityFilter, sourceFilter, searchTerm]);
 
   const stats = useMemo(() => {
     const active = exceptions.filter((item) => ['open', 'retry_scheduled'].includes(item.status)).length;
@@ -194,16 +211,26 @@ const OperationalExceptionsTab = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div>
               <CardTitle>Exceções operacionais</CardTitle>
               <CardDescription>
                 Monitoramento de filas internas, saques, retries Stripe, webhooks e inconsistências operacionais.
               </CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+              <div className="relative md:col-span-2">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Buscar por motivo, origem, ID, usuário ou projeto"
+                  className="pl-10"
+                />
+              </div>
+
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -217,7 +244,7 @@ const OperationalExceptionsTab = () => {
               </Select>
 
               <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Severidade" />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,22 +256,23 @@ const OperationalExceptionsTab = () => {
                 </SelectContent>
               </Select>
 
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Origem" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas origens</SelectItem>
-                  {sourceOptions.map((source) => (
-                    <SelectItem key={source} value={source}>{source}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas origens</SelectItem>
+                    {sourceOptions.map((source) => (
+                      <SelectItem key={source} value={source}>{source}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Button variant="outline" onClick={fetchExceptions} className="gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Atualizar
-              </Button>
+                <Button variant="outline" onClick={fetchExceptions} className="gap-2 shrink-0">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
