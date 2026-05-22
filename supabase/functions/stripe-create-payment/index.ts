@@ -2,9 +2,20 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const allowedOrigins = new Set([
+  "https://raiztoken.com.br",
+  "https://www.raiztoken.com.br",
+  "http://localhost:5173",
+  "http://localhost:3000",
+]);
+
+const getCorsHeaders = (req: Request) => {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://raiztoken.com.br",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Vary": "Origin",
+  };
 };
 
 const logStep = (step: string, details?: any) => {
@@ -20,7 +31,12 @@ const enrichError = (message: string, sourceError?: any) => {
   });
 };
 
+const isUuid = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,6 +44,21 @@ serve(async (req) => {
   let currentStep = "Function started";
 
   try {
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 405,
+      });
+    }
+
+    const requestOrigin = req.headers.get("origin") || "";
+    if (requestOrigin && !allowedOrigins.has(requestOrigin)) {
+      return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
     currentStep = "Function started";
     logStep("Function started");
 
@@ -42,7 +73,7 @@ serve(async (req) => {
 
     currentStep = "Read authorization header";
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("AUTH_REQUIRED");
 
     currentStep = "Authenticate user";
     const token = authHeader.replace("Bearer ", "");
@@ -50,18 +81,20 @@ serve(async (req) => {
     if (userError) throw enrichError(`Auth error: ${userError.message}`, userError);
     
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    if (!user?.email) throw new Error("AUTH_REQUIRED");
+    logStep("User authenticated", { userId: user.id });
 
     currentStep = "Parse payment request";
     const { projectId, amount } = await req.json();
-    if (!projectId || !amount) throw new Error("Missing projectId or amount");
+    const numericAmount = Number(amount);
+    if (!projectId || !isUuid(String(projectId)) || !Number.isFinite(numericAmount)) {
+      throw new Error("INVALID_PAYMENT_REQUEST");
+    }
     
-    const amountCents = Math.round(amount * 100);
-    if (amountCents < 500) throw new Error("Minimum amount is R$5.00");
-    logStep("Payment request", { projectId, amount, amountCents });
+    const amountCents = Math.round(numericAmount * 100);
+    if (amountCents < 500 || amountCents > 100000000) throw new Error("INVALID_PAYMENT_AMOUNT");
+    logStep("Payment request", { projectId, amountCents });
 
-    // Get project using only columns that exist in production.
     currentStep = "Load project";
     const { data: project, error: projectError } = await supabase
       .from('projects')
@@ -78,20 +111,19 @@ serve(async (req) => {
       .single();
 
     if (projectError) throw enrichError(`Project error: ${projectError.message}`, projectError);
-    if (!project) throw new Error("Project not found");
+    if (!project) throw new Error("PROJECT_NOT_FOUND");
     logStep("Project loaded", {
       projectId: project.id,
       creatorId: project.user_id,
       status: project.status,
-      goal: project.goal,
       projectType: project.project_type,
     });
 
     if (project.status !== 'approved') {
-      throw new Error("Projeto nao esta aprovado para receber pagamentos");
+      throw new Error("PROJECT_NOT_APPROVED");
     }
     if (project.user_id === user.id) {
-      throw new Error("Criador nao pode apoiar o proprio projeto por pagamento Stripe");
+      throw new Error("SELF_SUPPORT_NOT_ALLOWED");
     }
 
     currentStep = "Load creator profile";
@@ -102,25 +134,22 @@ serve(async (req) => {
       .single();
 
     if (creatorError) throw enrichError(`Creator profile error: ${creatorError.message}`, creatorError);
-    if (!creatorProfile) throw new Error("Perfil do criador nao encontrado");
+    if (!creatorProfile) throw new Error("CREATOR_PROFILE_NOT_FOUND");
 
     if (!creatorProfile?.stripe_account_id) {
-      throw new Error("Criador ainda não configurou a conta para receber pagamentos");
+      throw new Error("CREATOR_STRIPE_NOT_CONFIGURED");
     }
     if (!creatorProfile.stripe_onboarding_complete) {
-      throw new Error("Criador ainda não completou a verificação da conta");
+      throw new Error("CREATOR_STRIPE_ONBOARDING_INCOMPLETE");
     }
 
     logStep("Project found", { 
       title: project.title, 
       creatorId: creatorProfile.id,
-      stripeAccountId: creatorProfile.stripe_account_id,
       platformFee: project.platform_fee_percentage,
       projectType: project.project_type
     });
 
-    // Calculate platform fee and creator amount based on project type
-    // Seed projects: 0% fee, Regular projects: 10% fee (or custom)
     currentStep = "Calculate payment fees";
     const projectType = project.project_type || 'regular';
     const platformFeePercent = projectType === 'seed' ? 0 : (project.platform_fee_percentage || 10);
@@ -136,7 +165,6 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Check if customer exists
     currentStep = "Find Stripe customer";
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
@@ -144,9 +172,8 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin") || "https://raiztoken.com.br";
+    const origin = allowedOrigins.has(requestOrigin) ? requestOrigin : "https://raiztoken.com.br";
 
-    // Create Checkout Session with transfer to connected account
     currentStep = "Create Stripe checkout session";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -158,7 +185,7 @@ serve(async (req) => {
             currency: 'brl',
             product_data: {
               name: `Apoio ao projeto: ${project.title}`,
-              description: `Contribuição de R$ ${(amount).toFixed(2)} para o projeto`,
+              description: `Contribuição de R$ ${numericAmount.toFixed(2)} para o projeto`,
             },
             unit_amount: amountCents,
           },
@@ -190,9 +217,8 @@ serve(async (req) => {
       },
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created", { sessionId: session.id });
 
-    // Record payment intent (pending)
     currentStep = "Insert stripe_payments pending record";
     const { error: paymentInsertError } = await supabase.from('stripe_payments').insert({
       user_id: user.id,
@@ -231,16 +257,25 @@ serve(async (req) => {
       hint: errorHint,
     });
 
+    const publicErrors = new Map<string, string>([
+      ["AUTH_REQUIRED", "Usuário não autenticado."],
+      ["INVALID_PAYMENT_REQUEST", "Solicitação de pagamento inválida."],
+      ["INVALID_PAYMENT_AMOUNT", "Valor de pagamento inválido."],
+      ["PROJECT_NOT_FOUND", "Projeto não encontrado."],
+      ["PROJECT_NOT_APPROVED", "Projeto não está aprovado para receber pagamentos."],
+      ["SELF_SUPPORT_NOT_ALLOWED", "Criador não pode apoiar o próprio projeto."],
+      ["CREATOR_STRIPE_NOT_CONFIGURED", "Criador ainda não configurou a conta para receber pagamentos."],
+      ["CREATOR_STRIPE_ONBOARDING_INCOMPLETE", "Criador ainda não completou a verificação da conta."],
+    ]);
+
+    const status = errorMessage === "AUTH_REQUIRED" ? 401 : 500;
+    const publicMessage = publicErrors.get(errorMessage) || "Erro ao iniciar pagamento.";
+
     return new Response(
-      JSON.stringify({
-        error: errorMessage,
-        step: currentStep,
-        code: errorCode,
-        details: errorDetails,
-      }),
+      JSON.stringify({ error: publicMessage }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status,
       }
     );
   }
