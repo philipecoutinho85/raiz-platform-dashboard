@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Shield, Menu, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail, Heart, PenTool } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import AdminSearchCommand from './AdminSearchCommand';
 
 interface AdminHeaderProps {
@@ -11,6 +13,37 @@ interface AdminHeaderProps {
 
 const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
   const navigate = useNavigate();
+  const [activeOperationsCount, setActiveOperationsCount] = useState(0);
+
+  const fetchActiveOperationsCount = async () => {
+    const { count, error } = await (supabase as any)
+      .from('operational_exception_queue')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['open', 'retry_scheduled']);
+
+    if (!error) {
+      setActiveOperationsCount(count || 0);
+    }
+  };
+
+  useEffect(() => {
+    fetchActiveOperationsCount();
+
+    const channel = supabase
+      .channel('admin_header_operational_exceptions')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'operational_exception_queue',
+      }, () => {
+        fetchActiveOperationsCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   
   return (
     <div className="bg-white border-b border-raiz-accent/20 py-6">
@@ -55,6 +88,11 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 <Button variant="outline" className="bg-primary hover:bg-primary/90 text-primary-foreground border-primary/50 shadow-lg">
                   <Menu className="mr-2 h-5 w-5" />
                   Menu
+                  {activeOperationsCount > 0 && (
+                    <span className="ml-2 rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">
+                      {activeOperationsCount > 99 ? '99+' : activeOperationsCount}
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64 bg-background shadow-2xl border-primary/30" align="end">
@@ -111,7 +149,12 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 <DropdownMenuLabel className="text-primary">⚙️ Sistema</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => setActiveTab("operations")} className="cursor-pointer hover:bg-primary/10">
                   <Shield className="mr-2 h-4 w-4 text-primary" />
-                  Operação
+                  <span className="flex-1">Operação</span>
+                  {activeOperationsCount > 0 && (
+                    <span className="ml-2 rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-destructive-foreground">
+                      {activeOperationsCount > 99 ? '99+' : activeOperationsCount}
+                    </span>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab("expired")} className="cursor-pointer hover:bg-primary/10">
                   <Clock className="mr-2 h-4 w-4 text-primary" />
