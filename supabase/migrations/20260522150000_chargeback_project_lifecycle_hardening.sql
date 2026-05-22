@@ -1,6 +1,6 @@
 -- Chargeback, dispute, and project lifecycle hardening.
--- Goal: prevent unreconciled financial loss when a user buys tokens, consumes them, and later disputes/refunds the payment.
--- Also adds an atomic cancellation path that refunds valid project contributions idempotently.
+-- Safe version: avoids changing existing CHECK constraints on financial_ledger and ledger_movements.
+-- Adds defensive records, user risk flags, and an atomic admin cancellation/refund path.
 
 CREATE TABLE IF NOT EXISTS public.payment_dispute_records (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -122,7 +122,6 @@ DECLARE
   v_purchase public.token_purchases%ROWTYPE;
   v_payment public.stripe_payments%ROWTYPE;
   v_ledger public.financial_ledger%ROWTYPE;
-  v_contribution public.project_contributions%ROWTYPE;
   v_user_id uuid;
   v_project_id uuid;
   v_contribution_id uuid;
@@ -131,7 +130,7 @@ DECLARE
   v_balance integer := 0;
   v_debit_amount integer := 0;
   v_unrecovered integer := 0;
-  v_reference_uuid uuid;
+  v_purchase_id uuid;
 BEGIN
   IF p_event_id IS NULL OR length(trim(p_event_id)) = 0 THEN
     RAISE EXCEPTION 'Stripe event id is required';
@@ -139,7 +138,7 @@ BEGIN
 
   SELECT * INTO v_purchase
   FROM public.token_purchases
-  WHERE (p_metadata ? 'purchase_id' AND id = (p_metadata->>'purchase_id')::uuid)
+  WHERE (p_metadata ? 'purchase_id' AND id = NULLIF(p_metadata->>'purchase_id', '')::uuid)
      OR (p_session_id IS NOT NULL AND pagarme_transaction_id = p_session_id)
   LIMIT 1
   FOR UPDATE;
@@ -147,7 +146,7 @@ BEGIN
   IF FOUND THEN
     v_source_type := 'token_purchase';
     v_user_id := v_purchase.user_id;
-    v_reference_uuid := v_purchase.id;
+    v_purchase_id := v_purchase.id;
 
     INSERT INTO public.user_tokens (user_id, balance)
     VALUES (v_purchase.user_id, 0)
@@ -215,13 +214,11 @@ BEGIN
       IF FOUND THEN
         v_contribution_id := v_ledger.contribution_id;
 
-        UPDATE public.financial_ledger
-        SET financial_status = CASE
-              WHEN p_event_type = 'charge.refunded' THEN 'refunded'
-              ELSE 'disputed'
-            END,
-            updated_at = now()
-        WHERE id = v_ledger.id;
+        IF p_event_type = 'charge.refunded' THEN
+          UPDATE public.financial_ledger
+          SET financial_status = 'refunded'
+          WHERE id = v_ledger.id;
+        END IF;
 
         INSERT INTO public.ledger_movements (
           ledger_id,
@@ -236,7 +233,7 @@ BEGIN
         )
         VALUES (
           v_ledger.id,
-          CASE WHEN p_event_type = 'charge.refunded' THEN 'refund' ELSE 'dispute' END,
+          CASE WHEN p_event_type = 'charge.refunded' THEN 'refund' ELSE 'adjustment' END,
           v_amount,
           'stripe',
           'platform',
@@ -289,7 +286,7 @@ BEGIN
     p_charge_id,
     p_session_id,
     v_source_type,
-    CASE WHEN v_source_type = 'token_purchase' THEN v_reference_uuid ELSE NULL END,
+    v_purchase_id,
     v_project_id,
     v_contribution_id,
     v_user_id,
@@ -335,8 +332,7 @@ BEGIN
     ON CONFLICT (user_id, source, source_id) DO UPDATE SET
       severity = EXCLUDED.severity,
       status = 'open',
-      metadata = user_risk_flags.metadata || EXCLUDED.metadata,
-      created_at = user_risk_flags.created_at;
+      metadata = user_risk_flags.metadata || EXCLUDED.metadata;
 
     INSERT INTO public.notifications (user_id, type, title, message, related_id)
     VALUES (
@@ -344,11 +340,11 @@ BEGIN
       'payment_dispute',
       'Pagamento em análise',
       'Identificamos uma contestação ou estorno relacionado a um pagamento. Algumas movimentações podem ficar em análise até a regularização.',
-      COALESCE(v_reference_uuid, v_project_id)
+      COALESCE(v_purchase_id, v_project_id)
     );
   END IF;
 
-  RETURN QUERY SELECT v_source_type, CASE WHEN v_source_type = 'token_purchase' THEN v_reference_uuid ELSE NULL END, v_project_id, v_user_id, v_debit_amount, v_unrecovered;
+  RETURN QUERY SELECT v_source_type, v_purchase_id, v_project_id, v_user_id, v_debit_amount, v_unrecovered;
 END;
 $$;
 
@@ -435,10 +431,6 @@ BEGIN
     SET balance = v_new_balance,
         updated_at = now()
     WHERE user_id = v_contribution.user_id;
-
-    UPDATE public.project_contributions
-    SET status = 'refunded'
-    WHERE id = v_contribution.id;
 
     INSERT INTO public.token_transactions (
       user_id,
