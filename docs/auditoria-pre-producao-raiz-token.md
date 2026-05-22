@@ -6,7 +6,7 @@ A Raiz Token opera com tokens como unidade de apoio e reconhecimento, onde 1 tok
 
 ## Status geral
 
-**Maturidade estimada da auditoria:** 88% a 91%
+**Maturidade estimada da auditoria:** 92% a 94%
 
 **Status:** Em fase final de validação operacional.
 
@@ -60,8 +60,9 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
   - `stripe-request-payout`
   - `stripe-connect-onboard`
   - `stripe-check-account`
+- [x] Deploy do conjunto auditado de Edge Functions confirmado visualmente no GitHub Actions.
 
-**Ponto de atenção:** merge no GitHub não garante deploy no Supabase.
+**Execução validada:** `Deploy Supabase Edge Functions #14`, commit `b40bdc4`, status `success`, duração aproximada de 51s.
 
 ---
 
@@ -122,8 +123,9 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
   - `charge.refunded`
 - [x] Idempotência por evento Stripe.
 - [x] Integração com processamento atômico de disputas.
+- [x] Deploy da função incluído no workflow auditado e confirmado visualmente.
 
-**Ponto de atenção:** precisa confirmar configuração real no dashboard da Stripe e env var `STRIPE_RISK_WEBHOOK_SECRET`.
+**Ponto de atenção:** ainda precisa confirmar configuração real do endpoint no dashboard da Stripe e env var `STRIPE_RISK_WEBHOOK_SECRET`.
 
 ---
 
@@ -132,6 +134,7 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
 - [x] Criação de `retry-scheduled-withdrawals`.
 - [x] Workflow GitHub Actions para chamada recorrente.
 - [x] Configuração de `verify_jwt = false` para chamada cron protegida por secret.
+- [x] Deploy da função incluído no workflow auditado e confirmado visualmente.
 
 **Limitação atual:** a função reabre saques agendados para processamento, mas não executa payout completo automaticamente. Isso foi mantido assim por segurança.
 
@@ -185,29 +188,21 @@ npm run build
 
 ### 2.3 Deploy real das Edge Functions
 
-Confirmar deploy no Supabase das funções:
+Funções confirmadas no workflow auditado:
 
-- [ ] `stripe-request-payout`
-- [ ] `stripe-connect-onboard`
-- [ ] `stripe-check-account`
-- [ ] `stripe-risk-webhook`
-- [ ] `retry-scheduled-withdrawals`
-- [ ] `send-welcome-email`
-- [ ] `send-contact-email`
-- [ ] `stripe-token-checkout`
-- [ ] `stripe-create-payment`
+- [x] `stripe-request-payout`
+- [x] `stripe-connect-onboard`
+- [x] `stripe-check-account`
+- [x] `stripe-risk-webhook`
+- [x] `retry-scheduled-withdrawals`
+- [x] `send-welcome-email`
+- [x] `send-contact-email`
+- [x] `stripe-token-checkout`
+- [x] `stripe-create-payment`
 
-**Comandos de referência:**
+**Execução validada:** `Deploy Supabase Edge Functions #14`, commit `b40bdc4`, status `success`.
 
-```bash
-supabase functions deploy stripe-request-payout
-supabase functions deploy stripe-connect-onboard
-supabase functions deploy stripe-check-account
-supabase functions deploy stripe-risk-webhook
-supabase functions deploy retry-scheduled-withdrawals
-```
-
-**Criticidade:** alta.
+**Status:** resolvido.
 
 ---
 
@@ -368,7 +363,7 @@ A auditoria só deve ser considerada concluída quando todos os itens abaixo est
 
 - [x] Build aprovado.
 - [ ] Migrations aplicadas e verificadas.
-- [ ] Edge Functions deployadas.
+- [x] Edge Functions deployadas.
 - [ ] Secrets configurados.
 - [x] Compra mínima oficial corrigida.
 - [ ] Fluxo de compra testado.
