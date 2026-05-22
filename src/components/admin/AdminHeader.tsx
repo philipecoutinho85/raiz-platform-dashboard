@@ -40,6 +40,7 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 activeTab === "transactions" ? "Transações" :
                 activeTab === "refunds" ? "Reembolsos" :
                 activeTab === "withdrawals" ? "Resgates" :
+                activeTab === "operations" ? "Operação" :
                 activeTab === "expired" ? "Proj. Expirados" :
                 activeTab === "support" ? "Suporte" :
                 activeTab === "rejections" ? "Msg. Rejeições" :
@@ -108,6 +109,10 @@ const AdminHeader = ({ activeTab, setActiveTab }: AdminHeaderProps) => {
                 
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-primary">⚙️ Sistema</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setActiveTab("operations")} className="cursor-pointer hover:bg-primary/10">
+                  <Shield className="mr-2 h-4 w-4 text-primary" />
+                  Operação
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab("expired")} className="cursor-pointer hover:bg-primary/10">
                   <Clock className="mr-2 h-4 w-4 text-primary" />
                   Projetos Expirados
