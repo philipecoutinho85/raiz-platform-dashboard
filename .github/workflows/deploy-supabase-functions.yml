@@ -43,7 +43,7 @@ jobs:
       - name: Show Supabase CLI version
         run: supabase --version
 
-      - name: Deploy selected Edge Functions
+      - name: Deploy audited Edge Functions
         shell: bash
         run: |
           set -euo pipefail
@@ -56,7 +56,13 @@ jobs:
             "stripe-create-payment"
             "process-withdrawal"
             "stripe-request-payout"
+            "stripe-connect-onboard"
+            "stripe-check-account"
+            "stripe-risk-webhook"
+            "retry-scheduled-withdrawals"
             "admin-reconcile-token-purchase"
+            "send-welcome-email"
+            "send-contact-email"
           )
 
           for function_name in "${functions[@]}"; do
@@ -72,4 +78,4 @@ jobs:
             echo "::endgroup::"
           done
 
-          echo "All selected Supabase Edge Functions were deployed successfully."
+          echo "All audited Supabase Edge Functions were deployed successfully."
