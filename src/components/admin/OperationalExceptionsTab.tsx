@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search, X, Eye } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 
@@ -69,6 +70,17 @@ const safeMetadataPreview = (metadata: Record<string, unknown> | null) => {
   return safeEntries.length ? safeEntries.join(' | ') : 'Metadados ocultos por segurança';
 };
 
+const sanitizeMetadata = (metadata: Record<string, unknown> | null) => {
+  if (!metadata) return {};
+
+  return Object.fromEntries(
+    Object.entries(metadata).filter(([key]) => {
+      const normalizedKey = key.toLowerCase();
+      return !normalizedKey.includes('secret') && !normalizedKey.includes('token') && !normalizedKey.includes('password');
+    })
+  );
+};
+
 const searchableText = (item: OperationalException) => [
   item.id,
   item.source,
@@ -81,6 +93,13 @@ const searchableText = (item: OperationalException) => [
   safeMetadataPreview(item.metadata),
 ].filter(Boolean).join(' ').toLowerCase();
 
+const DetailRow = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
+  <div className="space-y-1">
+    <p className="text-xs font-medium text-muted-foreground">{label}</p>
+    <p className="break-all rounded-md bg-muted px-3 py-2 text-sm">{value || 'Não informado'}</p>
+  </div>
+);
+
 const OperationalExceptionsTab = () => {
   const [exceptions, setExceptions] = useState<OperationalException[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +107,7 @@ const OperationalExceptionsTab = () => {
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedException, setSelectedException] = useState<OperationalException | null>(null);
 
   const fetchExceptions = async () => {
     setLoading(true);
@@ -310,6 +330,7 @@ const OperationalExceptionsTab = () => {
                     <TableHead>Retry</TableHead>
                     <TableHead>Criada em</TableHead>
                     <TableHead>Metadados</TableHead>
+                    <TableHead className="text-right">Detalhes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -338,6 +359,12 @@ const OperationalExceptionsTab = () => {
                           {safeMetadataPreview(item.metadata)}
                         </div>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedException(item)} className="gap-2">
+                          <Eye className="h-4 w-4" />
+                          Ver
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -346,6 +373,54 @@ const OperationalExceptionsTab = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedException} onOpenChange={(open) => !open && setSelectedException(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes da exceção operacional</DialogTitle>
+            <DialogDescription>
+              Consulta somente leitura para investigação administrativa. Nenhuma ação financeira é executada por este modal.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedException && (
+            <div className="space-y-5">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={getStatusVariant(selectedException.status)}>
+                  {statusLabel[selectedException.status] || selectedException.status}
+                </Badge>
+                <Badge variant={getSeverityVariant(selectedException.severity)}>
+                  {severityLabel[selectedException.severity] || selectedException.severity}
+                </Badge>
+                <Badge variant="outline">{selectedException.source}</Badge>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DetailRow label="ID da exceção" value={selectedException.id} />
+                <DetailRow label="Source ID" value={selectedException.source_id} />
+                <DetailRow label="Usuário" value={selectedException.user_id} />
+                <DetailRow label="Projeto" value={selectedException.project_id} />
+                <DetailRow label="Criada em" value={formatToBrasilia(selectedException.created_at)} />
+                <DetailRow label="Atualizada em" value={formatToBrasilia(selectedException.updated_at)} />
+                <DetailRow label="Próximo retry" value={selectedException.next_retry_at ? formatToBrasilia(selectedException.next_retry_at) : null} />
+                <DetailRow label="Tentativas" value={selectedException.retry_count || 0} />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Motivo</p>
+                <p className="break-words rounded-md bg-muted px-3 py-2 text-sm">{selectedException.reason}</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Metadados seguros</p>
+                <pre className="max-h-72 overflow-auto rounded-md bg-muted p-3 text-xs">
+                  {JSON.stringify(sanitizeMetadata(selectedException.metadata), null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
