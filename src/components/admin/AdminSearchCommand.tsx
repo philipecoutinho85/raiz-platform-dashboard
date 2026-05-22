@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail, Heart } from 'lucide-react';
+import { Search, FolderOpen, Users, Award, AlertTriangle, DollarSign, Coins, ArrowLeftRight, RotateCcw, LogOut, Clock, FileText, TestTube, Settings, MessageSquare, Mail, Heart, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Command,
@@ -26,6 +26,9 @@ const menuItems = [
   { label: 'Transações', value: 'transactions', icon: ArrowLeftRight, group: 'Financeiro' },
   { label: 'Reembolsos', value: 'refunds', icon: RotateCcw, group: 'Financeiro' },
   { label: 'Resgates', value: 'withdrawals', icon: LogOut, group: 'Financeiro' },
+  { label: 'Operação', value: 'operations', icon: Shield, group: 'Sistema' },
+  { label: 'Fila Operacional', value: 'operations', icon: Shield, group: 'Sistema' },
+  { label: 'Exceções Operacionais', value: 'operations', icon: Shield, group: 'Sistema' },
   { label: 'Projetos Expirados', value: 'expired', icon: Clock, group: 'Sistema' },
   { label: 'Suporte', value: 'support', icon: MessageSquare, group: 'Sistema' },
   { label: 'Msg. Rejeições', value: 'rejections', icon: Mail, group: 'Sistema' },
@@ -91,7 +94,7 @@ const AdminSearchCommand = ({ setActiveTab }: AdminSearchCommandProps) => {
                 <CommandGroup key={group} heading={group}>
                   {groupItems.map(item => (
                     <CommandItem
-                      key={item.value}
+                      key={`${item.value}-${item.label}`}
                       value={item.label}
                       onSelect={() => handleSelect(item.value)}
                       className="cursor-pointer"
