@@ -6,9 +6,9 @@ A Raiz Token opera com tokens como unidade de apoio e reconhecimento, onde 1 tok
 
 ## Status geral
 
-**Maturidade estimada da auditoria:** 75% a 80%
+**Maturidade estimada da auditoria:** 82% a 86%
 
-**Status:** Em fase avançada, mas ainda não encerrada.
+**Status:** Em fase final de validação.
 
 O foco atual deixou de ser apenas correção pontual e passou a ser estruturação de governança operacional, controle de risco, rastreabilidade e redução de processos manuais.
 
@@ -53,7 +53,7 @@ O foco atual deixou de ser apenas correção pontual e passou a ser estruturaç�
 
 ### 1.4 Hardening de funções Stripe principais
 
-- [x] `stripe-token-checkout` com CORS restrito e sanitização de erros.
+- [x] `stripe-token-checkout` com CORS restrito, sanitização de erros e compra mínima oficial de 5 tokens.
 - [x] `stripe-create-payment` com CORS restrito e sanitização de erros.
 - [x] PR de Stripe Connect merged na `main`.
 - [x] Funções Stripe Connect endurecidas via PR:
@@ -219,21 +219,21 @@ Confirmar em produção:
 
 ---
 
-### 2.5 Alinhar compra mínima oficial de tokens
+### 2.5 Compra mínima oficial de tokens
 
-Regra oficial da Raiz Token:
+Regra oficial atual da Raiz Token:
 
 - 1 token = R$1,00
-- compra mínima = R$1.000,00
-- compra mínima = 1.000 tokens
+- compra mínima = R$5,00
+- compra mínima = 5 tokens
 
-Pendência:
+Status:
 
-- [ ] Revisar `stripe-token-checkout`.
-- [ ] Garantir mínimo de 1.000 tokens.
-- [ ] Garantir mensagem pública clara: `A compra mínima é de 1.000 tokens.`
+- [x] `stripe-token-checkout` revisada.
+- [x] Mínimo de 5 tokens aplicado.
+- [x] Mensagem pública clara: `A compra mínima é de 5 tokens.`
 
-**Criticidade:** alta, por consistência comercial, jurídica e operacional.
+**Criticidade:** resolvida.
 
 ---
 
@@ -358,7 +358,7 @@ A auditoria só deve ser considerada concluída quando todos os itens abaixo est
 - [ ] Migrations aplicadas e verificadas.
 - [ ] Edge Functions deployadas.
 - [ ] Secrets configurados.
-- [ ] Compra mínima oficial corrigida.
+- [x] Compra mínima oficial corrigida.
 - [ ] Fluxo de compra testado.
 - [ ] Fluxo de apoio testado.
 - [ ] Fluxo de cancelamento testado.
