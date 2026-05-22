@@ -55,6 +55,14 @@ interface AdminStats {
   totalTokens: number;
 }
 
+interface ProjectCancelResult {
+  project_id: string;
+  previous_status: string;
+  new_status: string;
+  contributions_refunded: number;
+  tokens_refunded: number;
+}
+
 export const useAdminData = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -72,6 +80,20 @@ export const useAdminData = () => {
 
   const formatTokens = (value: number) => {
     return new Intl.NumberFormat('pt-BR').format(value);
+  };
+
+  const cancelProjectAndRefundTokens = async (projectId: string, reason: string): Promise<ProjectCancelResult | null> => {
+    const { data, error } = await (supabase as any).rpc('cancel_project_and_refund_tokens_atomic', {
+      p_project_id: projectId,
+      p_reason: reason
+    });
+
+    if (error) {
+      console.error('Error cancelling project atomically:', error);
+      throw error;
+    }
+
+    return Array.isArray(data) && data.length > 0 ? data[0] as ProjectCancelResult : null;
   };
 
   const fetchAdminData = async () => {
@@ -317,65 +339,59 @@ export const useAdminData = () => {
         });
         
       } else if (action === 'cancel') {
-        const { error } = await supabase
-          .from('projects')
-          .update({
-            status: 'cancelled',
-            reviewed_at: new Date().toISOString(),
-            reviewed_by: user?.id
-          })
-          .eq('id', projectId);
+        const result = await cancelProjectAndRefundTokens(projectId, reason || 'admin_cancelled');
 
-        if (error) {
-          throw error;
-        }
-
-        // Log da ação
-        await logAdminAction('cancel_project', 'project', projectId);
+        await logAdminAction('cancel_project_refund_atomic', 'project', projectId, {
+          reason: reason || 'admin_cancelled',
+          tokens_refunded: result?.tokens_refunded || 0,
+          contributions_refunded: result?.contributions_refunded || 0,
+          previous_status: result?.previous_status,
+          new_status: result?.new_status
+        });
         
         toast({
-          title: "Projeto cancelado",
-          description: `O projeto foi cancelado. Se houver contribuições, os reembolsos foram iniciados automaticamente.`,
+          title: "Projeto cancelado com segurança",
+          description: `${result?.contributions_refunded || 0} apoio(s) processado(s) e ${formatTokens(result?.tokens_refunded || 0)} token(s) devolvido(s).`,
         });
         
       } else if (action === 'delete') {
         const project = allProjects.find(p => p.id === projectId);
-        const hadContributions = project && project.raised_amount && project.raised_amount > 0;
-        const projectCompleted = project && project.raised_amount >= project.goal;
-        
-        const { error } = await supabase
-          .from('projects')
-          .delete()
-          .eq('id', projectId);
-
-        if (error) {
-          throw error;
-        }
-
-        // Log da ação
-        await logAdminAction('delete_project', 'project', projectId, {
-          had_contributions: hadContributions,
-          raised_amount: project?.raised_amount || 0,
-          backers_count: project?.backers_count || 0,
-          completed: projectCompleted
-        });
+        const hadContributions = Boolean(project?.raised_amount && project.raised_amount > 0);
         
         if (hadContributions) {
-          if (projectCompleted) {
-            toast({
-              title: "Projeto excluído",
-              description: `Projeto concluído (100% da meta) excluído. Os apoiadores foram notificados. Tokens não foram devolvidos.`,
-            });
-          } else {
-            toast({
-              title: "Projeto excluído com devolução de tokens",
-              description: `${project?.backers_count || 0} apoiador(es) receberão ${formatTokens(project?.raised_amount || 0)} tokens de volta automaticamente.`,
-            });
-          }
+          const result = await cancelProjectAndRefundTokens(projectId, 'admin_delete_converted_to_cancel_refund');
+
+          await logAdminAction('delete_project_converted_to_cancel_refund', 'project', projectId, {
+            had_contributions: true,
+            raised_amount: project?.raised_amount || 0,
+            backers_count: project?.backers_count || 0,
+            tokens_refunded: result?.tokens_refunded || 0,
+            contributions_refunded: result?.contributions_refunded || 0
+          });
+
+          toast({
+            title: "Exclusão convertida em cancelamento seguro",
+            description: `${result?.contributions_refunded || 0} apoio(s) processado(s) e ${formatTokens(result?.tokens_refunded || 0)} token(s) devolvido(s). O histórico foi preservado para auditoria.`,
+          });
         } else {
+          const { error } = await supabase
+            .from('projects')
+            .delete()
+            .eq('id', projectId);
+
+          if (error) {
+            throw error;
+          }
+
+          await logAdminAction('delete_project_without_contributions', 'project', projectId, {
+            had_contributions: false,
+            raised_amount: project?.raised_amount || 0,
+            backers_count: project?.backers_count || 0
+          });
+          
           toast({
             title: "Projeto excluído",
-            description: `O projeto foi permanentemente excluído do sistema.`,
+            description: `Projeto sem contribuições excluído do sistema.`,
           });
         }
       }
