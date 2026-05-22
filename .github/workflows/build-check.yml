@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    name: Validate frontend build
+    name: Validate frontend quality and build
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run lint
+        run: npm run lint
 
       - name: Run build
         run: npm run build
