@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 type ExceptionStatus = 'open' | 'retry_scheduled' | 'resolved' | 'dismissed';
 type ExceptionSeverity = 'low' | 'medium' | 'high' | 'critical';
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 interface OperationalException {
   id: string;
@@ -44,13 +45,13 @@ const severityLabel: Record<ExceptionSeverity, string> = {
   critical: 'Crítica',
 };
 
-const getSeverityVariant = (severity: ExceptionSeverity) => {
+const getSeverityVariant = (severity: ExceptionSeverity): BadgeVariant => {
   if (severity === 'critical' || severity === 'high') return 'destructive';
   if (severity === 'medium') return 'secondary';
   return 'outline';
 };
 
-const getStatusVariant = (status: ExceptionStatus) => {
+const getStatusVariant = (status: ExceptionStatus): BadgeVariant => {
   if (status === 'open') return 'destructive';
   if (status === 'retry_scheduled') return 'secondary';
   return 'outline';
