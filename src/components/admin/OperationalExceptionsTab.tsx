@@ -81,6 +81,23 @@ const sanitizeMetadata = (metadata: Record<string, unknown> | null) => {
   );
 };
 
+const buildSafeExceptionPayload = (item: OperationalException) => ({
+  id: item.id,
+  source: item.source,
+  source_id: item.source_id,
+  user_id: item.user_id,
+  project_id: item.project_id,
+  severity: item.severity,
+  status: item.status,
+  reason: item.reason,
+  next_retry_at: item.next_retry_at,
+  retry_count: item.retry_count,
+  created_at: item.created_at,
+  updated_at: item.updated_at,
+  resolved_at: item.resolved_at,
+  metadata: sanitizeMetadata(item.metadata),
+});
+
 const searchableText = (item: OperationalException) => [
   item.id,
   item.source,
@@ -105,6 +122,16 @@ const copyToClipboard = async (label: string, value: string | number | null | un
   } catch (error) {
     console.error('Erro ao copiar para área de transferência:', error);
     toast.error('Não foi possível copiar');
+  }
+};
+
+const copySafeJson = async (item: OperationalException) => {
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(buildSafeExceptionPayload(item), null, 2));
+    toast.success('JSON seguro copiado');
+  } catch (error) {
+    console.error('Erro ao copiar JSON seguro:', error);
+    toast.error('Não foi possível copiar o JSON');
   }
 };
 
@@ -421,6 +448,10 @@ const OperationalExceptionsTab = () => {
                 <Button variant="outline" size="sm" onClick={() => copyToClipboard('ID da exceção', selectedException.id)} className="gap-2">
                   <Copy className="h-4 w-4" />
                   Copiar ID
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => copySafeJson(selectedException)} className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  Copiar JSON seguro
                 </Button>
                 {selectedException.source_id && (
                   <Button variant="outline" size="sm" onClick={() => copyToClipboard('Source ID', selectedException.source_id)} className="gap-2">
