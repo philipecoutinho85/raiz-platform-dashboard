@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Search, X } from 'lucide-react';
 import { formatToBrasilia } from '@/lib/dateUtils';
 import { toast } from 'sonner';
 
@@ -108,6 +108,13 @@ const OperationalExceptionsTab = () => {
     }
   };
 
+  const clearFilters = () => {
+    setStatusFilter('active');
+    setSeverityFilter('all');
+    setSourceFilter('all');
+    setSearchTerm('');
+  };
+
   useEffect(() => {
     fetchExceptions();
 
@@ -154,6 +161,8 @@ const OperationalExceptionsTab = () => {
 
     return { active, critical, scheduled, resolved };
   }, [exceptions]);
+
+  const hasCustomFilters = statusFilter !== 'active' || severityFilter !== 'all' || sourceFilter !== 'all' || searchTerm.trim().length > 0;
 
   if (loading) {
     return (
@@ -212,11 +221,19 @@ const OperationalExceptionsTab = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-4">
-            <div>
-              <CardTitle>Exceções operacionais</CardTitle>
-              <CardDescription>
-                Monitoramento de filas internas, saques, retries Stripe, webhooks e inconsistências operacionais.
-              </CardDescription>
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+              <div>
+                <CardTitle>Exceções operacionais</CardTitle>
+                <CardDescription>
+                  Monitoramento de filas internas, saques, retries Stripe, webhooks e inconsistências operacionais.
+                </CardDescription>
+              </div>
+              {hasCustomFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2 md:self-center">
+                  <X className="h-4 w-4" />
+                  Limpar filtros
+                </Button>
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               <div className="relative md:col-span-2">
