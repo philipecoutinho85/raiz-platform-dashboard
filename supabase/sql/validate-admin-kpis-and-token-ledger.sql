@@ -1,6 +1,10 @@
 -- Admin KPI and token ledger validation script.
 -- Read-only.
 -- Purpose: validate admin dashboard counters and token ledger consistency after financial/lifecycle changes.
+--
+-- Important:
+-- Do not join project_contributions and refunds directly in the same aggregate query,
+-- because multiple contributions x multiple refunds multiplies rows and inflates totals.
 
 -- 1. Project status distribution.
 SELECT
@@ -55,19 +59,38 @@ SELECT
   wallets.wallet_total - ledger.ledger_total AS difference
 FROM wallets, ledger;
 
--- 5. Contributions/refunds by project, useful for cancelled projects.
+-- 5. Contributions/refunds by project without row multiplication.
+WITH contribution_totals AS (
+  SELECT
+    pc.project_id,
+    COUNT(*) FILTER (WHERE pc.status = 'completed') AS completed_contributions_count,
+    COUNT(DISTINCT pc.user_id) FILTER (WHERE pc.status = 'completed') AS completed_backers_count,
+    COALESCE(SUM(pc.amount) FILTER (WHERE pc.status = 'completed'), 0)::integer AS completed_contributions_tokens
+  FROM public.project_contributions pc
+  GROUP BY pc.project_id
+), refund_totals AS (
+  SELECT
+    r.project_id,
+    COUNT(*) AS refunds_count,
+    COALESCE(SUM(r.amount), 0)::integer AS refunded_tokens
+  FROM public.refunds r
+  GROUP BY r.project_id
+)
 SELECT
   p.id,
   p.title,
   p.status,
   p.raised_amount,
   p.backers_count,
-  COUNT(pc.id) FILTER (WHERE pc.status = 'completed') AS completed_contributions_count,
-  COALESCE(SUM(pc.amount) FILTER (WHERE pc.status = 'completed'), 0)::integer AS completed_contributions_tokens,
-  COUNT(r.id) AS refunds_count,
-  COALESCE(SUM(r.amount), 0)::integer AS refunded_tokens
+  COALESCE(ct.completed_contributions_count, 0) AS completed_contributions_count,
+  COALESCE(ct.completed_backers_count, 0) AS completed_backers_count,
+  COALESCE(ct.completed_contributions_tokens, 0) AS completed_contributions_tokens,
+  COALESCE(rt.refunds_count, 0) AS refunds_count,
+  COALESCE(rt.refunded_tokens, 0) AS refunded_tokens,
+  p.raised_amount - COALESCE(ct.completed_contributions_tokens, 0) AS raised_amount_difference,
+  p.backers_count - COALESCE(ct.completed_backers_count, 0) AS backers_count_difference,
+  COALESCE(ct.completed_contributions_tokens, 0) - COALESCE(rt.refunded_tokens, 0) AS support_minus_refund_difference
 FROM public.projects p
-LEFT JOIN public.project_contributions pc ON pc.project_id = p.id
-LEFT JOIN public.refunds r ON r.project_id = p.id
-GROUP BY p.id, p.title, p.status, p.raised_amount, p.backers_count
+LEFT JOIN contribution_totals ct ON ct.project_id = p.id
+LEFT JOIN refund_totals rt ON rt.project_id = p.id
 ORDER BY p.updated_at DESC NULLS LAST, p.created_at DESC;
