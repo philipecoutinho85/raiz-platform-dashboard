@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,23 +10,12 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users, MessageCircle, Trash2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Calendar, DollarSign, Users, MessageCircle, Archive } from 'lucide-react';
 import Footer from '@/components/Footer';
 import ProjectAdminMessages from '@/components/ProjectAdminMessages';
 import ProjectRejectionModal from '@/components/ProjectRejectionModal';
 import { StripeConnectSetup } from '@/components/StripeConnectSetup';
 import { CreatorPayoutPanel } from '@/components/CreatorPayoutPanel';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 
 interface Project {
   id: string;
@@ -51,10 +40,9 @@ const MyProjects = () => {
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [selectedRejectedProject, setSelectedRejectedProject] = useState<Project | null>(null);
-  const [cleaningProjects, setCleaningProjects] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -99,10 +87,21 @@ const MyProjects = () => {
     }
   };
 
+  const isActiveProject = (project: Project) => {
+    if (project.status === 'cancelled' || project.status === 'deleted') return false;
+    if (project.status === 'approved' && project.raised_amount >= project.goal) return false;
+    return true;
+  };
+
   const filterProjects = () => {
     let filtered = projects;
 
-    // Filtrar por termo de busca
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(isActiveProject);
+    } else if (statusFilter !== 'all') {
+      filtered = filtered.filter(project => project.status === statusFilter);
+    }
+
     if (searchTerm) {
       filtered = filtered.filter(project =>
         project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,58 +110,7 @@ const MyProjects = () => {
       );
     }
 
-    // Filtrar por status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(project => project.status === statusFilter);
-    }
-
     setFilteredProjects(filtered);
-  };
-
-  // Projetos inativos: rejeitados, cancelados, ou aprovados que não atingiram meta
-  const getInactiveProjects = () => {
-    return projects.filter(project => {
-      // Rejeitados
-      if (project.status === 'rejected') return true;
-      // Cancelados
-      if (project.status === 'cancelled') return true;
-      // Aprovados que atingiram 100% da meta (concluídos)
-      if (project.status === 'approved' && project.raised_amount >= project.goal) return true;
-      return false;
-    });
-  };
-
-  const handleCleanInactiveProjects = async () => {
-    const inactiveProjects = getInactiveProjects();
-    if (inactiveProjects.length === 0) return;
-
-    setCleaningProjects(true);
-    try {
-      const projectIds = inactiveProjects.map(p => p.id);
-      
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .in('id', projectIds);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Projetos removidos',
-        description: `${inactiveProjects.length} projeto(s) removido(s) com sucesso.`,
-      });
-
-      fetchProjects();
-    } catch (error: any) {
-      console.error('Erro ao limpar projetos:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível remover os projetos.',
-        variant: 'destructive',
-      });
-    } finally {
-      setCleaningProjects(false);
-    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -171,6 +119,7 @@ const MyProjects = () => {
       approved: { variant: 'default' as const, label: 'Aprovado', color: 'text-green-600' },
       rejected: { variant: 'destructive' as const, label: 'Rejeitado', color: 'text-red-600' },
       cancelled: { variant: 'secondary' as const, label: 'Cancelado', color: 'text-orange-600' },
+      deleted: { variant: 'secondary' as const, label: 'Arquivado', color: 'text-gray-600' },
       draft: { variant: 'outline' as const, label: 'Rascunho', color: 'text-gray-600' }
     };
 
@@ -212,41 +161,6 @@ const MyProjects = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
-            {getInactiveProjects().length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Limpar Inativos ({getInactiveProjects().length})
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Limpar projetos inativos?</AlertDialogTitle>
-                    <AlertDialogDescription className="space-y-2">
-                      <p>Esta ação irá remover permanentemente {getInactiveProjects().length} projeto(s):</p>
-                      <ul className="list-disc list-inside text-sm space-y-1">
-                        <li>Projetos rejeitados</li>
-                        <li>Projetos cancelados</li>
-                        <li>Projetos concluídos (que atingiram a meta)</li>
-                      </ul>
-                      <p className="font-semibold text-destructive">Esta ação não pode ser desfeita.</p>
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={handleCleanInactiveProjects}
-                      disabled={cleaningProjects}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      {cleaningProjects ? 'Removendo...' : 'Confirmar Remoção'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            
             <Link to="/criar-projeto">
               <Button className="w-full lg:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
@@ -277,14 +191,16 @@ const MyProjects = () => {
               </div>
               
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
+                <SelectTrigger className="w-full md:w-56">
                   <SelectValue placeholder="Filtrar por status" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="active">Ativos</SelectItem>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="pending">Aguardando Aprovação</SelectItem>
                   <SelectItem value="approved">Aprovados</SelectItem>
                   <SelectItem value="rejected">Rejeitados</SelectItem>
+                  <SelectItem value="cancelled">Cancelados</SelectItem>
                   <SelectItem value="draft">Rascunhos</SelectItem>
                 </SelectContent>
               </Select>
@@ -346,6 +262,15 @@ const MyProjects = () => {
                           <p className="text-raiz-secondary mb-4 line-clamp-2">
                             {project.description}
                           </p>
+
+                          {(project.status === 'cancelled' || project.status === 'deleted') && (
+                            <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-700 flex items-start gap-2">
+                              <Archive className="w-4 h-4 mt-0.5 shrink-0" />
+                              <span>
+                                Este projeto foi encerrado e permanece disponível apenas para histórico, auditoria e prestação de contas.
+                              </span>
+                            </div>
+                          )}
                           
                           <div className="flex flex-wrap gap-4 text-sm text-raiz-secondary mb-4">
                             <div className="flex items-center space-x-1">
