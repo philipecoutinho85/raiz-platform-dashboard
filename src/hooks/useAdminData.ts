@@ -82,6 +82,14 @@ export const useAdminData = () => {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
+  const isInactiveProject = (project?: Project | null) => {
+    return Boolean(project && ['cancelled', 'deleted', 'archived'].includes(project.status));
+  };
+
+  const hasFinancialHistory = (project?: Project | null) => {
+    return Boolean((project?.raised_amount && project.raised_amount > 0) || (project?.backers_count && project.backers_count > 0));
+  };
+
   const cancelProjectAndRefundTokens = async (projectId: string, reason: string): Promise<ProjectCancelResult | null> => {
     const { data, error } = await (supabase as any).rpc('cancel_project_and_refund_tokens_atomic', {
       p_project_id: projectId,
@@ -356,13 +364,29 @@ export const useAdminData = () => {
         
       } else if (action === 'delete') {
         const project = allProjects.find(p => p.id === projectId);
-        const hadContributions = Boolean(project?.raised_amount && project.raised_amount > 0);
+        const projectHasFinancialHistory = hasFinancialHistory(project);
+        const projectIsInactive = isInactiveProject(project);
+
+        if (projectIsInactive) {
+          await logAdminAction('delete_inactive_project_blocked', 'project', projectId, {
+            status: project?.status,
+            raised_amount: project?.raised_amount || 0,
+            backers_count: project?.backers_count || 0
+          });
+
+          toast({
+            title: "Exclusão bloqueada",
+            description: "Este projeto já está encerrado e deve permanecer disponível apenas como histórico auditável.",
+            variant: "destructive"
+          });
+          return;
+        }
         
-        if (hadContributions) {
+        if (projectHasFinancialHistory) {
           const result = await cancelProjectAndRefundTokens(projectId, 'admin_delete_converted_to_cancel_refund');
 
           await logAdminAction('delete_project_converted_to_cancel_refund', 'project', projectId, {
-            had_contributions: true,
+            had_financial_history: true,
             raised_amount: project?.raised_amount || 0,
             backers_count: project?.backers_count || 0,
             tokens_refunded: result?.tokens_refunded || 0,
@@ -383,15 +407,15 @@ export const useAdminData = () => {
             throw error;
           }
 
-          await logAdminAction('delete_project_without_contributions', 'project', projectId, {
-            had_contributions: false,
+          await logAdminAction('delete_project_without_financial_history', 'project', projectId, {
+            had_financial_history: false,
             raised_amount: project?.raised_amount || 0,
             backers_count: project?.backers_count || 0
           });
           
           toast({
             title: "Projeto excluído",
-            description: `Projeto sem contribuições excluído do sistema.`,
+            description: `Projeto sem histórico financeiro excluído do sistema.`,
           });
         }
       }
