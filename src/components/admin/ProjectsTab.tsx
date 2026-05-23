@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Eye, Check, X, Search, Trash2, Clock } from 'lucide-react';
+import { Eye, Check, X, Search, Trash2, Clock, Archive } from 'lucide-react';
 import ApproveProjectModal from './ApproveProjectModal';
 
 interface Project {
@@ -64,7 +64,7 @@ const ProjectsTab = ({
   onViewProjectDetails 
 }: ProjectsTabProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
   const [approveProject, setApproveProject] = useState<Project | null>(null);
   const [isApproving, setIsApproving] = useState(false);
@@ -76,10 +76,24 @@ const ProjectsTab = ({
     setApproveProject(null);
   };
 
+  const isInactiveProject = (project: Project) => {
+    return ['cancelled', 'deleted', 'archived'].includes(project.status);
+  };
+
+  const hasFinancialHistory = (project: Project) => {
+    return Boolean((project.raised_amount && project.raised_amount > 0) || (project.backers_count && project.backers_count > 0));
+  };
+
   const filteredProjects = pendingProjects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+
+    const matchesStatus = (() => {
+      if (statusFilter === 'all') return true;
+      if (statusFilter === 'active') return !isInactiveProject(project);
+      return project.status === statusFilter;
+    })();
+
     return matchesSearch && matchesStatus;
   });
 
@@ -91,6 +105,9 @@ const ProjectsTab = ({
         return <Badge variant="destructive">Rejeitado</Badge>;
       case 'cancelled':
         return <Badge className="bg-orange-100 text-orange-800">Cancelado</Badge>;
+      case 'deleted':
+      case 'archived':
+        return <Badge className="bg-gray-100 text-gray-800">Arquivado</Badge>;
       default:
         return <Badge variant="secondary">Pendente</Badge>;
     }
@@ -111,7 +128,6 @@ const ProjectsTab = ({
     const isCompleted = project.raised_amount && project.raised_amount >= effectiveGoal;
     const today = new Date();
     
-    // Projeto concluído (atingiu 100% da meta)
     if (isCompleted) {
       const referenceDate = new Date(project.updated_at || project.submittedDate);
       const daysPassed = Math.floor((today.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -119,12 +135,10 @@ const ProjectsTab = ({
       return daysRemaining > 0 ? daysRemaining : 0;
     }
     
-    // Projeto expirado (passou da deadline sem atingir a meta)
     if (project.deadline && !isCompleted) {
       const deadlineDate = new Date(project.deadline);
-      deadlineDate.setHours(23, 59, 59, 999); // Final do dia
+      deadlineDate.setHours(23, 59, 59, 999);
       
-      // Só mostrar contador se já passou da deadline
       if (today > deadlineDate) {
         const daysPassed = Math.floor((today.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24));
         const daysRemaining = 20 - daysPassed;
@@ -158,11 +172,13 @@ const ProjectsTab = ({
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="pending">Pendente</SelectItem>
               <SelectItem value="approved">Aprovado</SelectItem>
               <SelectItem value="rejected">Rejeitado</SelectItem>
               <SelectItem value="cancelled">Cancelado</SelectItem>
+              <SelectItem value="archived">Arquivado</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -192,7 +208,7 @@ const ProjectsTab = ({
                             className="flex items-center gap-1"
                           >
                             <Clock className="w-3 h-3" />
-                            {daysRemaining === 0 ? 'Excluir hoje' : `${daysRemaining} dias até exclusão`}
+                            {daysRemaining === 0 ? 'Revisar hoje' : `${daysRemaining} dias para revisão`}
                           </Badge>
                         );
                       }
@@ -223,6 +239,15 @@ const ProjectsTab = ({
               <p className="text-gray-700 mb-4 line-clamp-2">
                 {project.description}
               </p>
+
+              {isInactiveProject(project) && (
+                <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 flex items-start gap-2">
+                  <Archive className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>
+                    Projeto encerrado. Mantido somente para histórico, auditoria, prestação de contas e rastreabilidade financeira.
+                  </span>
+                </div>
+              )}
               
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -265,16 +290,17 @@ const ProjectsTab = ({
                     Cancelar Projeto
                   </Button>
                 )}
-                
-                {/* Opção de excluir para todos os status */}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteProjectId(project.id)}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Excluir
-                </Button>
+
+                {!isInactiveProject(project) && !hasFinancialHistory(project) && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteProjectId(project.id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Excluir
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -284,9 +310,9 @@ const ProjectsTab = ({
           <Card>
             <CardContent className="text-center py-8">
               <p className="text-gray-500">
-                {searchTerm || statusFilter !== 'all' 
+                {searchTerm || statusFilter !== 'active' 
                   ? 'Nenhum projeto encontrado com os filtros aplicados.' 
-                  : 'Nenhum projeto encontrado.'
+                  : 'Nenhum projeto ativo encontrado.'
                 }
               </p>
             </CardContent>
@@ -294,54 +320,12 @@ const ProjectsTab = ({
         )}
       </div>
 
-      {/* Dialog de confirmação de exclusão */}
       <AlertDialog open={!!deleteProjectId} onOpenChange={() => setDeleteProjectId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão definitiva?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza de que deseja excluir este projeto? Esta ação é irreversível.
-              {(() => {
-                const project = pendingProjects.find(p => p.id === deleteProjectId);
-                if (project && project.raised_amount && project.raised_amount > 0) {
-                  const effectiveGoal = getEffectiveGoal(project);
-                  const projectCompleted = project.raised_amount >= effectiveGoal;
-                  const progressPercent = effectiveGoal > 0
-                    ? Math.round((project.raised_amount / effectiveGoal) * 100)
-                    : 0;
-                  
-                  if (projectCompleted) {
-                    return (
-                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
-                        <p className="font-medium text-blue-900 dark:text-blue-100">
-                          ℹ️ Projeto Concluído (100% da meta)
-                        </p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                          Este projeto arrecadou <strong>{formatTokens(project.raised_amount)} tokens</strong> de <strong>{project.backers_count || 0} apoiador(es)</strong>.
-                        </p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                          Como o projeto atingiu 100% da meta, <strong>os tokens NÃO serão devolvidos</strong>. Os apoiadores serão notificados sobre a exclusão.
-                        </p>
-                      </div>
-                    );
-                  } else {
-                    return (
-                      <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
-                        <p className="font-medium text-amber-900 dark:text-amber-100">
-                          ⚠️ Projeto Não Concluído ({progressPercent}% da meta)
-                        </p>
-                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                          Este projeto arrecadou <strong>{formatTokens(project.raised_amount)} tokens</strong> de <strong>{project.backers_count || 0} apoiador(es)</strong>.
-                        </p>
-                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                          Como o projeto NÃO atingiu a meta, <strong>todos os tokens serão devolvidos automaticamente</strong> aos apoiadores.
-                        </p>
-                      </div>
-                    );
-                  }
-                }
-                return null;
-              })()}
+              Esta ação só deve ser usada para projetos sem histórico financeiro. Projetos com apoios, tokens arrecadados ou prestação de contas devem ser cancelados/arquivados, não excluídos fisicamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -350,13 +334,12 @@ const ProjectsTab = ({
               onClick={() => deleteProjectId && handleDeleteProject(deleteProjectId)}
               className="bg-red-600 hover:bg-red-700"
             >
-              Excluir Projeto
+              Excluir definitivamente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Modal de aprovação com seleção de tipo */}
       <ApproveProjectModal
         isOpen={!!approveProject}
         onOpenChange={(open) => !open && setApproveProject(null)}
