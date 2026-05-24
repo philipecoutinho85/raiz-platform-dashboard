@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Eye, Check, X, Search, Trash2, Clock, Archive } from 'lucide-react';
+import { Eye, Check, X, Search, Trash2, Clock, Archive, FileText, ShieldAlert } from 'lucide-react';
 import ApproveProjectModal from './ApproveProjectModal';
 
 interface Project {
@@ -84,6 +84,11 @@ const ProjectsTab = ({
     return Boolean((project.raised_amount && project.raised_amount > 0) || (project.backers_count && project.backers_count > 0));
   };
 
+  const draftProjectsCount = pendingProjects.filter(project => project.status === 'draft').length;
+  const pendingProjectsCount = pendingProjects.filter(project => project.status === 'pending').length;
+  const approvedProjectsCount = pendingProjects.filter(project => project.status === 'approved').length;
+  const rejectedProjectsCount = pendingProjects.filter(project => project.status === 'rejected').length;
+
   const filteredProjects = pendingProjects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.author.toLowerCase().includes(searchTerm.toLowerCase());
@@ -91,6 +96,7 @@ const ProjectsTab = ({
     const matchesStatus = (() => {
       if (statusFilter === 'all') return true;
       if (statusFilter === 'active') return !isInactiveProject(project);
+      if (statusFilter === 'awaiting_kyc') return project.status === 'draft';
       return project.status === statusFilter;
     })();
 
@@ -99,6 +105,8 @@ const ProjectsTab = ({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'draft':
+        return <Badge className="bg-amber-100 text-amber-800">Rascunho / aguardando KYC</Badge>;
       case 'approved':
         return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
       case 'rejected':
@@ -108,6 +116,8 @@ const ProjectsTab = ({
       case 'deleted':
       case 'archived':
         return <Badge className="bg-gray-100 text-gray-800">Arquivado</Badge>;
+      case 'pending':
+        return <Badge variant="secondary">Aguardando análise</Badge>;
       default:
         return <Badge variant="secondary">Pendente</Badge>;
     }
@@ -156,6 +166,43 @@ const ProjectsTab = ({
 
   return (
     <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-amber-800">Rascunhos / aguardando KYC</p>
+              <p className="text-2xl font-bold text-amber-900">{draftProjectsCount}</p>
+            </div>
+            <ShieldAlert className="w-7 h-7 text-amber-700" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Aguardando análise</p>
+              <p className="text-2xl font-bold">{pendingProjectsCount}</p>
+            </div>
+            <FileText className="w-7 h-7 text-gray-500" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-gray-600">Aprovados</p>
+            <p className="text-2xl font-bold">{approvedProjectsCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-gray-600">Rejeitados</p>
+            <p className="text-2xl font-bold">{rejectedProjectsCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <strong>Fluxo de rascunho:</strong> projetos em rascunho ainda não foram encaminhados para análise. O criador precisa concluir o KYC e enviar o projeto para validação. Após isso, a administração ainda deverá analisar e aprovar antes da publicação.
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex flex-1 gap-4">
           <div className="relative flex-1 max-w-sm">
@@ -168,13 +215,15 @@ const ProjectsTab = ({
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-56">
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="awaiting_kyc">Rascunhos / aguardando KYC</SelectItem>
+              <SelectItem value="draft">Rascunho</SelectItem>
+              <SelectItem value="pending">Aguardando análise</SelectItem>
               <SelectItem value="approved">Aprovado</SelectItem>
               <SelectItem value="rejected">Rejeitado</SelectItem>
               <SelectItem value="cancelled">Cancelado</SelectItem>
@@ -196,7 +245,7 @@ const ProjectsTab = ({
                   <CardTitle className="text-xl mb-2 line-clamp-2">
                     {project.title}
                   </CardTitle>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     {getStatusBadge(project.status)}
                     <Badge variant="outline">{project.category}</Badge>
                     {(() => {
@@ -218,6 +267,11 @@ const ProjectsTab = ({
                   <p className="text-sm text-gray-600 mb-2">
                     por <strong>{project.author}</strong> • {project.submittedDate}
                   </p>
+                  {project.status === 'draft' && (
+                    <p className="text-sm text-amber-800 mb-2">
+                      Ainda não foi enviado para análise. Aguardando conclusão do KYC/envio pelo criador.
+                    </p>
+                  )}
                   {project.status === 'approved' && (
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span>Meta: {formatTokens(getEffectiveGoal(project))} tokens</span>
@@ -291,7 +345,7 @@ const ProjectsTab = ({
                   </Button>
                 )}
 
-                {!isInactiveProject(project) && !hasFinancialHistory(project) && (
+                {!isInactiveProject(project) && !hasFinancialHistory(project) && project.status !== 'draft' && (
                   <Button
                     variant="destructive"
                     size="sm"
