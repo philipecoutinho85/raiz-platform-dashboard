@@ -4,39 +4,132 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-const logStep = (step: string, details?: any) => {
+const jsonResponse = (payload: Record<string, unknown>, status = 200) => {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+};
+
+const logStep = (step: string, details?: Record<string, unknown>) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[STRIPE-TOKEN-WEBHOOK] ${step}${detailsStr}`);
 };
 
-async function processTokenPurchase(
+const getWebhookSecret = () => {
+  return Deno.env.get("STRIPE_TOKEN_WEBHOOK_SECRET") || Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
+};
+
+const getSupabaseAdmin = () => {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl) throw new Error("SUPABASE_URL not configured");
+  if (!supabaseServiceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+};
+
+const isTokenPurchaseSession = (session: Stripe.Checkout.Session) => {
+  return session.metadata?.type === "token_purchase" && Boolean(session.metadata?.purchase_id);
+};
+
+const safeMarkStripeEvent = async (
+  supabase: any,
+  eventId: string | undefined,
+  status: "processed" | "ignored" | "failed",
+  errorMessage: string | null = null,
+  metadata: Record<string, unknown> | null = null,
+) => {
+  if (!supabase || !eventId) return;
+
+  try {
+    const { error } = await supabase.rpc("mark_stripe_event_processed", {
+      p_event_id: eventId,
+      p_status: status,
+      p_error_message: errorMessage,
+      p_metadata: metadata,
+    });
+
+    if (error) {
+      logStep("Failed to mark Stripe event", { eventId, status, error: error.message });
+    }
+  } catch (error: any) {
+    logStep("Failed to mark Stripe event exception", { eventId, status, error: error.message });
+  }
+};
+
+const recordStripeEventOnce = async (supabase: any, event: Stripe.Event, source: string) => {
+  const eventObject = event.data.object as any;
+  const objectId = eventObject?.id ?? null;
+
+  try {
+    const { data, error } = await supabase.rpc("record_stripe_event_once", {
+      p_event_id: event.id,
+      p_event_type: event.type,
+      p_object_id: objectId,
+      p_source: source,
+      p_metadata: {
+        livemode: event.livemode,
+        created: event.created,
+      },
+    });
+
+    if (error) {
+      logStep("Idempotency registration failed; continuing with atomic processor", {
+        eventId: event.id,
+        error: error.message,
+      });
+      return true;
+    }
+
+    return Boolean(data);
+  } catch (error: any) {
+    logStep("Idempotency registration exception; continuing with atomic processor", {
+      eventId: event.id,
+      error: error.message,
+    });
+    return true;
+  }
+};
+
+const processTokenPurchase = async (
   supabase: any,
   session: Stripe.Checkout.Session,
   eventId: string,
-) {
+  paymentTypeOverride?: "card" | "boleto",
+  expiresAtOverride: string | null = null,
+) => {
   const metadata = session.metadata;
+
   if (!metadata?.purchase_id || metadata?.type !== "token_purchase") {
-    logStep("Not a token purchase, skipping");
+    logStep("Not a token purchase session, skipping", { sessionId: session.id });
     return false;
   }
 
-  const purchaseId = metadata.purchase_id;
-  const userId = metadata.user_id;
   const tokensAmount = Number.parseInt(metadata.tokens_amount || "0", 10);
+  const paymentType = paymentTypeOverride || (session.payment_method_types?.includes("boleto") ? "boleto" : "card");
 
-  logStep("Token purchase details", { purchaseId, userId, tokensAmount });
+  logStep("Processing token purchase", {
+    purchaseId: metadata.purchase_id,
+    userId: metadata.user_id,
+    tokensAmount,
+    sessionId: session.id,
+    paymentStatus: session.payment_status,
+    paymentType,
+  });
 
   const { data, error } = await supabase.rpc("process_token_purchase_atomic", {
-    p_purchase_id: purchaseId,
-    p_user_id: userId,
+    p_purchase_id: metadata.purchase_id,
+    p_user_id: metadata.user_id,
     p_tokens_amount: tokensAmount,
     p_stripe_session_id: session.id,
     p_stripe_payment_status: session.payment_status,
-    p_payment_type: session.payment_method_types?.includes("boleto") ? "boleto" : "card",
-    p_expires_at: null,
+    p_payment_type: paymentType,
+    p_expires_at: expiresAtOverride,
     p_event_id: eventId,
   });
 
@@ -44,11 +137,15 @@ async function processTokenPurchase(
 
   logStep("Token purchase RPC completed", data?.[0] || {});
   return true;
-}
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (req.method !== "POST") {
+    return jsonResponse({ received: false, error: "Method not allowed" }, 405);
   }
 
   let event: Stripe.Event | null = null;
@@ -58,185 +155,113 @@ serve(async (req) => {
     logStep("Webhook received");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    const webhookSecret = Deno.env.get("STRIPE_TOKEN_WEBHOOK_SECRET") ??
-      Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    const webhookSecret = getWebhookSecret();
 
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
-    if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET not configured");
+    if (!webhookSecret) throw new Error("STRIPE_TOKEN_WEBHOOK_SECRET or STRIPE_WEBHOOK_SECRET not configured");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
     const body = await req.text();
     const signature = req.headers.get("stripe-signature");
 
     if (!signature) {
-      return new Response(
-        JSON.stringify({ error: "No Stripe signature" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      logStep("Missing Stripe signature");
+      return jsonResponse({ received: false, error: "No Stripe signature" }, 400);
     }
 
     try {
       event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-      logStep("Webhook signature verified");
-    } catch (err: any) {
-      logStep("Webhook signature verification failed", { error: err.message });
-      return new Response(
-        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      logStep("Webhook signature verified", { eventId: event.id, type: event.type });
+    } catch (error: any) {
+      logStep("Webhook signature verification failed", { error: error.message });
+      return jsonResponse({ received: false, error: "Webhook signature verification failed" }, 400);
     }
-
-    logStep("Event type", { type: event.type, id: event.id });
 
     const eventObject = event.data.object as any;
     const eventMetadata = eventObject?.metadata || {};
+    const isCheckoutSessionEvent = event.type.startsWith("checkout.session.");
+    const isTokenPurchaseEvent = eventMetadata.type === "token_purchase";
 
-    if (eventMetadata.type !== "token_purchase") {
-      logStep("Ignoring non-token event before idempotency registration", {
+    if (!isTokenPurchaseEvent) {
+      logStep("Ignoring non-token event", {
         eventId: event.id,
         type: event.type,
         objectId: eventObject?.id,
       });
-
-      return new Response(JSON.stringify({ received: true, ignored: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return jsonResponse({ received: true, ignored: true });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    supabase = createClient(supabaseUrl, supabaseServiceKey);
+    if (!isCheckoutSessionEvent) {
+      logStep("Ignoring unsupported token event type", { eventId: event.id, type: event.type });
+      return jsonResponse({ received: true, ignored: true, reason: "unsupported_token_event_type" });
+    }
 
-    const objectId = eventObject?.id ?? null;
-    const { data: shouldProcess, error: eventError } = await supabase.rpc(
-      "record_stripe_event_once",
-      {
-        p_event_id: event.id,
-        p_event_type: event.type,
-        p_object_id: objectId,
-        p_source: "stripe-token-webhook",
-        p_metadata: {
-          livemode: event.livemode,
-          created: event.created,
-        },
-      },
-    );
+    supabase = getSupabaseAdmin();
 
-    if (eventError) throw eventError;
-
+    const shouldProcess = await recordStripeEventOnce(supabase, event, "stripe-token-webhook");
     if (!shouldProcess) {
       logStep("Duplicate Stripe event ignored", { eventId: event.id, type: event.type });
-      return new Response(JSON.stringify({ received: true, duplicate: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return jsonResponse({ received: true, duplicate: true });
+    }
+
+    const session = event.data.object as Stripe.Checkout.Session;
+
+    if (!isTokenPurchaseSession(session)) {
+      logStep("Token event missing purchase metadata", { eventId: event.id, sessionId: session.id });
+      await safeMarkStripeEvent(supabase, event.id, "ignored", null, { reason: "missing_token_purchase_metadata" });
+      return jsonResponse({ received: true, ignored: true, reason: "missing_token_purchase_metadata" });
     }
 
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      logStep("Processing checkout.session.completed", {
-        sessionId: session.id,
-        paymentStatus: session.payment_status,
-        paymentMethodTypes: session.payment_method_types,
-      });
-
-      const metadata = session.metadata;
-      if (!metadata?.purchase_id || metadata?.type !== "token_purchase") {
-        logStep("Not a token purchase, skipping");
-        await supabase.rpc("mark_stripe_event_processed", {
-          p_event_id: event.id,
-          p_status: "ignored",
-          p_error_message: null,
-          p_metadata: null,
-        });
-
-        return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
-      }
-
       const paymentMethodTypes = session.payment_method_types || [];
-      const isBoleto = paymentMethodTypes.includes("boleto") && session.payment_status !== "paid";
-      const paymentType = isBoleto ? "boleto" : "card";
+      const isBoletoPending = paymentMethodTypes.includes("boleto") && session.payment_status !== "paid";
+      let expiresAt: string | null = null;
 
-      let expiresAt = null;
-      if (isBoleto) {
+      if (isBoletoPending) {
         const expireDate = new Date();
         expireDate.setDate(expireDate.getDate() + 3);
         expiresAt = expireDate.toISOString();
       }
 
-      const { data, error } = await supabase.rpc("process_token_purchase_atomic", {
-        p_purchase_id: metadata.purchase_id,
-        p_user_id: metadata.user_id,
-        p_tokens_amount: Number.parseInt(metadata.tokens_amount || "0", 10),
-        p_stripe_session_id: session.id,
-        p_stripe_payment_status: session.payment_status,
-        p_payment_type: paymentType,
-        p_expires_at: expiresAt,
-        p_event_id: event.id,
-      });
-
-      if (error) throw error;
-
-      if (session.payment_status === "paid") {
-        logStep("Immediate payment confirmed, token purchase processed", data?.[0] || {});
-      } else {
-        logStep("Async payment method, metadata updated and waiting for confirmation", {
-          paymentStatus: session.payment_status,
-        });
-      }
+      await processTokenPurchase(
+        supabase,
+        session,
+        event.id,
+        isBoletoPending ? "boleto" : undefined,
+        expiresAt,
+      );
     } else if (event.type === "checkout.session.async_payment_succeeded") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      logStep("Processing checkout.session.async_payment_succeeded", { sessionId: session.id });
-      await processTokenPurchase(supabase, session, event.id);
+      await processTokenPurchase(supabase, session, event.id, "boleto", null);
     } else if (event.type === "checkout.session.async_payment_failed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      logStep("Processing checkout.session.async_payment_failed", { sessionId: session.id });
-
       const metadata = session.metadata;
       if (metadata?.purchase_id && metadata?.type === "token_purchase") {
-        await supabase.rpc("fail_token_purchase_if_unpaid", {
+        const { error } = await supabase.rpc("fail_token_purchase_if_unpaid", {
           p_purchase_id: metadata.purchase_id,
           p_stripe_session_id: session.id,
         });
 
-        logStep("Purchase marked failed if it was not already paid");
+        if (error) {
+          logStep("Failed to mark token purchase failed", { eventId: event.id, error: error.message });
+        } else {
+          logStep("Purchase marked failed if it was not already paid", { purchaseId: metadata.purchase_id });
+        }
       }
+    } else {
+      logStep("Token checkout event ignored", { eventId: event.id, type: event.type });
+      await safeMarkStripeEvent(supabase, event.id, "ignored", null, { reason: "unsupported_checkout_event" });
+      return jsonResponse({ received: true, ignored: true, reason: "unsupported_checkout_event" });
     }
 
-    await supabase.rpc("mark_stripe_event_processed", {
-      p_event_id: event.id,
-      p_status: "processed",
-      p_error_message: null,
-      p_metadata: null,
-    });
-
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    await safeMarkStripeEvent(supabase, event.id, "processed");
+    return jsonResponse({ received: true, processed: true });
   } catch (error: any) {
-    logStep("ERROR", { message: error.message });
+    const message = error?.message || "Unknown webhook error";
+    logStep("ERROR", { message, eventId: event?.id, type: event?.type });
 
     if (event?.id && supabase) {
-      await supabase.rpc("mark_stripe_event_processed", {
-        p_event_id: event.id,
-        p_status: "failed",
-        p_error_message: error.message,
-        p_metadata: null,
-      });
+      await safeMarkStripeEvent(supabase, event.id, "failed", message);
     }
 
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      },
-    );
+    return jsonResponse({ received: false, error: message }, 500);
   }
 });
