@@ -47,6 +47,7 @@ import AIFaqChat from "./components/AIFaqChat";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
+const OPTIONAL_VIDEO_DRAFT_PLACEHOLDER = "https://youtu.be/raiz-token-rascunho-video-opcional";
 
 const CreateProjectDraftMode = () => {
   useEffect(() => {
@@ -68,7 +69,7 @@ const CreateProjectDraftMode = () => {
           return {
             ...row,
             status: "draft",
-            youtube_url: trimmedVideoUrl,
+            youtube_url: trimmedVideoUrl === OPTIONAL_VIDEO_DRAFT_PLACEHOLDER ? "" : trimmedVideoUrl,
           };
         };
 
@@ -90,13 +91,22 @@ const CreateProjectDraftMode = () => {
     `;
     document.head.appendChild(style);
 
-    const prepareDraftSubmit = () => {
-      const youtubeInput = document.querySelector<HTMLInputElement>('#youtube_url');
-      if (youtubeInput && youtubeInput.value.trim() === "") {
-        youtubeInput.value = " ";
-        youtubeInput.dispatchEvent(new Event("input", { bubbles: true }));
-      }
+    const setNativeInputValue = (input: HTMLInputElement, value: string) => {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+      nativeInputValueSetter?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    };
 
+    const ensureOptionalVideoValue = () => {
+      const youtubeInput = document.querySelector<HTMLInputElement>('#youtube_url');
+      if (!youtubeInput) return;
+      if (youtubeInput.value.trim() === "") {
+        setNativeInputValue(youtubeInput, OPTIONAL_VIDEO_DRAFT_PLACEHOLDER);
+      }
+    };
+
+    const prepareDraftSubmit = () => {
       const youtubeLabel = document.querySelector<HTMLLabelElement>('label[for="youtube_url"]');
       if (youtubeLabel) {
         youtubeLabel.textContent = "URL do Vídeo (YouTube) - opcional";
@@ -111,13 +121,20 @@ const CreateProjectDraftMode = () => {
       });
     };
 
+    const handleSubmitCapture = () => {
+      ensureOptionalVideoValue();
+      prepareDraftSubmit();
+    };
+
     const intervalId = window.setInterval(prepareDraftSubmit, 500);
-    document.addEventListener("click", prepareDraftSubmit, true);
+    document.addEventListener("click", handleSubmitCapture, true);
+    document.addEventListener("submit", handleSubmitCapture, true);
     prepareDraftSubmit();
 
     return () => {
       window.clearInterval(intervalId);
-      document.removeEventListener("click", prepareDraftSubmit, true);
+      document.removeEventListener("click", handleSubmitCapture, true);
+      document.removeEventListener("submit", handleSubmitCapture, true);
       style.remove();
       supabase.from = originalFromValue;
     };
