@@ -1,6 +1,10 @@
 -- Support, notifications and admin logs blocker summary.
 -- Read-only.
 -- Returns counts by issue type. Zero count means no blocker for that category.
+--
+-- Important:
+-- Refund notification validation must use an effective project id:
+-- refunds.project_id when present, otherwise project_contributions.project_id.
 
 WITH cancelled_project_without_lifecycle_event AS (
   SELECT p.id
@@ -23,17 +27,24 @@ WITH cancelled_project_without_lifecycle_event AS (
         AND al.target_id = p.id
         AND al.action ILIKE '%cancel%'
     )
-), refund_without_notification AS (
-  SELECT r.id
+), refund_scope AS (
+  SELECT
+    r.id,
+    r.user_id,
+    COALESCE(r.project_id, pc.project_id) AS effective_project_id
   FROM public.refunds r
+  LEFT JOIN public.project_contributions pc ON pc.id = r.contribution_id
   WHERE r.status = 'completed'
-    AND NOT EXISTS (
-      SELECT 1
-      FROM public.notifications n
-      WHERE n.user_id = r.user_id
-        AND n.related_id = r.project_id
-        AND n.type IN ('project_refund', 'refund', 'project_deleted_refund')
-    )
+), refund_without_notification AS (
+  SELECT rs.id
+  FROM refund_scope rs
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM public.notifications n
+    WHERE n.user_id = rs.user_id
+      AND n.related_id IS NOT DISTINCT FROM rs.effective_project_id
+      AND n.type IN ('project_refund', 'refund', 'project_deleted_refund')
+  )
 ), notification_missing_user AS (
   SELECT n.id
   FROM public.notifications n
