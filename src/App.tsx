@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -43,8 +44,85 @@ import RateSupportPage from "./pages/RateSupportPage";
 import ShortUrlRedirect from "./pages/ShortUrlRedirect";
 import CookieConsent from "./components/CookieConsent";
 import AIFaqChat from "./components/AIFaqChat";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
+
+const CreateProjectDraftMode = () => {
+  useEffect(() => {
+    const originalFrom = supabase.from.bind(supabase);
+    const originalFromValue = supabase.from;
+
+    supabase.from = ((tableName: string) => {
+      const queryBuilder = originalFrom(tableName as never) as any;
+
+      if (tableName !== "projects" || typeof queryBuilder.insert !== "function") {
+        return queryBuilder;
+      }
+
+      const originalInsert = queryBuilder.insert.bind(queryBuilder);
+      queryBuilder.insert = (values: any, options?: any) => {
+        const convertRow = (row: any) => {
+          if (!row || typeof row !== "object") return row;
+          return {
+            ...row,
+            status: "draft",
+            youtube_url: typeof row.youtube_url === "string" ? row.youtube_url : "",
+          };
+        };
+
+        const convertedValues = Array.isArray(values)
+          ? values.map(convertRow)
+          : convertRow(values);
+
+        return originalInsert(convertedValues, options);
+      };
+
+      return queryBuilder;
+    }) as typeof supabase.from;
+
+    const style = document.createElement("style");
+    style.setAttribute("data-raiz-draft-mode", "true");
+    style.textContent = `
+      [data-raiz-draft-mode] .pointer-events-none { pointer-events: auto !important; }
+      [data-raiz-draft-mode] .opacity-60 { opacity: 1 !important; }
+    `;
+    document.head.appendChild(style);
+
+    const prepareDraftSubmit = () => {
+      const youtubeInput = document.querySelector<HTMLInputElement>('#youtube_url');
+      if (youtubeInput && youtubeInput.value.trim() === "") {
+        youtubeInput.value = " ";
+        youtubeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+
+      const submitButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('button[type="submit"]'));
+      submitButtons.forEach((button) => {
+        button.disabled = false;
+        if (button.textContent?.includes("Criar Projeto")) {
+          button.textContent = "Salvar rascunho";
+        }
+      });
+    };
+
+    const intervalId = window.setInterval(prepareDraftSubmit, 500);
+    document.addEventListener("click", prepareDraftSubmit, true);
+    prepareDraftSubmit();
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("click", prepareDraftSubmit, true);
+      style.remove();
+      supabase.from = originalFromValue;
+    };
+  }, []);
+
+  return (
+    <div data-raiz-draft-mode="true">
+      <CreateProject />
+    </div>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -77,7 +155,7 @@ const App = () => (
                   path="/criar-projeto" 
                   element={
                     <ProtectedRoute>
-                      <CreateProject />
+                      <CreateProjectDraftMode />
                     </ProtectedRoute>
                   } 
                 />
@@ -97,10 +175,7 @@ const App = () => (
                     </ProtectedRoute>
                   } 
                 />
-                <Route 
-                  path="/projeto/:id" 
-                  element={<ProjectDetail />} 
-                />
+                <Route path="/projeto/:id" element={<ProjectDetail />} />
                 <Route 
                   path="/perfil" 
                   element={
@@ -109,10 +184,7 @@ const App = () => (
                     </ProtectedRoute>
                   } 
                 />
-                <Route 
-                  path="/usuario/:userId" 
-                  element={<PublicProfile />} 
-                />
+                <Route path="/usuario/:userId" element={<PublicProfile />} />
                 <Route 
                   path="/admin" 
                   element={
@@ -153,10 +225,8 @@ const App = () => (
                     </ProtectedRoute>
                   } 
                 />
-                {/* Blog public pages */}
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
-                {/* Public informational pages */}
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/como-funciona" element={<HowItWorks />} />
                 <Route path="/faq" element={<FAQ />} />
@@ -168,10 +238,8 @@ const App = () => (
                 <Route path="/politica-de-cookies" element={<CookiePolicy />} />
                 <Route path="/contato" element={<Contact />} />
                 <Route path="/avaliar-suporte" element={<RateSupportPage />} />
-                {/* Short URL routes for campaigns */}
                 <Route path="/c/:shortId" element={<ShortUrlRedirect />} />
                 <Route path="/campanha/:shortId" element={<ShortUrlRedirect />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>
