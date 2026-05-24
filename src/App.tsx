@@ -64,10 +64,11 @@ const CreateProjectDraftMode = () => {
       queryBuilder.insert = (values: any, options?: any) => {
         const convertRow = (row: any) => {
           if (!row || typeof row !== "object") return row;
+          const trimmedVideoUrl = typeof row.youtube_url === "string" ? row.youtube_url.trim() : "";
           return {
             ...row,
             status: "draft",
-            youtube_url: typeof row.youtube_url === "string" ? row.youtube_url : "",
+            youtube_url: trimmedVideoUrl,
           };
         };
 
@@ -94,6 +95,11 @@ const CreateProjectDraftMode = () => {
       if (youtubeInput && youtubeInput.value.trim() === "") {
         youtubeInput.value = " ";
         youtubeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+
+      const youtubeLabel = document.querySelector<HTMLLabelElement>('label[for="youtube_url"]');
+      if (youtubeLabel) {
+        youtubeLabel.textContent = "URL do Vídeo (YouTube) - opcional";
       }
 
       const submitButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('button[type="submit"]'));
