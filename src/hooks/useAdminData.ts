@@ -39,13 +39,20 @@ interface AdminUser {
   email: string;
   tokens: number;
   projects: number;
+  activeProjects: number;
   totalRaised: number;
   status: string;
+  role: string;
+  adminType: string;
   joinDate: string;
+  joinDateTime: string;
+  registeredAt: string;
   avatar: string;
   phone: string;
   bio: string;
   lastLogin: string;
+  emailConfirmedAt: string;
+  hasProfile: boolean;
 }
 
 interface AdminStats {
@@ -82,6 +89,22 @@ export const useAdminData = () => {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'Não informado';
+    return new Date(value).toLocaleDateString('pt-BR');
+  };
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return 'Não informado';
+    return new Date(value).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const isInactiveProject = (project?: Project | null) => {
     return Boolean(project && ['cancelled', 'deleted', 'archived'].includes(project.status));
   };
@@ -108,7 +131,6 @@ export const useAdminData = () => {
     try {
       setLoading(true);
       
-      // Buscar TODOS os projetos (não apenas pendentes) com informações do usuário
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
@@ -120,7 +142,6 @@ export const useAdminData = () => {
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
       } else {
-        // Buscar informações dos usuários para cada projeto
         const formattedProjects: Project[] = [];
         
         for (const project of projectsData || []) {
@@ -128,92 +149,81 @@ export const useAdminData = () => {
             .from('profiles')
             .select('nome, sobrenome, email')
             .eq('id', project.user_id)
-            .single();
+            .maybeSingle();
 
-          if (profileData) {
-            const featuredImage = project.project_images?.find((img: any) => img.is_featured);
-            
-            formattedProjects.push({
-              id: project.id,
-              title: project.title,
-              author: `${profileData.nome} ${profileData.sobrenome}`,
-              authorEmail: profileData.email,
-              category: project.category,
-              goal: project.goal,
-              description: project.description,
-              submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
-              status: project.status,
-              user_id: project.user_id,
-              raised_amount: project.raised_amount,
-              backers_count: project.backers_count,
-              deadline: project.deadline,
-              endereco: project.endereco,
-              cidade: project.cidade,
-              estado: project.estado,
-              youtube_url: project.youtube_url,
-              featured_image: featuredImage?.image_url,
-              custom_goal: project.custom_goal,
-              admin_fee_percentage: project.admin_fee_percentage,
-              rejection_reason: project.rejection_reason,
-              pending_requirements: project.pending_requirements,
-              project_type: project.project_type as 'seed' | 'regular' | undefined,
-              platform_fee_percentage: project.platform_fee_percentage
-            });
-          }
+          const featuredImage = project.project_images?.find((img: any) => img.is_featured);
+          
+          formattedProjects.push({
+            id: project.id,
+            title: project.title,
+            author: profileData ? `${profileData.nome || ''} ${profileData.sobrenome || ''}`.trim() || profileData.email : 'Usuário sem perfil',
+            authorEmail: profileData?.email || 'E-mail não encontrado no perfil',
+            category: project.category,
+            goal: project.goal,
+            description: project.description,
+            submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
+            status: project.status,
+            user_id: project.user_id,
+            raised_amount: project.raised_amount,
+            backers_count: project.backers_count,
+            deadline: project.deadline,
+            endereco: project.endereco,
+            cidade: project.cidade,
+            estado: project.estado,
+            youtube_url: project.youtube_url,
+            featured_image: featuredImage?.image_url,
+            custom_goal: project.custom_goal,
+            admin_fee_percentage: project.admin_fee_percentage,
+            rejection_reason: project.rejection_reason,
+            pending_requirements: project.pending_requirements,
+            project_type: project.project_type as 'seed' | 'regular' | undefined,
+            platform_fee_percentage: project.platform_fee_percentage
+          });
         }
         
         setAllProjects(formattedProjects);
       }
 
-      // Buscar usuários para exibir na aba de usuários
-      const { data: usersData } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      const { data: userTokensData } = await supabase
-        .from('user_tokens')
-        .select('*');
-      
-      const { data: userProjectsData } = await supabase
-        .from('projects')
-        .select('user_id, raised_amount');
+      const { data: adminUsersData, error: adminUsersError } = await (supabase as any)
+        .rpc('admin_get_users_overview');
 
-      // Formatar dados dos usuários
-      const formattedUsers: AdminUser[] = [];
-      
-      if (usersData) {
-        for (const profile of usersData) {
-          const userTokens = userTokensData?.find(t => t.user_id === profile.id);
-          const userProjects = userProjectsData?.filter(p => p.user_id === profile.id) || [];
-          const totalRaised = userProjects.reduce((sum, p) => sum + (p.raised_amount || 0), 0);
-          
-          formattedUsers.push({
-            id: profile.id,
-            name: `${profile.nome} ${profile.sobrenome}`,
-            email: profile.email,
-            tokens: userTokens?.balance || 0,
-            projects: userProjects.length,
-            totalRaised,
-            status: 'active',
-            joinDate: new Date(profile.created_at).toLocaleDateString('pt-BR'),
-            avatar: profile.avatar_url || '',
-            phone: profile.celular || '',
-            bio: '',
-            lastLogin: ''
-          });
-        }
+      if (adminUsersError) {
+        console.error('Error fetching admin users overview:', adminUsersError);
+        throw adminUsersError;
       }
+
+      const formattedUsers: AdminUser[] = (adminUsersData || []).map((adminUser: any) => {
+        const fullName = `${adminUser.nome || ''} ${adminUser.sobrenome || ''}`.trim();
+        const fallbackName = adminUser.email ? adminUser.email.split('@')[0] : 'Usuário sem e-mail';
+
+        return {
+          id: adminUser.id,
+          name: fullName || fallbackName,
+          email: adminUser.email || 'E-mail não informado',
+          tokens: adminUser.token_balance || 0,
+          projects: adminUser.projects_count || 0,
+          activeProjects: adminUser.active_projects_count || 0,
+          totalRaised: adminUser.total_raised || 0,
+          status: 'active',
+          role: adminUser.role || 'user',
+          adminType: adminUser.admin_type || '',
+          joinDate: formatDate(adminUser.registered_at),
+          joinDateTime: formatDateTime(adminUser.registered_at),
+          registeredAt: adminUser.registered_at || '',
+          avatar: adminUser.avatar_url || '',
+          phone: adminUser.celular || adminUser.phone || '',
+          bio: '',
+          lastLogin: formatDateTime(adminUser.last_sign_in_at),
+          emailConfirmedAt: formatDateTime(adminUser.email_confirmed_at),
+          hasProfile: Boolean(adminUser.profile_created_at)
+        };
+      });
       
       setUsers(formattedUsers);
 
-      // Buscar estatísticas
       const { data: allProjectsStats } = await supabase
         .from('projects')
         .select('status');
-
-      const { data: allUsers } = await supabase
-        .from('profiles')
-        .select('id');
 
       const { data: totalTokensData } = await supabase
         .from('user_tokens')
@@ -221,7 +231,7 @@ export const useAdminData = () => {
 
       const activeProjectsCount = allProjectsStats?.filter(p => p.status === 'approved').length || 0;
       const pendingProjectsCount = allProjectsStats?.filter(p => p.status === 'pending').length || 0;
-      const totalUsersCount = allUsers?.length || 0;
+      const totalUsersCount = formattedUsers.length;
       const totalTokens = totalTokensData?.reduce((sum, user) => sum + user.balance, 0) || 0;
 
       setStats({
@@ -246,7 +256,6 @@ export const useAdminData = () => {
   const handleProjectAction = async (projectId: string, action: string, reason?: string, projectType?: 'seed' | 'regular') => {
     try {
       if (action === 'approve') {
-        // Validar que o tipo de projeto foi selecionado
         if (!projectType) {
           toast({
             title: "Erro",
@@ -256,10 +265,7 @@ export const useAdminData = () => {
           return;
         }
 
-        // Buscar meta do projeto antes de aprovar
         const project = allProjects.find(p => p.id === projectId);
-        
-        // Definir a taxa baseada no tipo de projeto
         const platformFee = projectType === 'seed' ? 0 : 10;
         
         const { error } = await supabase
@@ -278,7 +284,6 @@ export const useAdminData = () => {
           throw error;
         }
 
-        // Atribuir badge "Verificado pela Raiz Token" ao projeto
         const { data: verifiedBadge } = await supabase
           .from('badges')
           .select('id')
@@ -296,14 +301,12 @@ export const useAdminData = () => {
             }, { onConflict: 'project_id,badge_id' });
         }
 
-        // Log da ação
         await logAdminAction('approve_project', 'project', projectId, { 
           project_goal: project?.goal,
           project_type: projectType,
           platform_fee: platformFee
         });
 
-        // Verificar se precisa de alerta de alto valor
         if (project) {
           await checkHighValueAndAlert(projectId, project.goal);
         }
@@ -338,7 +341,6 @@ export const useAdminData = () => {
           throw error;
         }
 
-        // Log da ação
         await logAdminAction('reject_project', 'project', projectId, { reason });
         
         toast({
@@ -420,7 +422,6 @@ export const useAdminData = () => {
         }
       }
 
-      // Atualizar dados
       await fetchAdminData();
 
     } catch (error: any) {
