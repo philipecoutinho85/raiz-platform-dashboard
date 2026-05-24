@@ -142,6 +142,14 @@ const CreateProjectDraftMode = () => {
 
   return (
     <div data-raiz-draft-mode="true">
+      <div className="container mx-auto px-4 max-w-4xl pt-6">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <h2 className="font-semibold mb-1">Rascunho salvo, publicação somente após verificação</h2>
+          <p className="text-sm leading-relaxed">
+            Você pode salvar seu projeto agora sem concluir o KYC. Para que ele seja encaminhado à validação da Raiz Token, será necessário concluir a verificação de identidade. Mesmo após o KYC, o projeto ainda passará por análise da administração antes de ser publicado.
+          </p>
+        </div>
+      </div>
       <CreateProject />
     </div>
   );
@@ -165,89 +173,19 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/registro" element={<Register />} />
                 <Route path="/esqueci-senha" element={<ForgotPassword />} />
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } 
-                />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/projetos" element={<Marketplace />} />
-                <Route 
-                  path="/criar-projeto" 
-                  element={
-                    <ProtectedRoute>
-                      <CreateProjectDraftMode />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/criar-projeto-legado" 
-                  element={
-                    <ProtectedRoute>
-                      <CreateProject />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/meus-projetos" 
-                  element={
-                    <ProtectedRoute>
-                      <MyProjects />
-                    </ProtectedRoute>
-                  } 
-                />
+                <Route path="/criar-projeto" element={<ProtectedRoute><CreateProjectDraftMode /></ProtectedRoute>} />
+                <Route path="/criar-projeto-legado" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
+                <Route path="/meus-projetos" element={<ProtectedRoute><MyProjects /></ProtectedRoute>} />
                 <Route path="/projeto/:id" element={<ProjectDetail />} />
-                <Route 
-                  path="/perfil" 
-                  element={
-                    <ProtectedRoute>
-                      <UserProfile />
-                    </ProtectedRoute>
-                  } 
-                />
+                <Route path="/perfil" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
                 <Route path="/usuario/:userId" element={<PublicProfile />} />
-                <Route 
-                  path="/admin" 
-                  element={
-                    <ProtectedRoute requireAdmin={true}>
-                      <AdminPanel />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/admin/blog" 
-                  element={
-                    <ProtectedRoute requireAdmin={true}>
-                      <AdminBlog />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/admin/blog/:id" 
-                  element={
-                    <ProtectedRoute requireAdmin={true}>
-                      <AdminBlogEditor />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/carteira" 
-                  element={
-                    <ProtectedRoute>
-                      <Wallet />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/checkout-pagamento" 
-                  element={
-                    <ProtectedRoute>
-                      <CheckoutPayment />
-                    </ProtectedRoute>
-                  } 
-                />
+                <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminPanel /></ProtectedRoute>} />
+                <Route path="/admin/blog" element={<ProtectedRoute requireAdmin={true}><AdminBlog /></ProtectedRoute>} />
+                <Route path="/admin/blog/:id" element={<ProtectedRoute requireAdmin={true}><AdminBlogEditor /></ProtectedRoute>} />
+                <Route path="/carteira" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+                <Route path="/checkout-pagamento" element={<ProtectedRoute><CheckoutPayment /></ProtectedRoute>} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
