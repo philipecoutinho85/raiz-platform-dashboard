@@ -375,7 +375,12 @@ const MyProjects = () => {
                         <Link to={`/projeto/${project.id}`} className="flex-1"><Button variant="outline" className="w-full"><Eye className="w-4 h-4 mr-2" />Ver Detalhes</Button></Link>
 
                         {(project.status === 'draft' || project.status === 'rejected') && (
-                          <Button variant="outline" className="flex-1"><Edit className="w-4 h-4 mr-2" />Editar</Button>
+                          <Link to={`/editar-projeto/${project.id}`} className="flex-1">
+                            <Button variant="outline" className="w-full">
+                              <Edit className="w-4 h-4 mr-2" />
+                              Editar
+                            </Button>
+                          </Link>
                         )}
 
                         {project.status === 'draft' && !stripeAccountStatus?.verified && (

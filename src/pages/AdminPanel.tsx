@@ -62,6 +62,7 @@ const AdminPanel = () => {
     setIsProjectDetailModalOpen,
     setRejectionReason,
     setSelectedUser,
+    setSelectedProject,
     handleViewUserDetails,
     handleEditUser,
     handleRejectProject,
@@ -193,7 +194,15 @@ const AdminPanel = () => {
       <UserDetailModal isOpen={isUserDetailModalOpen} onClose={() => setIsUserDetailModalOpen(false)} user={selectedUser} onUserAction={handleUserActionWrapper} />
       <EditUserModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} user={selectedUser} form={form} onSave={handleSaveEditWrapper} />
       <RejectProjectModal isOpen={isRejectModalOpen} onClose={handleCancelReject} project={selectedProject} rejectionReason={rejectionReason} setRejectionReason={setRejectionReason} onReject={(projectId, reason) => handleProjectActionWrapper(projectId, 'reject', reason)} />
-      <ProjectDetailModal isOpen={isProjectDetailModalOpen} onClose={() => setIsProjectDetailModalOpen(false)} project={selectedProject} />
+      <ProjectDetailModal
+        isOpen={isProjectDetailModalOpen}
+        onOpenChange={(open) => {
+          setIsProjectDetailModalOpen(open);
+          if (!open) setSelectedProject(null);
+        }}
+        project={selectedProject}
+        onUpdate={fetchAdminData}
+      />
       <ReauthenticationModal isOpen={isReauthModalOpen} onClose={handleReauthClose} onSuccess={handleReauthSuccess} action={pendingAction} />
       <Footer />
     </div>

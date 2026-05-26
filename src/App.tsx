@@ -16,6 +16,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
 import CreateProject from "./pages/CreateProject";
+import CreateProjectDraft from "./pages/CreateProjectDraft";
 import MyProjects from "./pages/MyProjects";
 import ProjectDetail from "./pages/ProjectDetail";
 import UserProfile from "./pages/UserProfile";
@@ -175,7 +176,8 @@ const App = () => (
                 <Route path="/esqueci-senha" element={<ForgotPassword />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/projetos" element={<Marketplace />} />
-                <Route path="/criar-projeto" element={<ProtectedRoute><CreateProjectDraftMode /></ProtectedRoute>} />
+                <Route path="/criar-projeto" element={<ProtectedRoute><CreateProjectDraft /></ProtectedRoute>} />
+                <Route path="/editar-projeto/:projectId" element={<ProtectedRoute><CreateProjectDraft /></ProtectedRoute>} />
                 <Route path="/criar-projeto-legado" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
                 <Route path="/meus-projetos" element={<ProtectedRoute><MyProjects /></ProtectedRoute>} />
                 <Route path="/projeto/:id" element={<ProjectDetail />} />
