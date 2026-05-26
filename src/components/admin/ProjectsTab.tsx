@@ -84,6 +84,10 @@ const ProjectsTab = ({
     return Boolean((project.raised_amount && project.raised_amount > 0) || (project.backers_count && project.backers_count > 0));
   };
 
+  const canDeleteProject = (project: Project) => {
+    return ['draft', 'pending', 'rejected'].includes(project.status) && !hasFinancialHistory(project);
+  };
+
   const draftProjectsCount = pendingProjects.filter(project => project.status === 'draft').length;
   const pendingProjectsCount = pendingProjects.filter(project => project.status === 'pending').length;
   const approvedProjectsCount = pendingProjects.filter(project => project.status === 'approved').length;
@@ -345,7 +349,7 @@ const ProjectsTab = ({
                   </Button>
                 )}
 
-                {!isInactiveProject(project) && !hasFinancialHistory(project) && project.status !== 'draft' && (
+                {canDeleteProject(project) && (
                   <Button
                     variant="destructive"
                     size="sm"

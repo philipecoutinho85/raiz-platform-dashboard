@@ -191,6 +191,21 @@ const fetchProjectsFallback = async (): Promise<Project[]> => {
   }
 };
 
+const mergeProjects = (primary: Project[], secondary: Project[]) => {
+  const projectsById = new Map<string, Project>();
+
+  primary.forEach((project) => {
+    if (project.id) projectsById.set(project.id, project);
+  });
+
+  secondary.forEach((project) => {
+    if (!project.id || projectsById.has(project.id)) return;
+    projectsById.set(project.id, project);
+  });
+
+  return Array.from(projectsById.values());
+};
+
 export const useAdminData = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -229,9 +244,13 @@ export const useAdminData = () => {
       console.error('[AdminDataStable] admin_get_projects_overview failed', error);
     }
 
-    if (formattedProjects.length === 0) {
-      console.warn('[AdminDataStable] admin_get_projects_overview returned no projects; trying protected projects fallback');
-      formattedProjects = await fetchProjectsFallback();
+    const fallbackProjects = await fetchProjectsFallback();
+    if (fallbackProjects.length > formattedProjects.length) {
+      console.warn('[AdminDataStable] protected projects fallback found projects missing from RPC result', {
+        rpcCount: formattedProjects.length,
+        fallbackCount: fallbackProjects.length,
+      });
+      formattedProjects = mergeProjects(formattedProjects, fallbackProjects);
       console.info('[AdminDataStable] protected projects fallback loaded', {
         count: formattedProjects.length,
         statuses: formattedProjects.reduce((acc: Record<string, number>, project) => {
@@ -239,6 +258,8 @@ export const useAdminData = () => {
           return acc;
         }, {}),
       });
+    } else if (formattedProjects.length === 0) {
+      console.warn('[AdminDataStable] admin_get_projects_overview and protected projects fallback returned no projects');
     }
 
     setAllProjects(formattedProjects);
