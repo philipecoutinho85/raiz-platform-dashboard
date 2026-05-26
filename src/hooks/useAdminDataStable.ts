@@ -53,8 +53,80 @@ interface AdminUser {
   hasProfile: boolean;
 }
 
-const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString('pt-BR') : 'Não informado';
-const formatDateTime = (value?: string | null) => value ? new Date(value).toLocaleString('pt-BR') : 'Não informado';
+const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString('pt-BR') : 'Nao informado';
+const formatDateTime = (value?: string | null) => value ? new Date(value).toLocaleString('pt-BR') : 'Nao informado';
+
+const normalizeRpcRows = (data: any) => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.projects)) return data.projects;
+  if (Array.isArray(data.items)) return data.items;
+  if (Array.isArray(data.data)) return data.data;
+  if (typeof data === 'string') {
+    try {
+      return normalizeRpcRows(JSON.parse(data));
+    } catch (error) {
+      console.error('[AdminDataStable] Invalid JSON returned by RPC', error);
+      return [];
+    }
+  }
+  return [data];
+};
+
+const formatProject = (project: any): Project => ({
+  id: project.id,
+  title: project.title || 'Projeto sem titulo',
+  author: project.author || project.author_name || project.creator_name || 'Usuario sem perfil',
+  authorEmail: project.author_email || project.creator_email || project.email || 'E-mail nao encontrado',
+  category: project.category || 'Sem categoria',
+  goal: Number(project.goal || 0),
+  description: project.description || '',
+  submittedDate: formatDate(project.created_at),
+  status: project.status || 'draft',
+  user_id: project.user_id,
+  raised_amount: Number(project.raised_amount || 0),
+  backers_count: Number(project.backers_count || 0),
+  deadline: project.deadline,
+  endereco: project.endereco,
+  cidade: project.cidade,
+  estado: project.estado,
+  youtube_url: project.youtube_url,
+  featured_image: project.featured_image || project.featured_image_url || project.image_url,
+  custom_goal: project.custom_goal ? Number(project.custom_goal) : undefined,
+  admin_fee_percentage: project.admin_fee_percentage ? Number(project.admin_fee_percentage) : undefined,
+  rejection_reason: project.rejection_reason,
+  pending_requirements: project.pending_requirements,
+  project_type: project.project_type,
+  platform_fee_percentage: project.platform_fee_percentage ? Number(project.platform_fee_percentage) : undefined,
+  updated_at: project.updated_at,
+});
+
+const formatAdminUser = (adminUser: any): AdminUser => {
+  const fullName = `${adminUser.nome || ''} ${adminUser.sobrenome || ''}`.trim();
+  const fallbackName = adminUser.email ? adminUser.email.split('@')[0] : 'Usuario sem e-mail';
+
+  return {
+    id: adminUser.id,
+    name: fullName || adminUser.name || adminUser.full_name || fallbackName,
+    email: adminUser.email || 'E-mail nao informado',
+    tokens: Number(adminUser.token_balance || adminUser.tokens || adminUser.balance || 0),
+    projects: Number(adminUser.projects_count || adminUser.projects || 0),
+    activeProjects: Number(adminUser.active_projects_count || adminUser.activeProjects || 0),
+    totalRaised: Number(adminUser.total_raised || adminUser.totalRaised || 0),
+    status: adminUser.status || 'active',
+    role: adminUser.role || 'user',
+    adminType: adminUser.admin_type || '',
+    joinDate: formatDate(adminUser.registered_at || adminUser.created_at),
+    joinDateTime: formatDateTime(adminUser.registered_at || adminUser.created_at),
+    registeredAt: adminUser.registered_at || adminUser.created_at || '',
+    avatar: adminUser.avatar_url || adminUser.avatar || '',
+    phone: adminUser.celular || adminUser.phone || '',
+    bio: '',
+    lastLogin: formatDateTime(adminUser.last_sign_in_at || adminUser.last_login),
+    emailConfirmedAt: formatDateTime(adminUser.email_confirmed_at),
+    hasProfile: Boolean(adminUser.profile_created_at || adminUser.hasProfile),
+  };
+};
 
 export const useAdminData = () => {
   const { user } = useAuth();
@@ -71,90 +143,63 @@ export const useAdminData = () => {
     }
 
     setLoading(true);
+
+    let formattedProjects: Project[] = [];
+    let formattedUsers: AdminUser[] = [];
+    let totalTokens = 0;
+
     try {
-      const { data: projectsData, error: projectsError } = await (supabase as any).rpc('admin_get_projects_overview');
-      if (projectsError) throw projectsError;
-
-      const formattedProjects: Project[] = (projectsData || []).map((project: any) => ({
-        id: project.id,
-        title: project.title || 'Projeto sem título',
-        author: project.author || 'Usuário sem perfil',
-        authorEmail: project.author_email || 'E-mail não encontrado',
-        category: project.category || 'Sem categoria',
-        goal: Number(project.goal || 0),
-        description: project.description || '',
-        submittedDate: formatDate(project.created_at),
-        status: project.status,
-        user_id: project.user_id,
-        raised_amount: Number(project.raised_amount || 0),
-        backers_count: Number(project.backers_count || 0),
-        deadline: project.deadline,
-        endereco: project.endereco,
-        cidade: project.cidade,
-        estado: project.estado,
-        youtube_url: project.youtube_url,
-        featured_image: project.featured_image,
-        custom_goal: project.custom_goal ? Number(project.custom_goal) : undefined,
-        admin_fee_percentage: project.admin_fee_percentage ? Number(project.admin_fee_percentage) : undefined,
-        rejection_reason: project.rejection_reason,
-        pending_requirements: project.pending_requirements,
-        project_type: project.project_type,
-        platform_fee_percentage: project.platform_fee_percentage ? Number(project.platform_fee_percentage) : undefined,
-        updated_at: project.updated_at,
-      }));
-      setAllProjects(formattedProjects);
-
-      let formattedUsers: AdminUser[] = [];
-      const { data: usersData, error: usersError } = await (supabase as any).rpc('admin_get_users_overview');
-      if (!usersError) {
-        formattedUsers = (usersData || []).map((adminUser: any) => {
-          const fullName = `${adminUser.nome || ''} ${adminUser.sobrenome || ''}`.trim();
-          const fallbackName = adminUser.email ? adminUser.email.split('@')[0] : 'Usuário sem e-mail';
-          return {
-            id: adminUser.id,
-            name: fullName || fallbackName,
-            email: adminUser.email || 'E-mail não informado',
-            tokens: adminUser.token_balance || 0,
-            projects: adminUser.projects_count || 0,
-            activeProjects: adminUser.active_projects_count || 0,
-            totalRaised: adminUser.total_raised || 0,
-            status: 'active',
-            role: adminUser.role || 'user',
-            adminType: adminUser.admin_type || '',
-            joinDate: formatDate(adminUser.registered_at),
-            joinDateTime: formatDateTime(adminUser.registered_at),
-            registeredAt: adminUser.registered_at || '',
-            avatar: adminUser.avatar_url || '',
-            phone: adminUser.celular || '',
-            bio: '',
-            lastLogin: formatDateTime(adminUser.last_sign_in_at),
-            emailConfirmedAt: formatDateTime(adminUser.email_confirmed_at),
-            hasProfile: Boolean(adminUser.profile_created_at),
-          };
-        });
+      const { data, error } = await (supabase as any).rpc('admin_get_projects_overview');
+      if (error) {
+        console.error('[AdminDataStable] admin_get_projects_overview failed', error);
       } else {
-        console.error('Admin users overview failed:', usersError);
+        formattedProjects = normalizeRpcRows(data).map(formatProject);
+        console.info('[AdminDataStable] admin_get_projects_overview loaded', {
+          count: formattedProjects.length,
+          statuses: formattedProjects.reduce((acc: Record<string, number>, project) => {
+            acc[project.status] = (acc[project.status] || 0) + 1;
+            return acc;
+          }, {}),
+        });
       }
-      setUsers(formattedUsers);
-
-      const { data: tokenRows } = await supabase.from('user_tokens').select('balance');
-      const totalTokens = tokenRows?.reduce((sum, row) => sum + Number(row.balance || 0), 0) || 0;
-      setStats({
-        totalUsers: formattedUsers.length,
-        activeProjects: formattedProjects.filter((p) => p.status === 'approved').length,
-        pendingApproval: formattedProjects.filter((p) => p.status === 'pending').length,
-        totalTokens,
-      });
-    } catch (error: any) {
-      console.error('Admin data load failed:', error);
-      toast({
-        title: 'Erro',
-        description: error?.message?.includes('ADMIN') ? 'Usuário sem permissão administrativa.' : 'Erro ao carregar dados administrativos.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('[AdminDataStable] admin_get_projects_overview failed', error);
     }
+
+    setAllProjects(formattedProjects);
+
+    try {
+      const { data, error } = await (supabase as any).rpc('admin_get_users_overview');
+      if (error) {
+        console.warn('[AdminDataStable] admin_get_users_overview failed; projects remain loaded', error);
+      } else {
+        formattedUsers = normalizeRpcRows(data).map(formatAdminUser);
+      }
+    } catch (error) {
+      console.warn('[AdminDataStable] admin_get_users_overview failed; projects remain loaded', error);
+    }
+
+    setUsers(formattedUsers);
+
+    try {
+      const { data, error } = await supabase.from('user_tokens').select('balance');
+      if (error) {
+        console.warn('[AdminDataStable] user_tokens failed; projects remain loaded', error);
+      } else {
+        totalTokens = data?.reduce((sum, row) => sum + Number(row.balance || 0), 0) || 0;
+      }
+    } catch (error) {
+      console.warn('[AdminDataStable] user_tokens failed; projects remain loaded', error);
+    }
+
+    setStats({
+      totalUsers: formattedUsers.length,
+      activeProjects: formattedProjects.filter((project) => project.status === 'approved').length,
+      pendingApproval: formattedProjects.filter((project) => project.status === 'pending').length,
+      totalTokens,
+    });
+
+    setLoading(false);
   };
 
   const handleProjectAction = async (projectId: string, action: string, reason?: string, projectType?: 'seed' | 'regular') => {
@@ -170,7 +215,7 @@ export const useAdminData = () => {
       }
 
       if (action === 'reject') {
-        if (!reason?.trim()) throw new Error('Informe o motivo da rejeição.');
+        if (!reason?.trim()) throw new Error('Informe o motivo da rejeicao.');
         const { error } = await supabase.from('projects').update({
           status: 'rejected',
           reviewed_at: new Date().toISOString(),
@@ -188,7 +233,7 @@ export const useAdminData = () => {
           p_reason: reason || 'admin_cancelled',
         });
         if (error) throw error;
-        toast({ title: 'Projeto cancelado', description: 'Projeto cancelado com segurança.' });
+        toast({ title: 'Projeto cancelado', description: 'Projeto cancelado com seguranca.' });
       }
 
       if (action === 'delete') {
@@ -196,7 +241,7 @@ export const useAdminData = () => {
           p_project_id: projectId,
         });
         if (error) throw error;
-        toast({ title: 'Projeto excluído', description: 'Projeto removido com segurança.' });
+        toast({ title: 'Projeto excluido', description: 'Projeto removido com seguranca.' });
       }
 
       await fetchAdminData();
