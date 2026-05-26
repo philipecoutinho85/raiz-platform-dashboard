@@ -62,6 +62,10 @@ const normalizeRpcRows = (data: any) => {
   if (Array.isArray(data.projects)) return data.projects;
   if (Array.isArray(data.items)) return data.items;
   if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.result)) return data.result;
+  if (Array.isArray(data.rows)) return data.rows;
+  if (Array.isArray(data.records)) return data.records;
+  if (Array.isArray(data.projects_overview)) return data.projects_overview;
   if (typeof data === 'string') {
     try {
       return normalizeRpcRows(JSON.parse(data));
@@ -73,33 +77,45 @@ const normalizeRpcRows = (data: any) => {
   return [data];
 };
 
-const formatProject = (project: any): Project => ({
-  id: project.id,
-  title: project.title || 'Projeto sem titulo',
-  author: project.author || project.author_name || project.creator_name || 'Usuario sem perfil',
-  authorEmail: project.author_email || project.creator_email || project.email || 'E-mail nao encontrado',
-  category: project.category || 'Sem categoria',
-  goal: Number(project.goal || 0),
-  description: project.description || '',
-  submittedDate: formatDate(project.created_at),
-  status: project.status || 'draft',
-  user_id: project.user_id,
-  raised_amount: Number(project.raised_amount || 0),
-  backers_count: Number(project.backers_count || 0),
-  deadline: project.deadline,
-  endereco: project.endereco,
-  cidade: project.cidade,
-  estado: project.estado,
-  youtube_url: project.youtube_url,
-  featured_image: project.featured_image || project.featured_image_url || project.image_url,
-  custom_goal: project.custom_goal ? Number(project.custom_goal) : undefined,
-  admin_fee_percentage: project.admin_fee_percentage ? Number(project.admin_fee_percentage) : undefined,
-  rejection_reason: project.rejection_reason,
-  pending_requirements: project.pending_requirements,
-  project_type: project.project_type,
-  platform_fee_percentage: project.platform_fee_percentage ? Number(project.platform_fee_percentage) : undefined,
-  updated_at: project.updated_at,
-});
+const normalizeStatus = (status?: string | null) => String(status || 'draft').trim().toLowerCase();
+
+const optionalNumber = (value: any) => {
+  if (value === null || value === undefined || value === '') return undefined;
+  return Number(value);
+};
+
+const formatProject = (project: any): Project => {
+  const projectImages = Array.isArray(project.project_images) ? project.project_images : [];
+  const featuredImage = projectImages.find((image: any) => image?.is_featured)?.image_url || projectImages[0]?.image_url;
+
+  return {
+    id: project.id || project.project_id,
+    title: project.title || project.project_title || 'Projeto sem titulo',
+    author: project.author || project.author_name || project.creator_name || project.profile_name || 'Usuario sem perfil',
+    authorEmail: project.author_email || project.creator_email || project.email || project.profile_email || 'E-mail nao encontrado',
+    category: project.category || 'Sem categoria',
+    goal: Number(project.goal || project.goal_amount || 0),
+    description: project.description || '',
+    submittedDate: formatDate(project.created_at || project.submitted_date || project.submittedDate),
+    status: normalizeStatus(project.status || project.project_status),
+    user_id: project.user_id || project.creator_id || project.owner_id,
+    raised_amount: Number(project.raised_amount || project.raisedAmount || 0),
+    backers_count: Number(project.backers_count || project.backersCount || 0),
+    deadline: project.deadline,
+    endereco: project.endereco,
+    cidade: project.cidade,
+    estado: project.estado,
+    youtube_url: project.youtube_url,
+    featured_image: project.featured_image || project.featured_image_url || project.image_url || featuredImage,
+    custom_goal: optionalNumber(project.custom_goal),
+    admin_fee_percentage: optionalNumber(project.admin_fee_percentage),
+    rejection_reason: project.rejection_reason,
+    pending_requirements: project.pending_requirements,
+    project_type: project.project_type,
+    platform_fee_percentage: optionalNumber(project.platform_fee_percentage),
+    updated_at: project.updated_at,
+  };
+};
 
 const formatAdminUser = (adminUser: any): AdminUser => {
   const fullName = `${adminUser.nome || ''} ${adminUser.sobrenome || ''}`.trim();
@@ -128,6 +144,53 @@ const formatAdminUser = (adminUser: any): AdminUser => {
   };
 };
 
+const fetchProjectsFallback = async (): Promise<Project[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('[AdminDataStable] protected projects fallback failed', error);
+      return [];
+    }
+
+    const projects = data || [];
+    const userIds = Array.from(new Set(projects.map((project: any) => project.user_id).filter(Boolean)));
+    const profilesById = new Map<string, any>();
+
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await (supabase as any)
+        .from('profiles')
+        .select('id, nome, sobrenome, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.warn('[AdminDataStable] profiles fallback failed; projects remain loaded', profilesError);
+      } else {
+        (profiles || []).forEach((profile: any) => profilesById.set(profile.id, profile));
+      }
+    }
+
+    return projects
+      .map((project: any) => {
+        const profile = profilesById.get(project.user_id);
+        const profileName = profile ? `${profile.nome || ''} ${profile.sobrenome || ''}`.trim() : '';
+
+        return formatProject({
+          ...project,
+          author: profileName || profile?.email,
+          author_email: profile?.email,
+        });
+      })
+      .filter((project: Project) => Boolean(project.id));
+  } catch (error) {
+    console.warn('[AdminDataStable] protected projects fallback failed', error);
+    return [];
+  }
+};
+
 export const useAdminData = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -153,7 +216,7 @@ export const useAdminData = () => {
       if (error) {
         console.error('[AdminDataStable] admin_get_projects_overview failed', error);
       } else {
-        formattedProjects = normalizeRpcRows(data).map(formatProject);
+        formattedProjects = normalizeRpcRows(data).map(formatProject).filter((project: Project) => Boolean(project.id));
         console.info('[AdminDataStable] admin_get_projects_overview loaded', {
           count: formattedProjects.length,
           statuses: formattedProjects.reduce((acc: Record<string, number>, project) => {
@@ -164,6 +227,18 @@ export const useAdminData = () => {
       }
     } catch (error) {
       console.error('[AdminDataStable] admin_get_projects_overview failed', error);
+    }
+
+    if (formattedProjects.length === 0) {
+      console.warn('[AdminDataStable] admin_get_projects_overview returned no projects; trying protected projects fallback');
+      formattedProjects = await fetchProjectsFallback();
+      console.info('[AdminDataStable] protected projects fallback loaded', {
+        count: formattedProjects.length,
+        statuses: formattedProjects.reduce((acc: Record<string, number>, project) => {
+          acc[project.status] = (acc[project.status] || 0) + 1;
+          return acc;
+        }, {}),
+      });
     }
 
     setAllProjects(formattedProjects);
