@@ -11,7 +11,7 @@ const HeroSection = () => {
       
       
       <div className="container mx-auto px-4 pt-20 pb-16 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 xl:gap-20 items-center min-h-[80vh]">
           {/* Left Column - Main Content */}
           <div className="text-center lg:text-left animate-fade-in">
             <div className="inline-flex items-center space-x-2 bg-raiz-gold/20 text-raiz-gold px-4 py-2 rounded-full mb-6">
@@ -54,7 +54,7 @@ const HeroSection = () => {
           </div>
           
           {/* Right Column - Visual Elements */}
-          <div className="relative animate-slide-in-right">
+          <div className="relative animate-slide-in-right lg:justify-self-end lg:w-[92%] xl:w-[88%]">
             <div className="relative">
               {/* Main visual card */}
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-raiz-accent/20">
