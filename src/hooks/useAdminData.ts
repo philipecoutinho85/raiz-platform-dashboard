@@ -31,6 +31,7 @@ interface Project {
   pending_requirements?: string;
   project_type?: 'seed' | 'regular';
   platform_fee_percentage?: number;
+  updated_at?: string;
 }
 
 interface AdminUser {
@@ -130,59 +131,44 @@ export const useAdminData = () => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          project_images(image_url, is_featured)
-        `)
-        .order('created_at', { ascending: false });
 
-      if (projectsError) {
-        console.error('Error fetching projects:', projectsError);
-      } else {
-        const formattedProjects: Project[] = [];
-        
-        for (const project of projectsData || []) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('nome, sobrenome, email')
-            .eq('id', project.user_id)
-            .maybeSingle();
+      const { data: adminProjectsData, error: adminProjectsError } = await (supabase as any)
+        .rpc('admin_get_projects_overview');
 
-          const featuredImage = project.project_images?.find((img: any) => img.is_featured);
-          
-          formattedProjects.push({
-            id: project.id,
-            title: project.title,
-            author: profileData ? `${profileData.nome || ''} ${profileData.sobrenome || ''}`.trim() || profileData.email : 'Usuário sem perfil',
-            authorEmail: profileData?.email || 'E-mail não encontrado no perfil',
-            category: project.category,
-            goal: project.goal,
-            description: project.description,
-            submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
-            status: project.status,
-            user_id: project.user_id,
-            raised_amount: project.raised_amount,
-            backers_count: project.backers_count,
-            deadline: project.deadline,
-            endereco: project.endereco,
-            cidade: project.cidade,
-            estado: project.estado,
-            youtube_url: project.youtube_url,
-            featured_image: featuredImage?.image_url,
-            custom_goal: project.custom_goal,
-            admin_fee_percentage: project.admin_fee_percentage,
-            rejection_reason: project.rejection_reason,
-            pending_requirements: project.pending_requirements,
-            project_type: project.project_type as 'seed' | 'regular' | undefined,
-            platform_fee_percentage: project.platform_fee_percentage
-          });
-        }
-        
-        setAllProjects(formattedProjects);
+      if (adminProjectsError) {
+        console.error('Error fetching admin projects overview:', adminProjectsError);
+        throw adminProjectsError;
       }
+
+      const formattedProjects: Project[] = (adminProjectsData || []).map((project: any) => ({
+        id: project.id,
+        title: project.title,
+        author: project.author || 'Usuário sem perfil',
+        authorEmail: project.author_email || 'E-mail não encontrado no perfil',
+        category: project.category,
+        goal: Number(project.goal || 0),
+        description: project.description,
+        submittedDate: new Date(project.created_at).toLocaleDateString('pt-BR'),
+        status: project.status,
+        user_id: project.user_id,
+        raised_amount: Number(project.raised_amount || 0),
+        backers_count: Number(project.backers_count || 0),
+        deadline: project.deadline,
+        endereco: project.endereco,
+        cidade: project.cidade,
+        estado: project.estado,
+        youtube_url: project.youtube_url,
+        featured_image: project.featured_image,
+        custom_goal: project.custom_goal ? Number(project.custom_goal) : undefined,
+        admin_fee_percentage: project.admin_fee_percentage ? Number(project.admin_fee_percentage) : undefined,
+        rejection_reason: project.rejection_reason,
+        pending_requirements: project.pending_requirements,
+        project_type: project.project_type as 'seed' | 'regular' | undefined,
+        platform_fee_percentage: project.platform_fee_percentage ? Number(project.platform_fee_percentage) : undefined,
+        updated_at: project.updated_at
+      }));
+
+      setAllProjects(formattedProjects);
 
       const { data: adminUsersData, error: adminUsersError } = await (supabase as any)
         .rpc('admin_get_users_overview');
@@ -218,19 +204,15 @@ export const useAdminData = () => {
           hasProfile: Boolean(adminUser.profile_created_at)
         };
       });
-      
-      setUsers(formattedUsers);
 
-      const { data: allProjectsStats } = await supabase
-        .from('projects')
-        .select('status');
+      setUsers(formattedUsers);
 
       const { data: totalTokensData } = await supabase
         .from('user_tokens')
         .select('balance');
 
-      const activeProjectsCount = allProjectsStats?.filter(p => p.status === 'approved').length || 0;
-      const pendingProjectsCount = allProjectsStats?.filter(p => p.status === 'pending').length || 0;
+      const activeProjectsCount = formattedProjects.filter(p => p.status === 'approved').length;
+      const pendingProjectsCount = formattedProjects.filter(p => p.status === 'pending').length;
       const totalUsersCount = formattedUsers.length;
       const totalTokens = totalTokensData?.reduce((sum, user) => sum + user.balance, 0) || 0;
 
@@ -267,21 +249,20 @@ export const useAdminData = () => {
 
         const project = allProjects.find(p => p.id === projectId);
         const platformFee = projectType === 'seed' ? 0 : 10;
-        
-        const { error } = await supabase
-          .from('projects')
-          .update({
-            status: 'approved',
-            reviewed_at: new Date().toISOString(),
-            reviewed_by: user?.id,
-            project_type: projectType,
-            platform_fee_percentage: platformFee
-          })
-          .eq('id', projectId);
+
+        const { data: approvalResult, error } = await (supabase as any)
+          .rpc('admin_approve_project_for_publication', {
+            p_project_id: projectId,
+            p_project_type: projectType,
+          });
 
         if (error) {
           console.error('Error approving project:', error);
           throw error;
+        }
+
+        if (!approvalResult || approvalResult.length === 0) {
+          throw new Error('PROJECT_NOT_PENDING_OR_NOT_FOUND');
         }
 
         const { data: verifiedBadge } = await supabase
@@ -426,9 +407,14 @@ export const useAdminData = () => {
 
     } catch (error: any) {
       console.error('Error updating project:', error);
+      const errorMessage = String(error?.message || '');
+      const friendlyMessage = errorMessage.includes('PROJECT_NOT_PENDING_OR_NOT_FOUND')
+        ? 'O projeto não está mais aguardando análise ou não foi encontrado.'
+        : error.message || 'Erro ao atualizar projeto. Tente novamente.';
+
       toast({
         title: "Erro",
-        description: error.message || "Erro ao atualizar projeto. Tente novamente.",
+        description: friendlyMessage,
         variant: "destructive"
       });
     }
