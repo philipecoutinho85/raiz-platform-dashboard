@@ -29,7 +29,7 @@ import RejectProjectModal from '@/components/admin/RejectProjectModal';
 import ProjectDetailModal from '@/components/admin/ProjectDetailModal';
 import AdminLogsViewer from '@/components/AdminLogsViewer';
 import Admin2FASetup from '@/components/Admin2FASetup';
-import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminData } from '@/hooks/useAdminDataStable';
 import { useAdminUserActions } from '@/hooks/useAdminUserActions';
 import { useAdminModals } from '@/hooks/useAdminModals';
 import { useAdminSecurity } from '@/hooks/useAdminSecurity';
@@ -69,7 +69,6 @@ const AdminPanel = () => {
     handleViewProjectDetails
   } = useAdminModals();
 
-  // Verificar 2FA e dispositivo ao montar
   useEffect(() => {
     const checkSecurity = async () => {
       const twoFAStatus = await check2FAStatus();
@@ -126,7 +125,6 @@ const AdminPanel = () => {
       <div className="container mx-auto px-4 py-8 pb-20 md:pb-8">
         <AdminStats stats={stats} />
 
-        {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {isMobile && (
             <div className="mb-4">
@@ -169,123 +167,34 @@ const AdminPanel = () => {
           </TabsContent>
 
           <TabsContent value="users">
-            <UsersTab 
-              users={users}
-              onUserAction={handleUserActionWrapper}
-              onViewUserDetails={handleViewUserDetails}
-              onEditUser={handleEditUser}
-            />
+            <UsersTab users={users} onUserAction={handleUserActionWrapper} onViewUserDetails={handleViewUserDetails} onEditUser={handleEditUser} />
           </TabsContent>
 
-          <TabsContent value="badges">
-            <BadgesTab />
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <ReportsManagement />
-          </TabsContent>
-
-          <TabsContent value="consents">
-            <ConsentRecordsTab />
-          </TabsContent>
-
-          <TabsContent value="top-supporters">
-            <TopSupportersTab />
-          </TabsContent>
-
-          <TabsContent value="finance">
-            <FinancialDashboard />
-          </TabsContent>
-
-          <TabsContent value="tokens">
-            <TokensTab stats={stats} refetchData={fetchAdminData} />
-          </TabsContent>
-
-          <TabsContent value="transactions">
-            <TransactionsTab />
-          </TabsContent>
-
-          <TabsContent value="refunds">
-            <RefundsTab />
-          </TabsContent>
-
-          <TabsContent value="boleto-refunds">
-            <BoletoRefundsTab />
-          </TabsContent>
-
-          <TabsContent value="withdrawals">
-            <WithdrawalsTab />
-          </TabsContent>
-
-          <TabsContent value="operations">
-            <OperationalExceptionsTab />
-          </TabsContent>
-
-          <TabsContent value="expired">
-            <ExpiredProjectsTab />
-          </TabsContent>
-
-          <TabsContent value="support">
-            <SupportTab />
-          </TabsContent>
-
-          <TabsContent value="rejections">
-            <ProjectRejectionMessagesTab />
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <AdminLogsViewer />
-          </TabsContent>
-
-          <TabsContent value="tests">
-            <AdminTestPanel />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <SettingsTab />
-          </TabsContent>
+          <TabsContent value="badges"><BadgesTab /></TabsContent>
+          <TabsContent value="reports"><ReportsManagement /></TabsContent>
+          <TabsContent value="consents"><ConsentRecordsTab /></TabsContent>
+          <TabsContent value="top-supporters"><TopSupportersTab /></TabsContent>
+          <TabsContent value="finance"><FinancialDashboard /></TabsContent>
+          <TabsContent value="tokens"><TokensTab stats={stats} refetchData={fetchAdminData} /></TabsContent>
+          <TabsContent value="transactions"><TransactionsTab /></TabsContent>
+          <TabsContent value="refunds"><RefundsTab /></TabsContent>
+          <TabsContent value="boleto-refunds"><BoletoRefundsTab /></TabsContent>
+          <TabsContent value="withdrawals"><WithdrawalsTab /></TabsContent>
+          <TabsContent value="operations"><OperationalExceptionsTab /></TabsContent>
+          <TabsContent value="expired"><ExpiredProjectsTab /></TabsContent>
+          <TabsContent value="support"><SupportTab /></TabsContent>
+          <TabsContent value="rejections"><ProjectRejectionMessagesTab /></TabsContent>
+          <TabsContent value="logs"><AdminLogsViewer /></TabsContent>
+          <TabsContent value="tests"><AdminTestPanel /></TabsContent>
+          <TabsContent value="settings"><SettingsTab /></TabsContent>
         </Tabs>
       </div>
 
-      <UserDetailModal 
-        isOpen={isUserDetailModalOpen}
-        onOpenChange={setIsUserDetailModalOpen}
-        selectedUser={selectedUser}
-        onUserAction={handleUserActionWrapper}
-      />
-
-      <EditUserModal 
-        isOpen={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
-        selectedUser={selectedUser}
-        form={form}
-        onSaveEdit={handleSaveEditWrapper}
-      />
-
-      <ProjectDetailModal 
-        isOpen={isProjectDetailModalOpen}
-        onOpenChange={setIsProjectDetailModalOpen}
-        project={selectedProject}
-        onUpdate={fetchAdminData}
-      />
-
-      <RejectProjectModal 
-        isOpen={isRejectModalOpen}
-        onOpenChange={setIsRejectModalOpen}
-        selectedProject={selectedProject}
-        rejectionReason={rejectionReason}
-        setRejectionReason={setRejectionReason}
-        onRejectProject={handleProjectActionWrapper}
-        onCancel={handleCancelReject}
-      />
-
-      <ReauthenticationModal
-        isOpen={isReauthModalOpen}
-        onClose={handleReauthClose}
-        onSuccess={handleReauthSuccess}
-        actionDescription={pendingAction?.description || ''}
-      />
-
+      <UserDetailModal isOpen={isUserDetailModalOpen} onClose={() => setIsUserDetailModalOpen(false)} user={selectedUser} onUserAction={handleUserActionWrapper} />
+      <EditUserModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} user={selectedUser} form={form} onSave={handleSaveEditWrapper} />
+      <RejectProjectModal isOpen={isRejectModalOpen} onClose={handleCancelReject} project={selectedProject} rejectionReason={rejectionReason} setRejectionReason={setRejectionReason} onReject={(projectId, reason) => handleProjectActionWrapper(projectId, 'reject', reason)} />
+      <ProjectDetailModal isOpen={isProjectDetailModalOpen} onClose={() => setIsProjectDetailModalOpen(false)} project={selectedProject} />
+      <ReauthenticationModal isOpen={isReauthModalOpen} onClose={handleReauthClose} onSuccess={handleReauthSuccess} action={pendingAction} />
       <Footer />
     </div>
   );
