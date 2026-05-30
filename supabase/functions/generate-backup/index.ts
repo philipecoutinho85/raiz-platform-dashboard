@@ -7,93 +7,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Tabelas críticas da plataforma. Manter explícito reduz risco de exportar objetos temporários/sensíveis por engano.
 const ALL_TABLES = [
-  // Usuários e Perfis
-  'profiles',
-  'user_roles',
-  'user_tokens',
-  'user_badges',
-  'user_consent_preferences',
-  'account_deletion_requests',
-
-  // Projetos
-  'projects',
-  'project_contributions',
-  'project_comments',
-  'project_gallery',
-  'project_images',
-  'project_updates',
-  'project_update_images',
-  'project_update_reactions',
-  'project_badges',
-  'project_reports',
-  'project_rejection_messages',
-
-  // Tokens e Transações
-  'token_transactions',
-  'token_purchases',
-
-  // Badges
-  'badges',
-
-  // Financeiro
-  'financial_ledger',
-  'ledger_movements',
-  'ledger_audit_log',
-  'financial_alerts',
-  'financial_settings',
-  'stripe_payments',
-  'stripe_fee_config',
-  'bank_reconciliation',
-  'transfer_receipts',
-
-  // Reembolsos
-  'refunds',
-  'refund_requests',
-
-  // Saques
-  'withdrawals',
-  'withdrawal_messages',
-  'withdrawal_verification_codes',
-
-  // Criadores
-  'creator_payouts',
-  'creator_scores',
-  'creator_consent_records',
-
-  // Admin
-  'admin_logs',
-  'admin_access_logs',
-  'admin_devices',
-  'admin_2fa',
-  'moderator_permissions',
-
-  // Suporte
-  'support_conversations',
-  'support_messages',
-
-  // Sistema
-  'system_settings',
-  'google_analytics_settings',
-  'notifications',
-
-  // LGPD
+  'profiles', 'user_roles', 'user_tokens', 'user_badges', 'user_consent_preferences', 'account_deletion_requests',
+  'projects', 'project_contributions', 'project_comments', 'project_gallery', 'project_images', 'project_updates',
+  'project_update_images', 'project_update_reactions', 'project_badges', 'project_reports', 'project_rejection_messages',
+  'token_transactions', 'token_purchases', 'badges',
+  'financial_ledger', 'ledger_movements', 'ledger_audit_log', 'financial_alerts', 'financial_settings',
+  'stripe_payments', 'stripe_fee_config', 'bank_reconciliation', 'transfer_receipts',
+  'refunds', 'refund_requests',
+  'withdrawals', 'withdrawal_messages', 'withdrawal_verification_codes',
+  'creator_payouts', 'creator_scores', 'creator_consent_records',
+  'admin_logs', 'admin_access_logs', 'admin_devices', 'admin_2fa', 'moderator_permissions',
+  'support_conversations', 'support_messages',
+  'system_settings', 'google_analytics_settings', 'notifications',
   'data_processing_registry',
-
-  // Blog
-  'blog_posts',
-  'blog_categories',
-  'blog_images',
-  'blog_post_versions',
-  'blog_snippets',
-
-  // Outros
-  'mailgun_sync_log',
-  'backup_files'
+  'blog_posts', 'blog_categories', 'blog_images', 'blog_post_versions', 'blog_snippets',
+  'mailgun_sync_log', 'backup_files'
 ];
 
-// Buckets críticos para backup
 const CRITICAL_BUCKETS = [
   'refund-proofs',
   'withdrawal-proofs',
@@ -141,17 +72,12 @@ const logAdminAction = async (
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  if (req.method !== 'POST') {
-    return jsonResponse({ error: 'Método não permitido' }, 405);
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method !== 'POST') return jsonResponse({ error: 'Método não permitido' }, 405);
 
   const startedAt = new Date().toISOString();
   let backupFileId: string | null = null;
-  let filename = `raiztoken-backup-${startedAt.replace(/[:.]/g, '-')}.zip`;
+  const filename = `raiztoken-backup-${startedAt.replace(/[:.]/g, '-')}.zip`;
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -163,20 +89,13 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verificar autenticação
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return jsonResponse({ error: 'Não autorizado' }, 401);
-    }
+    if (!authHeader) return jsonResponse({ error: 'Não autorizado' }, 401);
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) return jsonResponse({ error: 'Não autorizado' }, 401);
 
-    if (authError || !user) {
-      return jsonResponse({ error: 'Não autorizado' }, 401);
-    }
-
-    // Verificar se é admin master
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role, admin_type')
@@ -189,9 +108,6 @@ serve(async (req) => {
     }
 
     const { includeStorage = true, saveForLater = false } = await req.json().catch(() => ({}));
-
-    console.log('Iniciando geração de backup completo...');
-    console.log(`Total de tabelas a exportar: ${ALL_TABLES.length}`);
 
     if (saveForLater) {
       const { data: backupFile, error: backupFileError } = await supabaseAdmin
@@ -228,29 +144,15 @@ serve(async (req) => {
       generated_by_email: user.email,
       platform: 'Raiz Token',
       backup_file_id: backupFileId,
+      integrity_note: 'O SHA-256 do arquivo ZIP completo é armazenado em backup_files.sha256_checksum, no log administrativo e no header X-Backup-SHA256.',
       tables: {},
-      storage: {
-        buckets: [],
-        total_files: 0,
-        total_size: 0,
-        files_with_errors: []
-      },
-      summary: {
-        total_tables: 0,
-        total_records: 0,
-        tables_with_errors: [],
-        tables_empty: []
-      }
+      storage: { buckets: [], total_files: 0, total_size: 0, files_with_errors: [] },
+      summary: { total_tables: 0, total_records: 0, tables_with_errors: [], tables_empty: [] }
     };
 
-    // ========== BACKUP DO BANCO DE DADOS ==========
-    console.log('Exportando tabelas do banco de dados...');
     const databaseFolder = zip.folder('database');
-
     for (const table of ALL_TABLES) {
       try {
-        console.log(`Exportando tabela: ${table}`);
-
         const allData: any[] = [];
         let offset = 0;
         const batchSize = 1000;
@@ -263,7 +165,6 @@ serve(async (req) => {
             .range(offset, offset + batchSize - 1);
 
           if (error) {
-            console.error(`Erro ao exportar ${table}:`, error.message);
             manifest.summary.tables_with_errors.push({ table, error: error.message });
             break;
           }
@@ -278,33 +179,20 @@ serve(async (req) => {
         }
 
         databaseFolder?.file(`${table}.json`, JSON.stringify(allData, null, 2));
-
-        manifest.tables[table] = {
-          record_count: allData.length,
-          exported_at: new Date().toISOString()
-        };
+        manifest.tables[table] = { record_count: allData.length, exported_at: new Date().toISOString() };
         manifest.summary.total_records += allData.length;
         manifest.summary.total_tables++;
-
-        if (allData.length === 0) {
-          manifest.summary.tables_empty.push(table);
-        }
-
-        console.log(`${table}: ${allData.length} registros exportados`);
+        if (allData.length === 0) manifest.summary.tables_empty.push(table);
       } catch (err: any) {
-        console.error(`Erro ao processar tabela ${table}:`, err);
         manifest.summary.tables_with_errors.push({ table, error: err.message });
       }
     }
 
-    // ========== BACKUP DO STORAGE ==========
     if (includeStorage) {
-      console.log('Exportando arquivos do Storage...');
       const storageFolder = zip.folder('storage');
 
       for (const bucketName of CRITICAL_BUCKETS) {
         try {
-          console.log(`Processando bucket: ${bucketName}`);
           const bucketFolder = storageFolder?.folder(bucketName);
           let bucketFileCount = 0;
           let bucketSize = 0;
@@ -320,15 +208,12 @@ serve(async (req) => {
               bucketErrors.push({ path: path || '/', error: error.message });
               return;
             }
-
             if (!items || items.length === 0) return;
 
             for (const item of items) {
               const itemPath = path ? `${path}/${item.name}` : item.name;
-
               if (item.id === null) {
-                const subFolder = folder?.folder(item.name);
-                await processFolder(itemPath, subFolder);
+                await processFolder(itemPath, folder?.folder(item.name));
                 continue;
               }
 
@@ -354,70 +239,33 @@ serve(async (req) => {
           };
 
           await processFolder('', bucketFolder);
-
-          manifest.storage.buckets.push({
-            name: bucketName,
-            file_count: bucketFileCount,
-            size_bytes: bucketSize,
-            errors: bucketErrors
-          });
+          manifest.storage.buckets.push({ name: bucketName, file_count: bucketFileCount, size_bytes: bucketSize, errors: bucketErrors });
           manifest.storage.total_files += bucketFileCount;
           manifest.storage.total_size += bucketSize;
-
-          if (bucketErrors.length > 0) {
-            manifest.storage.files_with_errors.push({ bucket: bucketName, errors: bucketErrors });
-          }
-
-          console.log(`${bucketName}: ${bucketFileCount} arquivos exportados`);
+          if (bucketErrors.length > 0) manifest.storage.files_with_errors.push({ bucket: bucketName, errors: bucketErrors });
         } catch (bucketErr: any) {
-          console.error(`Erro ao processar bucket ${bucketName}:`, bucketErr);
-          manifest.storage.files_with_errors.push({
-            bucket: bucketName,
-            errors: [{ path: '/', error: bucketErr?.message || String(bucketErr) }]
-          });
+          manifest.storage.files_with_errors.push({ bucket: bucketName, errors: [{ path: '/', error: bucketErr?.message || String(bucketErr) }] });
         }
       }
     }
 
-    // ========== ADICIONAR MANIFESTO ==========
     manifest.completed_at = new Date().toISOString();
     zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
-    // ========== GERAR ZIP ==========
-    console.log('Gerando arquivo ZIP...');
-    const zipContent = await zip.generateAsync({
-      type: 'uint8array',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 9 }
-    });
-    const checksum = await sha256(zipContent);
-    manifest.sha256_checksum = checksum;
-
-    // Atualizar manifesto com checksum dentro do próprio ZIP.
-    zip.file('manifest.json', JSON.stringify(manifest, null, 2));
     const finalZipContent = await zip.generateAsync({
       type: 'uint8array',
       compression: 'DEFLATE',
       compressionOptions: { level: 9 }
     });
     const finalChecksum = await sha256(finalZipContent);
-    manifest.sha256_checksum = finalChecksum;
 
-    // ========== SALVAR PARA DOWNLOAD POSTERIOR ==========
     if (saveForLater) {
-      console.log('Salvando backup no storage...');
-
       const { data: uploadData, error: uploadError } = await supabaseAdmin
         .storage
         .from('backups')
-        .upload(filename, finalZipContent, {
-          contentType: 'application/zip',
-          upsert: true
-        });
+        .upload(filename, finalZipContent, { contentType: 'application/zip', upsert: true });
 
-      if (uploadError) {
-        throw new Error(`Backup gerado, mas falhou ao salvar no Storage: ${uploadError.message}`);
-      }
+      if (uploadError) throw new Error(`Backup gerado, mas falhou ao salvar no Storage: ${uploadError.message}`);
 
       const { error: updateError } = await supabaseAdmin
         .from('backup_files')
@@ -431,10 +279,7 @@ serve(async (req) => {
           include_storage: includeStorage,
           manifest,
           errors: manifest.summary.tables_with_errors.length > 0 || manifest.storage.files_with_errors.length > 0
-            ? {
-                tables: manifest.summary.tables_with_errors,
-                storage: manifest.storage.files_with_errors
-              }
+            ? { tables: manifest.summary.tables_with_errors, storage: manifest.storage.files_with_errors }
             : null,
           status: 'completed',
           completed_at: manifest.completed_at,
@@ -443,14 +288,9 @@ serve(async (req) => {
         })
         .eq('id', backupFileId);
 
-      if (updateError) {
-        throw new Error(`Backup salvo, mas falhou ao atualizar metadados: ${updateError.message}`);
-      }
-
-      console.log('Backup salvo e registrado com sucesso:', uploadData?.path);
+      if (updateError) throw new Error(`Backup salvo, mas falhou ao atualizar metadados: ${updateError.message}`);
     }
 
-    // ========== REGISTRAR LOG ADMINISTRATIVO ==========
     await logAdminAction(supabaseAdmin, user.id, 'backup_generated', {
       filename,
       backup_file_id: backupFileId,
@@ -460,18 +300,13 @@ serve(async (req) => {
       records_count: manifest.summary.total_records,
       storage_files: manifest.storage.total_files,
       storage_size_bytes: manifest.storage.total_size,
-      errors: {
-        tables: manifest.summary.tables_with_errors,
-        storage: manifest.storage.files_with_errors
-      },
+      errors: { tables: manifest.summary.tables_with_errors, storage: manifest.storage.files_with_errors },
       tables_empty: manifest.summary.tables_empty,
       include_storage: includeStorage,
       save_for_later: saveForLater,
       started_at: startedAt,
       completed_at: manifest.completed_at
     });
-
-    console.log('Backup gerado com sucesso!');
 
     return new Response(finalZipContent, {
       headers: {
@@ -492,20 +327,13 @@ serve(async (req) => {
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
         await supabaseAdmin
           .from('backup_files')
-          .update({
-            status: 'failed',
-            completed_at: new Date().toISOString(),
-            error_message: error.message || 'Erro desconhecido ao gerar backup'
-          })
+          .update({ status: 'failed', completed_at: new Date().toISOString(), error_message: error.message || 'Erro desconhecido ao gerar backup' })
           .eq('id', backupFileId);
       }
     } catch (updateFailure) {
       console.error('Falha ao registrar status failed do backup:', updateFailure);
     }
 
-    return jsonResponse({
-      error: 'Erro ao gerar backup',
-      details: error.message
-    }, 500);
+    return jsonResponse({ error: 'Erro ao gerar backup', details: error.message }, 500);
   }
 });
