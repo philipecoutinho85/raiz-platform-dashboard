@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { JSZip } from "https://deno.land/x/jszip@0.11.0/mod.ts";
+import { zipSync } from "https://esm.sh/fflate@0.8.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +50,28 @@ const bytesToHex = (buffer: ArrayBuffer) =>
 const sha256 = async (content: Uint8Array) => {
   const digest = await crypto.subtle.digest('SHA-256', content);
   return bytesToHex(digest);
+};
+
+type ZipFileMap = Record<string, Uint8Array>;
+
+const textEncoder = new TextEncoder();
+
+const normalizeZipPath = (path: string) =>
+  path
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .split('/')
+    .filter((segment) => segment && segment !== '.' && segment !== '..')
+    .join('/');
+
+const addZipFile = (zipFiles: ZipFileMap, path: string, content: Uint8Array) => {
+  const normalizedPath = normalizeZipPath(path);
+  if (!normalizedPath) throw new Error('Invalid empty ZIP path');
+  zipFiles[normalizedPath] = content;
+};
+
+const addJsonZipFile = (zipFiles: ZipFileMap, path: string, payload: unknown) => {
+  addZipFile(zipFiles, path, textEncoder.encode(JSON.stringify(payload, null, 2)));
 };
 
 const logAdminAction = async (
@@ -105,12 +127,12 @@ const pushStorageError = (
 const exportBucketToZip = async ({
   supabaseAdmin,
   bucketName,
-  zipArchive,
+  zipFiles,
   manifest,
 }: {
   supabaseAdmin: any;
   bucketName: string;
-  zipArchive: any;
+  zipFiles: ZipFileMap;
   manifest: any;
 }) => {
   const bucketManifest = {
@@ -153,7 +175,7 @@ const exportBucketToZip = async ({
       const uint8Array = new Uint8Array(arrayBuffer);
       const sizeBytes = Number(item?.metadata?.size || uint8Array.byteLength || 0);
 
-      zipArchive.file(`storage/${bucketName}/${itemPath}`, uint8Array);
+      addZipFile(zipFiles, `storage/${bucketName}/${itemPath}`, uint8Array);
       bucketManifest.downloaded_files_count++;
       bucketManifest.size_bytes += sizeBytes;
       manifest.storage.total_files++;
@@ -360,11 +382,12 @@ serve(async (req) => {
       backupFileId = backupFile.id;
     }
 
-    const zip = new JSZip();
+    const zipFiles: ZipFileMap = {};
     const backupHealthcheck = {
       generated_at: startedAt,
       version: '2.4',
-      database_write_strategy: 'direct-zip-file-path',
+      zip_writer: 'fflate.zipSync',
+      database_write_strategy: 'explicit-zip-file-map',
       expected_database_tables: ALL_TABLES.length,
       expected_database_manifest: 'database/_tables_manifest.json',
       note: 'If this file is missing from database/, production is not running the updated generate-backup function.'
@@ -388,6 +411,7 @@ serve(async (req) => {
         files_with_errors: [],
         debug: {
           strategy: 'paginated-recursive-storage-export',
+          zip_writer: 'fflate.zipSync',
           excluded_buckets: ['backups'],
           critical_buckets: CRITICAL_BUCKETS,
         }
@@ -395,8 +419,8 @@ serve(async (req) => {
       summary: { total_tables: 0, total_records: 0, tables_with_errors: [], tables_empty: [] }
     };
 
-    zip.file('_backup_healthcheck.json', JSON.stringify(backupHealthcheck, null, 2));
-    zip.file('database/_backup_healthcheck.json', JSON.stringify(backupHealthcheck, null, 2));
+    addJsonZipFile(zipFiles, '_backup_healthcheck.json', backupHealthcheck);
+    addJsonZipFile(zipFiles, 'database/_backup_healthcheck.json', backupHealthcheck);
 
     for (const table of ALL_TABLES) {
       try {
@@ -436,7 +460,7 @@ serve(async (req) => {
           }
         }
 
-        zip.file(`database/${table}.json`, JSON.stringify(allData, null, 2));
+        addJsonZipFile(zipFiles, `database/${table}.json`, allData);
         manifest.tables[table] = {
           record_count: allData.length,
           exported_at: new Date().toISOString(),
@@ -455,7 +479,7 @@ serve(async (req) => {
         const message = err?.message || String(err);
         console.error('[backup:database] table_exception', { table, error: message });
         manifest.summary.tables_with_errors.push({ table, error: message });
-        zip.file(`database/${table}.json`, JSON.stringify([], null, 2));
+        addJsonZipFile(zipFiles, `database/${table}.json`, []);
         manifest.tables[table] = {
           record_count: 0,
           exported_at: new Date().toISOString(),
@@ -465,14 +489,14 @@ serve(async (req) => {
       }
     }
 
-    zip.file('database/_tables_manifest.json', JSON.stringify({
+    addJsonZipFile(zipFiles, 'database/_tables_manifest.json', {
       exported_at: new Date().toISOString(),
       total_tables: manifest.summary.total_tables,
       total_records: manifest.summary.total_records,
       tables_empty: manifest.summary.tables_empty,
       tables_with_errors: manifest.summary.tables_with_errors,
       tables: manifest.tables,
-    }, null, 2));
+    });
 
     if (includeStorage) {
       const { data: existingBuckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
@@ -517,7 +541,7 @@ serve(async (req) => {
           await exportBucketToZip({
             supabaseAdmin,
             bucketName,
-            zipArchive: zip,
+            zipFiles,
             manifest,
           });
         } catch (bucketErr: any) {
@@ -538,13 +562,16 @@ serve(async (req) => {
     }
 
     manifest.completed_at = new Date().toISOString();
-    zip.file('manifest.json', JSON.stringify(manifest, null, 2));
-
-    const finalZipContent = await zip.generateAsync({
-      type: 'uint8array',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 9 }
+    addJsonZipFile(zipFiles, 'storage/_storage_manifest.json', manifest.storage);
+    addJsonZipFile(zipFiles, 'manifest.json', manifest);
+    addJsonZipFile(zipFiles, '_zip_index.json', {
+      generated_at: new Date().toISOString(),
+      writer: 'fflate.zipSync',
+      file_count: Object.keys(zipFiles).length + 1,
+      files: [...Object.keys(zipFiles), '_zip_index.json'].sort(),
     });
+
+    const finalZipContent = zipSync(zipFiles, { level: 6 });
     const finalChecksum = await sha256(finalZipContent);
 
     if (saveForLater) {
