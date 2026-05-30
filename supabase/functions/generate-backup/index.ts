@@ -138,7 +138,7 @@ serve(async (req) => {
 
     const zip = new JSZip();
     const manifest: any = {
-      version: '2.2',
+      version: '2.3',
       generated_at: startedAt,
       generated_by: user.id,
       generated_by_email: user.email,
@@ -198,7 +198,12 @@ serve(async (req) => {
           let bucketSize = 0;
           const bucketErrors: Array<{ path: string; error: string }> = [];
 
-          const processFolder = async (path: string, folder: any) => {
+          const processFolder = async (path: string, folder: any, depth = 0) => {
+            if (depth > 25) {
+              bucketErrors.push({ path: path || '/', error: 'Limite máximo de profundidade atingido no Storage' });
+              return;
+            }
+
             const { data: items, error } = await supabaseAdmin
               .storage
               .from(bucketName)
@@ -212,29 +217,31 @@ serve(async (req) => {
 
             for (const item of items) {
               const itemPath = path ? `${path}/${item.name}` : item.name;
-              if (item.id === null) {
-                await processFolder(itemPath, folder?.folder(item.name));
-                continue;
-              }
+              const itemLooksLikeFolder = item.metadata === null || item.metadata === undefined;
 
-              try {
-                const { data: fileData, error: downloadError } = await supabaseAdmin
-                  .storage
-                  .from(bucketName)
-                  .download(itemPath);
+              // Supabase Storage nem sempre informa pastas/arquivos de forma confiável via id.
+              // Estratégia robusta: se parecer arquivo, tente baixar primeiro; se falhar como objeto, trate como pasta.
+              if (!itemLooksLikeFolder) {
+                try {
+                  const { data: fileData, error: downloadError } = await supabaseAdmin
+                    .storage
+                    .from(bucketName)
+                    .download(itemPath);
 
-                if (downloadError || !fileData) {
-                  bucketErrors.push({ path: itemPath, error: downloadError?.message || 'Arquivo não retornado pelo Storage' });
+                  if (!downloadError && fileData) {
+                    const arrayBuffer = await fileData.arrayBuffer();
+                    folder?.file(item.name, new Uint8Array(arrayBuffer));
+                    bucketFileCount++;
+                    bucketSize += item.metadata?.size || arrayBuffer.byteLength;
+                    continue;
+                  }
+                } catch (downloadErr: any) {
+                  bucketErrors.push({ path: itemPath, error: downloadErr?.message || String(downloadErr) });
                   continue;
                 }
-
-                const arrayBuffer = await fileData.arrayBuffer();
-                folder?.file(item.name, new Uint8Array(arrayBuffer));
-                bucketFileCount++;
-                bucketSize += item.metadata?.size || arrayBuffer.byteLength;
-              } catch (downloadErr: any) {
-                bucketErrors.push({ path: itemPath, error: downloadErr?.message || String(downloadErr) });
               }
+
+              await processFolder(itemPath, folder?.folder(item.name), depth + 1);
             }
           };
 
