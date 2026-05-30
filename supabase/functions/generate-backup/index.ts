@@ -105,12 +105,12 @@ const pushStorageError = (
 const exportBucketToZip = async ({
   supabaseAdmin,
   bucketName,
-  zipRootFolder,
+  zipArchive,
   manifest,
 }: {
   supabaseAdmin: any;
   bucketName: string;
-  zipRootFolder: any;
+  zipArchive: any;
   manifest: any;
 }) => {
   const bucketManifest = {
@@ -153,7 +153,7 @@ const exportBucketToZip = async ({
       const uint8Array = new Uint8Array(arrayBuffer);
       const sizeBytes = Number(item?.metadata?.size || uint8Array.byteLength || 0);
 
-      zipRootFolder?.file(`${bucketName}/${itemPath}`, uint8Array);
+      zipArchive.file(`storage/${bucketName}/${itemPath}`, uint8Array);
       bucketManifest.downloaded_files_count++;
       bucketManifest.size_bytes += sizeBytes;
       manifest.storage.total_files++;
@@ -387,13 +387,15 @@ serve(async (req) => {
       summary: { total_tables: 0, total_records: 0, tables_with_errors: [], tables_empty: [] }
     };
 
-    const databaseFolder = zip.folder('database');
     for (const table of ALL_TABLES) {
       try {
         const allData: any[] = [];
         let offset = 0;
         const batchSize = 1000;
         let hasMore = true;
+        let tableError: string | null = null;
+
+        console.log('[backup:database] table_start', { table });
 
         while (hasMore) {
           const { data, error } = await supabaseAdmin
@@ -402,9 +404,17 @@ serve(async (req) => {
             .range(offset, offset + batchSize - 1);
 
           if (error) {
-            manifest.summary.tables_with_errors.push({ table, error: error.message });
+            tableError = error.message;
+            console.warn('[backup:database] table_error', { table, offset, error: tableError });
+            manifest.summary.tables_with_errors.push({ table, error: tableError });
             break;
           }
+
+          console.log('[backup:database] table_page', {
+            table,
+            offset,
+            count: data?.length || 0,
+          });
 
           if (data && data.length > 0) {
             allData.push(...data);
@@ -415,19 +425,45 @@ serve(async (req) => {
           }
         }
 
-        databaseFolder?.file(`${table}.json`, JSON.stringify(allData, null, 2));
-        manifest.tables[table] = { record_count: allData.length, exported_at: new Date().toISOString() };
+        zip.file(`database/${table}.json`, JSON.stringify(allData, null, 2));
+        manifest.tables[table] = {
+          record_count: allData.length,
+          exported_at: new Date().toISOString(),
+          ...(tableError ? { error: tableError } : {})
+        };
         manifest.summary.total_records += allData.length;
         manifest.summary.total_tables++;
-        if (allData.length === 0) manifest.summary.tables_empty.push(table);
+        if (allData.length === 0 && !tableError) manifest.summary.tables_empty.push(table);
+
+        console.log('[backup:database] table_complete', {
+          table,
+          records: allData.length,
+          hasError: Boolean(tableError),
+        });
       } catch (err: any) {
-        manifest.summary.tables_with_errors.push({ table, error: err.message });
+        const message = err?.message || String(err);
+        console.error('[backup:database] table_exception', { table, error: message });
+        manifest.summary.tables_with_errors.push({ table, error: message });
+        zip.file(`database/${table}.json`, JSON.stringify([], null, 2));
+        manifest.tables[table] = {
+          record_count: 0,
+          exported_at: new Date().toISOString(),
+          error: message
+        };
+        manifest.summary.total_tables++;
       }
     }
 
-    if (includeStorage) {
-      const storageFolder = zip.folder('storage');
+    zip.file('database/_tables_manifest.json', JSON.stringify({
+      exported_at: new Date().toISOString(),
+      total_tables: manifest.summary.total_tables,
+      total_records: manifest.summary.total_records,
+      tables_empty: manifest.summary.tables_empty,
+      tables_with_errors: manifest.summary.tables_with_errors,
+      tables: manifest.tables,
+    }, null, 2));
 
+    if (includeStorage) {
       const { data: existingBuckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
       let bucketNamesToExport: string[] = [];
 
@@ -470,7 +506,7 @@ serve(async (req) => {
           await exportBucketToZip({
             supabaseAdmin,
             bucketName,
-            zipRootFolder: storageFolder,
+            zipArchive: zip,
             manifest,
           });
         } catch (bucketErr: any) {
