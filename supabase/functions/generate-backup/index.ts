@@ -361,6 +361,14 @@ serve(async (req) => {
     }
 
     const zip = new JSZip();
+    const backupHealthcheck = {
+      generated_at: startedAt,
+      version: '2.4',
+      database_write_strategy: 'direct-zip-file-path',
+      expected_database_tables: ALL_TABLES.length,
+      expected_database_manifest: 'database/_tables_manifest.json',
+      note: 'If this file is missing from database/, production is not running the updated generate-backup function.'
+    };
     const manifest: any = {
       version: '2.4',
       generated_at: startedAt,
@@ -386,6 +394,9 @@ serve(async (req) => {
       },
       summary: { total_tables: 0, total_records: 0, tables_with_errors: [], tables_empty: [] }
     };
+
+    zip.file('_backup_healthcheck.json', JSON.stringify(backupHealthcheck, null, 2));
+    zip.file('database/_backup_healthcheck.json', JSON.stringify(backupHealthcheck, null, 2));
 
     for (const table of ALL_TABLES) {
       try {
