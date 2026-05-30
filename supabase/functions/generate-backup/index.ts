@@ -71,6 +71,230 @@ const logAdminAction = async (
   }
 };
 
+const isStorageFolder = (item: any) => {
+  return item?.id === null
+    || item?.metadata === null
+    || item?.metadata === undefined
+    || (!item?.metadata?.size && !item?.updated_at && !item?.created_at);
+};
+
+const isNotFoundStorageError = (error: unknown) => {
+  const message = String((error as any)?.message || error || '').toLowerCase();
+  return message.includes('not found')
+    || message.includes('object not found')
+    || message.includes('resource was not found')
+    || message.includes('404')
+    || message.includes('no such file');
+};
+
+const toStorageItemPath = (path: string, name: string) => path ? `${path}/${name}` : name;
+
+const pushStorageError = (
+  bucketManifest: any,
+  manifest: any,
+  bucketName: string,
+  path: string,
+  error: string,
+) => {
+  const errorEntry = { path: path || '/', error };
+  bucketManifest.errors.push(errorEntry);
+  bucketManifest.failed_files_count++;
+  manifest.storage.files_with_errors.push({ bucket: bucketName, ...errorEntry });
+};
+
+const exportBucketToZip = async ({
+  supabaseAdmin,
+  bucketName,
+  zipRootFolder,
+  manifest,
+}: {
+  supabaseAdmin: any;
+  bucketName: string;
+  zipRootFolder: any;
+  manifest: any;
+}) => {
+  const bucketManifest = {
+    name: bucketName,
+    listed_paths_count: 0,
+    downloaded_files_count: 0,
+    failed_files_count: 0,
+    empty_paths: [] as string[],
+    size_bytes: 0,
+    errors: [] as Array<{ path: string; error: string }>,
+  };
+
+  console.log('[backup:storage] bucket_start', { bucketName });
+
+  const downloadFile = async (itemPath: string, item?: any): Promise<'downloaded' | 'not_found' | 'failed'> => {
+    console.log('[backup:storage] download_attempt', { bucketName, itemPath });
+
+    try {
+      const { data: fileData, error: downloadError } = await supabaseAdmin
+        .storage
+        .from(bucketName)
+        .download(itemPath);
+
+      if (downloadError) {
+        const message = downloadError.message || String(downloadError);
+        console.warn('[backup:storage] download_error', { bucketName, itemPath, error: message });
+        if (isNotFoundStorageError(downloadError)) return 'not_found';
+
+        pushStorageError(bucketManifest, manifest, bucketName, itemPath, message);
+        return 'failed';
+      }
+
+      if (!fileData) {
+        console.warn('[backup:storage] download_empty_blob', { bucketName, itemPath });
+        pushStorageError(bucketManifest, manifest, bucketName, itemPath, 'Download returned empty file data');
+        return 'failed';
+      }
+
+      const arrayBuffer = await fileData.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const sizeBytes = Number(item?.metadata?.size || uint8Array.byteLength || 0);
+
+      zipRootFolder?.file(`${bucketName}/${itemPath}`, uint8Array);
+      bucketManifest.downloaded_files_count++;
+      bucketManifest.size_bytes += sizeBytes;
+      manifest.storage.total_files++;
+      manifest.storage.total_size += sizeBytes;
+
+      console.log('[backup:storage] download_success', {
+        bucketName,
+        itemPath,
+        sizeBytes,
+      });
+
+      return 'downloaded';
+    } catch (downloadErr: any) {
+      const message = downloadErr?.message || String(downloadErr);
+      console.warn('[backup:storage] download_exception', { bucketName, itemPath, error: message });
+      if (isNotFoundStorageError(downloadErr)) return 'not_found';
+
+      pushStorageError(bucketManifest, manifest, bucketName, itemPath, message);
+      return 'failed';
+    }
+  };
+
+  const listPath = async (path = '', depth = 0): Promise<'listed' | 'not_found' | 'failed'> => {
+    if (depth > 50) {
+      pushStorageError(bucketManifest, manifest, bucketName, path, 'Maximum storage traversal depth reached');
+      return 'failed';
+    }
+
+    const limit = 1000;
+    let offset = 0;
+    let listedAnyItem = false;
+
+    bucketManifest.listed_paths_count++;
+    console.log('[backup:storage] list_path_start', { bucketName, path: path || '/', depth });
+
+    while (true) {
+      const { data: items, error } = await supabaseAdmin
+        .storage
+        .from(bucketName)
+        .list(path, {
+          limit,
+          offset,
+          sortBy: { column: 'name', order: 'asc' }
+        });
+
+      if (error) {
+        const message = error.message || String(error);
+        console.warn('[backup:storage] list_path_error', { bucketName, path: path || '/', offset, error: message });
+        if (isNotFoundStorageError(error)) return 'not_found';
+
+        pushStorageError(bucketManifest, manifest, bucketName, path || '/', message);
+        return 'failed';
+      }
+
+      const count = items?.length || 0;
+      console.log('[backup:storage] list_path_page', { bucketName, path: path || '/', offset, count });
+
+      if (!items || count === 0) {
+        if (!listedAnyItem) {
+          bucketManifest.empty_paths.push(path || '/');
+        }
+        break;
+      }
+
+      listedAnyItem = true;
+
+      for (const item of items) {
+        if (!item?.name) continue;
+
+        const itemPath = toStorageItemPath(path, item.name);
+        const looksLikeFolder = isStorageFolder(item);
+        console.log('[backup:storage] item_classified', {
+          bucketName,
+          itemPath,
+          looksLikeFolder,
+          hasMetadata: item.metadata !== null && item.metadata !== undefined,
+          id: item.id ?? null,
+        });
+
+        if (looksLikeFolder) {
+          const folderResult = await listPath(itemPath, depth + 1);
+          if (folderResult === 'not_found') {
+            const downloadResult = await downloadFile(itemPath, item);
+            if (downloadResult === 'not_found') {
+              pushStorageError(
+                bucketManifest,
+                manifest,
+                bucketName,
+                itemPath,
+                'Storage item could not be listed as a folder or downloaded as a file',
+              );
+            }
+          }
+          continue;
+        }
+
+        const downloadResult = await downloadFile(itemPath, item);
+        if (downloadResult === 'not_found') {
+          const folderResult = await listPath(itemPath, depth + 1);
+          if (folderResult === 'not_found') {
+            pushStorageError(
+              bucketManifest,
+              manifest,
+              bucketName,
+              itemPath,
+              'Storage item could not be downloaded as a file or listed as a folder',
+            );
+          }
+        }
+      }
+
+      if (count < limit) break;
+      offset += limit;
+    }
+
+    return 'listed';
+  };
+
+  await listPath('');
+
+  manifest.storage.exported_buckets.push(bucketManifest);
+  manifest.storage.buckets.push({
+    name: bucketName,
+    file_count: bucketManifest.downloaded_files_count,
+    size_bytes: bucketManifest.size_bytes,
+    errors: bucketManifest.errors,
+  });
+
+  console.log('[backup:storage] bucket_complete', {
+    bucketName,
+    listedPaths: bucketManifest.listed_paths_count,
+    downloadedFiles: bucketManifest.downloaded_files_count,
+    failedFiles: bucketManifest.failed_files_count,
+    sizeBytes: bucketManifest.size_bytes,
+    emptyPaths: bucketManifest.empty_paths.length,
+    errors: bucketManifest.errors.length,
+  });
+
+  return bucketManifest;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') return jsonResponse({ error: 'Método não permitido' }, 405);
@@ -138,7 +362,7 @@ serve(async (req) => {
 
     const zip = new JSZip();
     const manifest: any = {
-      version: '2.3',
+      version: '2.4',
       generated_at: startedAt,
       generated_by: user.id,
       generated_by_email: user.email,
@@ -146,7 +370,20 @@ serve(async (req) => {
       backup_file_id: backupFileId,
       integrity_note: 'O SHA-256 do arquivo ZIP completo é armazenado em backup_files.sha256_checksum, no log administrativo e no header X-Backup-SHA256.',
       tables: {},
-      storage: { buckets: [], total_files: 0, total_size: 0, files_with_errors: [] },
+      storage: {
+        buckets: [],
+        exported_buckets: [],
+        skipped_buckets: [],
+        missing_buckets: [],
+        total_files: 0,
+        total_size: 0,
+        files_with_errors: [],
+        debug: {
+          strategy: 'paginated-recursive-storage-export',
+          excluded_buckets: ['backups'],
+          critical_buckets: CRITICAL_BUCKETS,
+        }
+      },
       summary: { total_tables: 0, total_records: 0, tables_with_errors: [], tables_empty: [] }
     };
 
@@ -191,67 +428,64 @@ serve(async (req) => {
     if (includeStorage) {
       const storageFolder = zip.folder('storage');
 
-      for (const bucketName of CRITICAL_BUCKETS) {
+      const { data: existingBuckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
+      let bucketNamesToExport: string[] = [];
+
+      if (bucketsError) {
+        const message = bucketsError.message || String(bucketsError);
+        console.warn('[backup:storage] list_buckets_error', { error: message });
+        manifest.storage.files_with_errors.push({ bucket: '*', path: '/', error: message });
+        manifest.storage.debug.bucket_discovery_error = message;
+        bucketNamesToExport = CRITICAL_BUCKETS.filter((bucketName) => bucketName !== 'backups');
+      } else {
+        const realBucketNames = (existingBuckets || [])
+          .map((bucket: any) => bucket.id || bucket.name)
+          .filter(Boolean);
+
+        const realBucketSet = new Set(realBucketNames);
+        manifest.storage.missing_buckets = CRITICAL_BUCKETS.filter((bucketName) => !realBucketSet.has(bucketName));
+
+        bucketNamesToExport = realBucketNames
+          .filter((bucketName: string) => bucketName !== 'backups')
+          .sort((a: string, b: string) => {
+            const aCriticalIndex = CRITICAL_BUCKETS.indexOf(a);
+            const bCriticalIndex = CRITICAL_BUCKETS.indexOf(b);
+            const aPriority = aCriticalIndex === -1 ? Number.MAX_SAFE_INTEGER : aCriticalIndex;
+            const bPriority = bCriticalIndex === -1 ? Number.MAX_SAFE_INTEGER : bCriticalIndex;
+            if (aPriority !== bPriority) return aPriority - bPriority;
+            return a.localeCompare(b);
+          });
+
+        if (realBucketSet.has('backups')) {
+          manifest.storage.skipped_buckets.push({ name: 'backups', reason: 'excluded_self_backup_bucket' });
+        }
+
+        for (const missingBucket of manifest.storage.missing_buckets) {
+          console.warn('[backup:storage] missing_critical_bucket', { bucketName: missingBucket });
+        }
+      }
+
+      for (const bucketName of bucketNamesToExport) {
         try {
-          const bucketFolder = storageFolder?.folder(bucketName);
-          let bucketFileCount = 0;
-          let bucketSize = 0;
-          const bucketErrors: Array<{ path: string; error: string }> = [];
-
-          const processFolder = async (path: string, folder: any, depth = 0) => {
-            if (depth > 25) {
-              bucketErrors.push({ path: path || '/', error: 'Limite máximo de profundidade atingido no Storage' });
-              return;
-            }
-
-            const { data: items, error } = await supabaseAdmin
-              .storage
-              .from(bucketName)
-              .list(path, { limit: 10000, sortBy: { column: 'name', order: 'asc' } });
-
-            if (error) {
-              bucketErrors.push({ path: path || '/', error: error.message });
-              return;
-            }
-            if (!items || items.length === 0) return;
-
-            for (const item of items) {
-              const itemPath = path ? `${path}/${item.name}` : item.name;
-              const itemLooksLikeFolder = item.metadata === null || item.metadata === undefined;
-
-              // Supabase Storage nem sempre informa pastas/arquivos de forma confiável via id.
-              // Estratégia robusta: se parecer arquivo, tente baixar primeiro; se falhar como objeto, trate como pasta.
-              if (!itemLooksLikeFolder) {
-                try {
-                  const { data: fileData, error: downloadError } = await supabaseAdmin
-                    .storage
-                    .from(bucketName)
-                    .download(itemPath);
-
-                  if (!downloadError && fileData) {
-                    const arrayBuffer = await fileData.arrayBuffer();
-                    folder?.file(item.name, new Uint8Array(arrayBuffer));
-                    bucketFileCount++;
-                    bucketSize += item.metadata?.size || arrayBuffer.byteLength;
-                    continue;
-                  }
-                } catch (downloadErr: any) {
-                  bucketErrors.push({ path: itemPath, error: downloadErr?.message || String(downloadErr) });
-                  continue;
-                }
-              }
-
-              await processFolder(itemPath, folder?.folder(item.name), depth + 1);
-            }
-          };
-
-          await processFolder('', bucketFolder);
-          manifest.storage.buckets.push({ name: bucketName, file_count: bucketFileCount, size_bytes: bucketSize, errors: bucketErrors });
-          manifest.storage.total_files += bucketFileCount;
-          manifest.storage.total_size += bucketSize;
-          if (bucketErrors.length > 0) manifest.storage.files_with_errors.push({ bucket: bucketName, errors: bucketErrors });
+          await exportBucketToZip({
+            supabaseAdmin,
+            bucketName,
+            zipRootFolder: storageFolder,
+            manifest,
+          });
         } catch (bucketErr: any) {
-          manifest.storage.files_with_errors.push({ bucket: bucketName, errors: [{ path: '/', error: bucketErr?.message || String(bucketErr) }] });
+          const message = bucketErr?.message || String(bucketErr);
+          console.error('[backup:storage] bucket_unhandled_error', { bucketName, error: message });
+          manifest.storage.files_with_errors.push({ bucket: bucketName, path: '/', error: message });
+          manifest.storage.exported_buckets.push({
+            name: bucketName,
+            listed_paths_count: 0,
+            downloaded_files_count: 0,
+            failed_files_count: 1,
+            empty_paths: [],
+            size_bytes: 0,
+            errors: [{ path: '/', error: message }],
+          });
         }
       }
     }
