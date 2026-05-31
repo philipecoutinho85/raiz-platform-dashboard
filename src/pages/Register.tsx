@@ -4,17 +4,13 @@ import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, User, Mail, Lock, Phone } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eye, EyeOff, User, Mail, Lock, Phone, ShieldCheck, BadgeCheck, FileCheck2, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import raizTokenLogo from '@/assets/raiz-token-logo.png';
 import Footer from '@/components/Footer';
 import MaintenanceModal from '@/components/MaintenanceModal';
 import { supabase } from '@/integrations/supabase/client';
-import { validateCPF, formatCPF } from '@/lib/cpfValidator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import TermsConsentCheckbox from '@/components/forms/TermsConsentCheckbox';
 
 const Register = () => {
@@ -93,7 +89,6 @@ const Register = () => {
       return;
     }
     
-    // Validar aceite de termos
     if (!termsAccepted) {
       setTermsError('Você deve aceitar os Termos de Uso e Política de Privacidade.');
       toast({
@@ -126,7 +121,6 @@ const Register = () => {
       return;
     }
 
-    // Validação de senha completa
     const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,64}$/;
     if (!passwordRegex.test(formData.senha)) {
       toast({
@@ -205,173 +199,208 @@ const Register = () => {
       <Helmet>
         <meta name="robots" content="noindex, follow" />
         <link rel="canonical" href="https://raiztoken.com.br/registro" />
+        <title>Criar Conta | Raiz Token</title>
       </Helmet>
       <MaintenanceModal />
-      <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20 py-8">
-        <div className="container mx-auto px-4 max-w-2xl">
-          <div className="mb-8">
-            <div className="flex justify-center mb-4">
-              <img src={raizTokenLogo} alt="Raiz Token Logo" className="h-36 w-auto" />
+
+      <main className="relative overflow-hidden bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)] px-4 py-14 md:py-20">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(45,64,93,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(45,64,93,.035)_1px,transparent_1px)] bg-[size:56px_56px] opacity-70" />
+
+        <div className="relative mx-auto grid w-full max-w-6xl items-start gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+          <section className="lg:sticky lg:top-28">
+            <div className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-home-line bg-white/90 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-home-900 shadow-home-glass">
+              <span className="h-2 w-2 rounded-full bg-home-800 shadow-[0_0_0_5px_rgba(29,140,90,.14)]" />
+              Novo cadastro
             </div>
-            <h1 className="text-3xl font-bold text-raiz-dark mb-4 text-left">Crie sua conta na plataforma de crowdfunding Raiz Token</h1>
-            <p className="text-raiz-secondary text-base leading-relaxed mb-6 text-left">
-              A Raiz Token é uma plataforma de crowdfunding que se destaca pela transparência, credibilidade e processos bem estruturados para apoiar projetos de impacto. Com práticas modernas de avaliação, validação e acompanhamento, a plataforma oferece um ambiente profissional e confiável para criadores e apoiadores. Ao registrar sua conta, você passa a integrar um ecossistema comprometido com seriedade, governança e a evolução sustentável das iniciativas.
+
+            <h1 className="mb-5 max-w-2xl font-display text-4xl font-extrabold leading-[.98] tracking-[-.038em] text-home-900 md:text-6xl">
+              Crie sua conta em uma plataforma de apoio confiável.
+            </h1>
+
+            <p className="mb-8 max-w-xl text-base leading-relaxed text-home-muted md:text-lg">
+              Entre para apoiar projetos reais, acompanhar sua carteira e participar de campanhas com validação, reputação pública e prestação de contas.
             </p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <User className="w-5 h-5" />
-                  <span>Dados de Cadastro</span>
-                </CardTitle>
+            <div className="grid gap-4">
+              <div className="rounded-[26px] border border-home-line bg-white/84 p-5 shadow-home-glass backdrop-blur-sm">
+                <ShieldCheck className="mb-4 h-7 w-7 text-home-800" />
+                <h2 className="mb-2 font-display text-xl font-extrabold tracking-[-.025em] text-home-900">Identidade e segurança</h2>
+                <p className="text-sm leading-relaxed text-home-muted">A conta é o primeiro passo para apoiar projetos e acompanhar sua jornada dentro da plataforma.</p>
+              </div>
+
+              <div className="rounded-[26px] border border-home-line bg-white/84 p-5 shadow-home-glass backdrop-blur-sm">
+                <FileCheck2 className="mb-4 h-7 w-7 text-home-800" />
+                <h2 className="mb-2 font-display text-xl font-extrabold tracking-[-.025em] text-home-900">Prestação de contas</h2>
+                <p className="text-sm leading-relaxed text-home-muted">Projetos precisam sustentar uma relação transparente com seus apoiadores.</p>
+              </div>
+
+              <div className="rounded-[26px] border border-home-line bg-white/84 p-5 shadow-home-glass backdrop-blur-sm">
+                <RotateCcw className="mb-4 h-7 w-7 text-home-800" />
+                <h2 className="mb-2 font-display text-xl font-extrabold tracking-[-.025em] text-home-900">Retorno dos tokens</h2>
+                <p className="text-sm leading-relaxed text-home-muted">Se a meta não for atingida, os tokens retornam para a carteira do apoiador conforme as regras da campanha.</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <Card className="overflow-hidden rounded-[34px] border-home-line bg-white/92 shadow-home-deep backdrop-blur-xl">
+              <CardHeader className="space-y-3 border-b border-home-line/70 bg-white/72 px-6 py-7 md:px-8">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-home-900 text-home-gold shadow-home-glass">
+                    <BadgeCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="font-display text-2xl font-extrabold tracking-[-.025em] text-home-900">Dados de cadastro</CardTitle>
+                    <p className="text-sm text-home-muted">Preencha os campos para criar sua conta</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome *</Label>
-                    <Input
-                      id="nome"
-                      placeholder="João"
-                      value={formData.nome}
-                      onChange={(e) => handleInputChange('nome', e.target.value)}
-                      required
-                      disabled={loading}
-                      maxLength={50}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sobrenome">Sobrenome *</Label>
-                    <Input
-                      id="sobrenome"
-                      placeholder="Silva"
-                      value={formData.sobrenome}
-                      onChange={(e) => handleInputChange('sobrenome', e.target.value)}
-                      required
-                      disabled={loading}
-                      maxLength={50}
-                    />
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail *</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="pl-10"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="celular">Celular *</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
-                    <Input
-                      id="celular"
-                      placeholder="(11) 99999-9999"
-                      className="pl-10"
-                      maxLength={15}
-                      value={formData.celular}
-                      onChange={(e) => handleInputChange('celular', formatPhone(e.target.value))}
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="senha">Senha *</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
+              <CardContent className="px-6 py-7 md:px-8">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome" className="text-home-900">Nome *</Label>
                       <Input
-                        id="senha"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Digite sua senha"
-                        className="pl-10 pr-10"
-                        value={formData.senha}
-                        onChange={(e) => handleInputChange('senha', e.target.value)}
+                        id="nome"
+                        placeholder="João"
+                        value={formData.nome}
+                        onChange={(e) => handleInputChange('nome', e.target.value)}
                         required
                         disabled={loading}
-                        minLength={8}
-                        maxLength={64}
+                        maxLength={50}
+                        className="h-12 rounded-2xl border-home-line bg-white text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary hover:text-raiz-primary"
-                        disabled={loading}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Mínimo 8 caracteres, máximo 64, pelo menos 1 letra maiúscula (A–Z) e 1 número (0–9)
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary w-4 h-4" />
+                    <div className="space-y-2">
+                      <Label htmlFor="sobrenome" className="text-home-900">Sobrenome *</Label>
                       <Input
-                        id="confirmarSenha"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirme sua senha"
-                        className="pl-10 pr-10"
-                        value={formData.confirmarSenha}
-                        onChange={(e) => handleInputChange('confirmarSenha', e.target.value)}
+                        id="sobrenome"
+                        placeholder="Silva"
+                        value={formData.sobrenome}
+                        onChange={(e) => handleInputChange('sobrenome', e.target.value)}
                         required
                         disabled={loading}
-                        minLength={8}
-                        maxLength={64}
+                        maxLength={50}
+                        className="h-12 rounded-2xl border-home-line bg-white text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-raiz-secondary hover:text-raiz-primary"
-                        disabled={loading}
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
                     </div>
                   </div>
-                </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-home-900">E-mail *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-home-800" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className="h-12 rounded-2xl border-home-line bg-white pl-11 text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
 
-                <TermsConsentCheckbox
-                  checked={termsAccepted}
-                  onCheckedChange={setTermsAccepted}
-                  error={termsError}
-                />
+                  <div className="space-y-2">
+                    <Label htmlFor="celular" className="text-home-900">Celular *</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-home-800" />
+                      <Input
+                        id="celular"
+                        placeholder="(11) 99999-9999"
+                        className="h-12 rounded-2xl border-home-line bg-white pl-11 text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
+                        maxLength={15}
+                        value={formData.celular}
+                        onChange={(e) => handleInputChange('celular', formatPhone(e.target.value))}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="senha" className="text-home-900">Senha *</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-home-800" />
+                        <Input
+                          id="senha"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Digite sua senha"
+                          className="h-12 rounded-2xl border-home-line bg-white pl-11 pr-11 text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
+                          value={formData.senha}
+                          onChange={(e) => handleInputChange('senha', e.target.value)}
+                          required
+                          disabled={loading}
+                          minLength={8}
+                          maxLength={64}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-home-muted transition-colors hover:text-home-800"
+                          disabled={loading}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <p className="text-xs leading-relaxed text-home-muted">
+                        Mínimo 8 caracteres, máximo 64, pelo menos 1 letra maiúscula e 1 número.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmarSenha" className="text-home-900">Confirmar Senha *</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-home-800" />
+                        <Input
+                          id="confirmarSenha"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          placeholder="Confirme sua senha"
+                          className="h-12 rounded-2xl border-home-line bg-white pl-11 pr-11 text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
+                          value={formData.confirmarSenha}
+                          onChange={(e) => handleInputChange('confirmarSenha', e.target.value)}
+                          required
+                          disabled={loading}
+                          minLength={8}
+                          maxLength={64}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-home-muted transition-colors hover:text-home-800"
+                          disabled={loading}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-home-line bg-home-100/70 p-4">
+                    <TermsConsentCheckbox
+                      checked={termsAccepted}
+                      onCheckedChange={setTermsAccepted}
+                      error={termsError}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                    <Button type="submit" className="h-12 rounded-full bg-home-800 px-8 font-semibold text-white shadow-lg shadow-home-900/10 hover:bg-home-900 sm:w-auto" disabled={loading}>
+                      {loading ? 'Criando Conta...' : 'Criar Conta'}
+                    </Button>
+                    <Button variant="outline" type="button" asChild className="h-12 rounded-full border-home-line px-8 font-semibold text-home-900 hover:bg-home-100 sm:w-auto">
+                      <Link to="/login">Já tenho uma conta</Link>
+                    </Button>
+                  </div>
+                </form>
               </CardContent>
             </Card>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                type="submit" 
-                className="bg-raiz-primary hover:bg-raiz-primary/90 sm:w-auto"
-                disabled={loading}
-              >
-                {loading ? 'Criando Conta...' : 'Criar Conta'}
-              </Button>
-              <Button variant="outline" type="button" asChild className="sm:w-auto">
-                <Link to="/login">Já tenho uma conta</Link>
-              </Button>
-            </div>
-          </form>
+          </section>
         </div>
-      </div>
+      </main>
       <Footer />
     </>
   );
