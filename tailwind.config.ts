@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -64,12 +63,12 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				raiz: {
-					primary: '#2D5016',
-					secondary: '#4A7C59',
-					accent: '#8FBC8F',
-					gold: '#D4AF37',
-					light: '#F0F8E8',
-					dark: '#1A2E0D'
+					primary: '#1D8C5A',
+					secondary: '#4FAF7A',
+					accent: '#BADA9C',
+					gold: '#BADA9C',
+					light: '#F7FAF6',
+					dark: '#2D405D'
 				},
 				home: {
 					950: '#172233',
@@ -182,9 +181,9 @@ export default {
 				'home-scan': 'home-scan 2.8s ease-in-out infinite'
 			},
 			backgroundImage: {
-				'gradient-raiz': 'linear-gradient(135deg, #2D5016 0%, #4A7C59 50%, #8FBC8F 100%)',
-				'gradient-gold': 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
-				'gradient-hero': 'linear-gradient(135deg, #1A2E0D 0%, #2D5016 50%, #4A7C59 100%)'
+				'gradient-raiz': 'linear-gradient(135deg, #2D405D 0%, #1D8C5A 100%)',
+				'gradient-gold': 'linear-gradient(135deg, #BADA9C 0%, #4FAF7A 100%)',
+				'gradient-hero': 'linear-gradient(135deg, #172233 0%, #2D405D 55%, #1D8C5A 100%)'
 			}
 		}
 	},
