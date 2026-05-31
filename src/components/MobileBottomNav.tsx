@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, FolderPlus, Folder, User, Shield, MessageCircle, Menu, X, LogOut, Coins, HelpCircle, Settings, ChevronUp } from 'lucide-react';
+import { Home, FolderPlus, Folder, User, Shield, MessageCircle, X, LogOut, Coins, HelpCircle, Settings, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupportMessages } from '@/hooks/useSupportMessages';
@@ -92,9 +92,8 @@ const MobileBottomNav = () => {
         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <SheetTrigger asChild>
             <button className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:text-primary">
-              <div className="relative">
-                <Menu className="w-5 h-5" />
-                <ChevronUp className="w-3 h-3 absolute -top-1 -right-1" />
+              <div className="relative flex h-5 w-5 items-center justify-center">
+                <ChevronUp className="h-5 w-5" />
               </div>
               <span className="text-[10px] font-medium">Menu</span>
             </button>
