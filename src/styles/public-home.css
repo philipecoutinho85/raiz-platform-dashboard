@@ -220,6 +220,17 @@
       }.raiz-public-home footer .grid > div:first-child > div:first-child {
         width: 140px;
         height: 48px;
+      }.raiz-public-home .glass, .raiz-public-home .glass-dark {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }.raiz-public-home .shadow-home-deep, .raiz-public-home .shadow-home-card, .raiz-public-home .shadow-home-glass {
+        box-shadow: 0 14px 34px rgba(45,64,93,.10) !important;
+      }.raiz-public-home .blur-\[80px\], .raiz-public-home .blur-\[100px\], .raiz-public-home .blur-3xl, .raiz-public-home .blur-2xl {
+        filter: blur(28px) !important;
+      }.raiz-public-home .animate-home-float, .raiz-public-home .animate-home-floatSlow {
+        animation: none !important;
+      }.raiz-public-home .reveal {
+        transition-duration: .45s !important;
       }.raiz-public-home .mobile-bottom-nav {
         position: fixed;
         left: 12px;
