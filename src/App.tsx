@@ -12,6 +12,7 @@ import AnalyticsScripts from "./components/AnalyticsScripts";
 import GoogleAnalyticsLoader from "./components/GoogleAnalyticsLoader";
 import Header from "./components/Header";
 import MobileBottomNav from "./components/MobileBottomNav";
+import HomeFAQController from "./components/HomeFAQController";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
@@ -163,6 +164,7 @@ const AppContent = () => {
   return (
     <>
       <CookieConsent />
+      {isPublicHome && <HomeFAQController />}
       <div className="min-h-screen flex flex-col">
         {!isPublicHome && <Header />}
         <Routes>
@@ -203,7 +205,7 @@ const AppContent = () => {
         </Routes>
       </div>
       {!isPublicHome && <MobileBottomNav />}
-      {!isPublicHome && <AIFaqChat />}
+      <AIFaqChat />
     </>
   );
 };
