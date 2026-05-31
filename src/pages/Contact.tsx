@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Send, Paperclip, Shield, Zap, Heart } from 'lucide-react';
+import { Mail, Send, Paperclip, Shield, Zap, Heart, MessageCircle, FileQuestion, BadgeCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -62,143 +62,156 @@ const Contact = () => {
     setFormData(prev => ({ ...prev, attachment: file }));
   };
 
+  const supportCards = [
+    {
+      icon: Shield,
+      title: 'Segurança e governança',
+      description: 'Canal para dúvidas sobre conta, segurança, privacidade, validação e regras da plataforma.'
+    },
+    {
+      icon: Zap,
+      title: 'Atendimento objetivo',
+      description: 'Envie sua solicitação com contexto para que a equipe consiga responder com mais precisão.'
+    },
+    {
+      icon: Heart,
+      title: 'Apoio ao usuário',
+      description: 'Suporte para apoiadores, criadores e pessoas interessadas em entender melhor a Raiz Token.'
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-raiz-primary via-raiz-primary/95 to-raiz-secondary">
-      <div className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="mx-auto mb-6 p-4 bg-raiz-accent/20 rounded-full w-fit">
-            <Mail className="w-12 h-12 text-raiz-accent" />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-raiz-light mb-6">
-            Fale 
-            <span className="text-raiz-gold"> Conosco</span>
-          </h1>
-          <p className="text-xl text-raiz-light/80 max-w-3xl mx-auto mb-8">
-            Estamos aqui para ajudar! Entre em contato conosco através do formulário abaixo 
-            ou utilize nossos canais diretos de comunicação.
-          </p>
-        </div>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)]">
+      <main className="relative overflow-hidden px-4 py-14 md:py-20">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(45,64,93,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(45,64,93,.035)_1px,transparent_1px)] bg-[size:56px_56px] opacity-70" />
 
-        <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-          {/* Platform Benefits */}
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-              <CardHeader>
-                <CardTitle className="text-raiz-gold flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Segurança Total
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-raiz-light/80">Plataforma 100% segura com criptografia de dados e proteção LGPD</p>
-              </CardContent>
-            </Card>
+        <div className="relative mx-auto max-w-7xl">
+          <section className="mx-auto mb-14 max-w-4xl text-center">
+            <div className="mx-auto mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-home-line bg-white/90 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-home-900 shadow-home-glass">
+              <span className="h-2 w-2 rounded-full bg-home-800 shadow-[0_0_0_5px_rgba(29,140,90,.14)]" />
+              Falar conosco
+            </div>
 
-            <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-              <CardHeader>
-                <CardTitle className="text-raiz-gold flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Resposta Rápida
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-raiz-light/80">Atendimento humanizado em até 24 horas úteis</p>
-              </CardContent>
-            </Card>
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-3xl border border-home-line bg-white/90 text-home-800 shadow-home-glass">
+              <Mail className="h-8 w-8" />
+            </div>
 
-            <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-              <CardHeader>
-                <CardTitle className="text-raiz-gold flex items-center gap-2">
-                  <Heart className="w-5 h-5" />
-                  Apoio Garantido
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-raiz-light/80">Sistema de reembolso automático para projetos não concluídos</p>
-              </CardContent>
-            </Card>
-          </div>
+            <h1 className="mb-6 font-display text-4xl font-extrabold leading-[.98] tracking-[-.038em] text-home-900 md:text-6xl">
+              Precisa de ajuda? Fale com a Raiz Token.
+            </h1>
 
-          {/* Contact Form */}
-          <div className="lg:col-span-2">
-            <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-              <CardHeader>
-                <CardTitle className="text-2xl text-raiz-gold">Envie sua Mensagem</CardTitle>
+            <p className="mx-auto max-w-3xl text-base leading-relaxed text-home-muted md:text-lg">
+              Envie sua mensagem para dúvidas sobre projetos, conta, carteira, apoios, validação, prestação de contas ou funcionamento da plataforma.
+            </p>
+          </section>
+
+          <section className="mb-16 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+            <aside className="space-y-4">
+              {supportCards.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Card key={item.title} className="rounded-[28px] border-home-line bg-white/90 shadow-home-glass transition-all duration-300 hover:-translate-y-2 hover:shadow-home-card">
+                    <CardContent className="p-6">
+                      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-home-line bg-white text-home-800">
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <h2 className="mb-2 font-display text-xl font-extrabold tracking-[-.025em] text-home-900">{item.title}</h2>
+                      <p className="text-sm leading-relaxed text-home-muted">{item.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+
+              <Card className="overflow-hidden rounded-[28px] border-home-line bg-gradient-to-br from-home-900 to-home-800 text-white shadow-home-card">
+                <CardContent className="p-6">
+                  <BadgeCheck className="mb-5 h-8 w-8 text-home-gold" />
+                  <h2 className="mb-3 font-display text-2xl font-extrabold tracking-[-.025em]">Antes de enviar</h2>
+                  <p className="text-sm leading-relaxed text-white/72">
+                    Quanto mais claro for o assunto, título e contexto da mensagem, mais rápida e precisa tende a ser a resposta.
+                  </p>
+                </CardContent>
+              </Card>
+            </aside>
+
+            <Card className="overflow-hidden rounded-[34px] border-home-line bg-white/92 shadow-home-card backdrop-blur-xl">
+              <CardHeader className="border-b border-home-line/70 bg-white/72 px-6 py-7 md:px-8">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-home-900 text-home-gold shadow-home-glass">
+                    <MessageCircle className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <CardTitle className="font-display text-2xl font-extrabold tracking-[-.025em] text-home-900">Envie sua mensagem</CardTitle>
+                    <p className="text-sm text-home-muted">Preencha os campos abaixo para abrir contato com a equipe</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-6 py-7 md:px-8">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="name" className="text-raiz-light">
-                      Nome Completo
-                    </Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Seu nome completo"
-                      required
-                      className="bg-white/5 border-raiz-accent/20 text-raiz-light placeholder:text-raiz-light/40"
-                    />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-home-900">Nome completo</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Seu nome completo"
+                        required
+                        className="h-12 rounded-2xl border-home-line bg-white text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-home-900">Endereço de e-mail</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="seu@email.com"
+                        required
+                        className="h-12 rounded-2xl border-home-line bg-white text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="email" className="text-raiz-light">
-                      Endereço de E-mail
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="seu@email.com"
-                      required
-                      className="bg-white/5 border-raiz-accent/20 text-raiz-light placeholder:text-raiz-light/40"
-                    />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="category" className="text-home-900">Assunto</Label>
+                      <Select
+                        value={formData.category}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                        required
+                      >
+                        <SelectTrigger className="h-12 rounded-2xl border-home-line bg-white text-home-900 focus:ring-home-800">
+                          <SelectValue placeholder="Selecione o assunto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="apoio">Apoio</SelectItem>
+                          <SelectItem value="projeto">Projeto</SelectItem>
+                          <SelectItem value="perfil">Perfil</SelectItem>
+                          <SelectItem value="saque">Saque</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="title" className="text-home-900">Título da mensagem</Label>
+                      <Input
+                        id="title"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        placeholder="Título da sua mensagem"
+                        required
+                        className="h-12 rounded-2xl border-home-line bg-white text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="category" className="text-raiz-light">
-                      Assunto
-                    </Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                      required
-                    >
-                      <SelectTrigger className="bg-white/5 border-raiz-accent/20 text-raiz-light">
-                        <SelectValue placeholder="Selecione o assunto" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="apoio">Apoio</SelectItem>
-                        <SelectItem value="projeto">Projeto</SelectItem>
-                        <SelectItem value="perfil">Perfil</SelectItem>
-                        <SelectItem value="saque">Saque</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="title" className="text-raiz-light">
-                      Título da Mensagem
-                    </Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      placeholder="Título da sua mensagem"
-                      required
-                      className="bg-white/5 border-raiz-accent/20 text-raiz-light placeholder:text-raiz-light/40"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="message" className="text-raiz-light">
-                      Deixe sua Mensagem
-                    </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="message" className="text-home-900">Mensagem</Label>
                     <Textarea
                       id="message"
                       name="message"
@@ -206,65 +219,61 @@ const Contact = () => {
                       onChange={handleChange}
                       placeholder="Descreva sua dúvida ou mensagem..."
                       required
-                      rows={6}
-                      className="bg-white/5 border-raiz-accent/20 text-raiz-light placeholder:text-raiz-light/40"
+                      rows={7}
+                      className="rounded-2xl border-home-line bg-white text-home-900 placeholder:text-home-muted/70 focus-visible:ring-home-800"
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="attachment" className="text-raiz-light">
-                      Anexos (opcional)
-                    </Label>
-                    <div className="relative">
+                  <div className="space-y-2">
+                    <Label htmlFor="attachment" className="text-home-900">Anexos (opcional)</Label>
+                    <div className="relative rounded-2xl border border-dashed border-home-line bg-home-100/70 p-4">
                       <Input
                         id="attachment"
                         type="file"
                         onChange={handleFileChange}
-                        className="bg-white/5 border-raiz-accent/20 text-raiz-light file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-raiz-gold file:text-black hover:file:bg-raiz-gold/90"
+                        className="border-0 bg-transparent p-0 text-home-muted file:mr-4 file:rounded-full file:border-0 file:bg-home-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-home-800"
                       />
-                      <Paperclip className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-raiz-light/40 pointer-events-none" />
+                      <Paperclip className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-home-muted" />
                     </div>
                     {formData.attachment && (
-                      <p className="text-sm text-raiz-light/60 mt-1">
+                      <p className="mt-1 text-sm text-home-muted">
                         Arquivo: {formData.attachment.name}
                       </p>
                     )}
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    size="lg" 
-                    disabled={loading}
-                    className="w-full bg-raiz-gold hover:bg-raiz-gold/90 text-black font-semibold"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
+                  <Button type="submit" size="lg" disabled={loading} className="h-12 w-full rounded-full bg-home-800 font-semibold text-white shadow-lg shadow-home-900/10 hover:bg-home-900">
+                    <Send className="mr-2 h-4 w-4" />
                     {loading ? 'Enviando...' : 'Enviar Mensagem'}
                   </Button>
                 </form>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </section>
 
-        {/* Quick Links */}
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-raiz-light mb-6">
-            Links Úteis
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/faq">
-              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
-                Perguntas Frequentes
-              </Button>
-            </Link>
-            <Link to="/como-funciona">
-              <Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">
-                Como Funciona
-              </Button>
-            </Link>
-          </div>
+          <section className="overflow-hidden rounded-[38px] bg-white/88 p-8 text-center shadow-home-glass md:p-10">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-home-900 text-home-gold">
+              <FileQuestion className="h-7 w-7" />
+            </div>
+            <h2 className="mb-4 font-display text-3xl font-extrabold tracking-[-.038em] text-home-900 md:text-4xl">Também pode consultar nossas páginas de apoio.</h2>
+            <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-home-muted">
+              Algumas dúvidas podem ser resolvidas rapidamente nas páginas institucionais da plataforma.
+            </p>
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
+              <Link to="/faq">
+                <Button variant="outline" size="lg" className="rounded-full border-home-line bg-white px-8 font-semibold text-home-900 hover:bg-home-100">
+                  Perguntas Frequentes
+                </Button>
+              </Link>
+              <Link to="/como-funciona">
+                <Button variant="outline" size="lg" className="rounded-full border-home-line bg-white px-8 font-semibold text-home-900 hover:bg-home-100">
+                  Como Funciona
+                </Button>
+              </Link>
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );
