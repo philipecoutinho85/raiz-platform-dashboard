@@ -79,6 +79,18 @@
       background: #2D405D;
       color: #BADA9C;
       border-color: rgba(45,64,93,.9);
+    }.raiz-public-home #apoiar .support-step-card.bg-home-900:hover {
+      transform: translateY(-8px) scale(1.01);
+      border-color: rgba(186,218,156,.55);
+      box-shadow: 0 28px 80px rgba(45,64,93,.24);
+      background: linear-gradient(135deg, #2D405D 0%, #1D8C5A 100%);
+      color: #FFFFFF;
+    }.raiz-public-home #apoiar .support-step-card.bg-home-900:hover p {
+      color: rgba(255,255,255,.78) !important;
+    }.raiz-public-home #apoiar .support-step-card.bg-home-900:hover .support-icon {
+      background: rgba(255,255,255,.12);
+      color: #BADA9C;
+      border-color: rgba(255,255,255,.22);
     }.raiz-public-home .mobile-bottom-nav, .raiz-public-home .mobile-only {
       display: none;
     }.raiz-public-home nav picture {
