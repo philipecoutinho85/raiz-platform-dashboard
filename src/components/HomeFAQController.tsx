@@ -1,37 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const extraFaqItems = [
-  {
-    question: 'Como posso apoiar um projeto?',
-    answer: 'Crie sua conta, compre tokens com valor mínimo de R$5,00 e escolha o projeto que deseja apoiar. O apoio é feito com tokens dentro da plataforma.'
-  },
-  {
-    question: 'O que acontece se eu mudar de ideia?',
-    answer: 'Antes do encerramento do projeto, você pode solicitar reembolso conforme as regras aplicáveis. Nesse caso, os tokens correspondentes são removidos da carteira.'
-  },
-  {
-    question: 'Os criadores são verificados?',
-    answer: 'Sim. A plataforma possui validação de identidade e análise do projeto antes da publicação, reforçando segurança e responsabilidade.'
-  },
-  {
-    question: 'O que é RaizScore?',
-    answer: 'É um sinal de reputação da plataforma, usado para indicar consistência, transparência e histórico do criador ou do projeto.'
-  },
-  {
-    question: 'O que são badges?',
-    answer: 'Badges são sinais públicos que ajudam a comunicar verificações, marcos, reputação e boas práticas de transparência dentro da plataforma.'
-  },
-  {
-    question: 'Existe prestação de contas?',
-    answer: 'Sim. A prestação de contas é parte central da Raiz Token e ajuda o apoiador a acompanhar como o projeto evoluiu após receber apoio.'
-  },
-  {
-    question: 'A Raiz Token é investimento?',
-    answer: 'Não. A Raiz Token é uma plataforma de apoio a projetos. Token não é investimento, não gera rendimento e não representa participação societária.'
-  }
-];
-
 const HomeFAQController = () => {
   const location = useLocation();
 
@@ -84,34 +53,14 @@ const HomeFAQController = () => {
       }
 
       .raiz-public-home #faq .space-y-4 > div.is-open p {
-        max-height: 220px;
+        max-height: 180px;
         opacity: 1;
         margin-top: .75rem;
       }
     `;
     document.head.appendChild(style);
 
-    const appendExtraFaqItems = () => {
-      const faqList = document.querySelector<HTMLElement>('.raiz-public-home #faq .space-y-4');
-      if (!faqList || faqList.dataset.raizExpandedFaq === 'true') return;
-
-      const itemClass = 'bg-white border border-home-line rounded-[34px] p-6 shadow-home-glass';
-      const titleClass = 'font-display text-xl font-extrabold text-home-900 mb-2';
-      const answerClass = 'text-home-muted';
-
-      extraFaqItems.forEach(({ question, answer }) => {
-        const item = document.createElement('div');
-        item.className = itemClass;
-        item.innerHTML = `<h3 class="${titleClass}">${question}</h3><p class="${answerClass}">${answer}</p>`;
-        faqList.appendChild(item);
-      });
-
-      faqList.dataset.raizExpandedFaq = 'true';
-    };
-
     const setupFaqItems = () => {
-      appendExtraFaqItems();
-
       const items = Array.from(document.querySelectorAll<HTMLElement>('.raiz-public-home #faq .space-y-4 > div'));
 
       items.forEach((item, index) => {
