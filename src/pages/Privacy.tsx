@@ -1,289 +1,129 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Lock, Eye, UserCheck, Database, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Footer from '@/components/Footer';
+import { LegalCTA, LegalPageLayout, LegalSection } from '@/components/legal/LegalPageLayout';
 
 const Privacy = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-raiz-primary via-raiz-primary/95 to-raiz-secondary">
-      <div className="container mx-auto px-4 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="mx-auto mb-6 p-4 bg-raiz-accent/20 rounded-full w-fit">
-            <Shield className="w-12 h-12 text-raiz-accent" />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-raiz-light mb-6">
-            Política de 
-            <span className="text-raiz-gold"> Privacidade</span>
-          </h1>
-          <p className="text-xl text-raiz-light/80 max-w-3xl mx-auto mb-8">
-            O Raiz Token respeita sua privacidade e cumpre rigorosamente a LGPD (Lei Geral de Proteção de Dados). 
-            Conheça como protegemos suas informações.
+    <LegalPageLayout
+      badge="Privacidade"
+      title="Política de Privacidade."
+      subtitle="A Raiz Token respeita sua privacidade e adota práticas alinhadas à LGPD para proteger dados pessoais tratados na plataforma."
+      icon={<Shield className="h-8 w-8" />}
+      footer={
+        <LegalCTA>
+          <h2 className="mb-4 font-display text-3xl font-extrabold tracking-[-.038em] md:text-5xl">Privacidade com transparência.</h2>
+          <p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-white/72 md:text-lg">
+            Consulte as políticas específicas para apoiadores e criadores ou veja também os termos de uso.
           </p>
-        </div>
-
-        {/* Privacy Content */}
-        <div className="space-y-8 max-w-4xl mx-auto mb-16">
-          
-          {/* Dados Coletados */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold flex items-center gap-2">
-                <Database className="w-6 h-6" />
-                Dados que Coletamos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80 space-y-4">
-              <p>
-                Coletamos apenas os dados <strong>estritamente necessários</strong> para operar a plataforma e garantir segurança:
-              </p>
-              
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">📋 Dados Pessoais:</h4>
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Nome completo e e-mail (obrigatórios para cadastro)</li>
-                  <li>CPF (exigido apenas para saques ou compliance fiscal)</li>
-                  <li>Telefone (opcional, para notificações importantes)</li>
-                  <li>Endereço (apenas se necessário para contrapartidas físicas)</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">💰 Dados de Transações:</h4>
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Histórico de apoios realizados e tokens adquiridos</li>
-                  <li>Projetos apoiados e valores correspondentes</li>
-                  <li>Dados de pagamento criptografados (processados por terceiros seguros)</li>
-                  <li>Histórico de reembolsos e devoluções</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">🔍 Dados de Uso:</h4>
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Navegação na plataforma (para melhorar a experiência)</li>
-                  <li>Dispositivo e browser utilizados (para otimização)</li>
-                  <li>Endereço IP (para segurança e prevenção de fraudes)</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Como Protegemos */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold flex items-center gap-2">
-                <Lock className="w-6 h-6" />
-                Como Protegemos seus Dados
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80 space-y-4">
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">🔐 Criptografia Avançada:</h4>
-                <p>Todos os dados são armazenados de forma segura utilizando criptografia SSL/TLS de ponta. Senhas são protegidas com hash seguro.</p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">🏦 Infraestrutura Segura:</h4>
-                <p>Utilizamos servidores certificados com backups automáticos, monitoramento 24/7 e atualizações de segurança constantes.</p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">👥 Acesso Restrito:</h4>
-                <p>Apenas funcionários autorizados têm acesso aos dados, sempre com propósito específico e sob supervisão.</p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">🔍 Auditoria Regular:</h4>
-                <p>Realizamos auditorias periódicas de segurança e conformidade com a LGPD.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Seus Direitos */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold flex items-center gap-2">
-                <UserCheck className="w-6 h-6" />
-                Seus Direitos (LGPD)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80 space-y-4">
-              <p>Conforme a Lei Geral de Proteção de Dados, você tem os seguintes direitos:</p>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-raiz-light mb-2">✅ Acesso</h4>
-                  <p className="text-sm">Consultar quais dados temos sobre você</p>
-                  
-                  <h4 className="font-semibold text-raiz-light mb-2 mt-4">📝 Correção</h4>
-                  <p className="text-sm">Solicitar correção de dados incorretos</p>
-                  
-                  <h4 className="font-semibold text-raiz-light mb-2 mt-4">🗑️ Exclusão</h4>
-                  <p className="text-sm">Pedir remoção dos seus dados pessoais</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-raiz-light mb-2">📄 Portabilidade</h4>
-                  <p className="text-sm">Exportar seus dados em formato legível</p>
-                  
-                  <h4 className="font-semibold text-raiz-light mb-2 mt-4">🚫 Oposição</h4>
-                  <p className="text-sm">Recusar processamento dos seus dados</p>
-                  
-                  <h4 className="font-semibold text-raiz-light mb-2 mt-4">ℹ️ Informação</h4>
-                  <p className="text-sm">Saber como utilizamos seus dados</p>
-                </div>
-              </div>
-
-              <div className="bg-raiz-accent/10 p-4 rounded-lg mt-6">
-                <p className="text-center">
-                  <strong>Para exercer qualquer direito:</strong><br />
-                  Entre em contato através do e-mail: <span className="text-raiz-gold">contato@raiztoken.com.br</span><br />
-                  <small>Responderemos em até 48 horas</small>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Compartilhamento */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold flex items-center gap-2">
-                <Eye className="w-6 h-6" />
-                Compartilhamento de Dados
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80 space-y-4">
-              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg">
-                <p className="text-center font-semibold">
-                  🛡️ <strong>NUNCA compartilharemos seus dados pessoais com terceiros</strong> sem sua autorização expressa.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">Exceções Legais:</h4>
-                <p>Podemos compartilhar dados apenas quando:</p>
-                <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
-                  <li>Exigido por lei ou ordem judicial</li>
-                  <li>Necessário para prevenir fraudes ou crimes</li>
-                  <li>Para processar pagamentos (dados criptografados enviados aos gateways)</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">Parceiros de Pagamento:</h4>
-                <p>Utilizamos apenas gateways certificados e reconhecidos no mercado (como Mercado Pago, PagSeguro) 
-                   que seguem as mesmas normas de segurança e privacidade.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Cookies */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold flex items-center gap-2">
-                <FileText className="w-6 h-6" />
-                Cookies e Tecnologias Similares
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80 space-y-4">
-              <p>Utilizamos cookies para melhorar sua experiência na plataforma:</p>
-              
-              <div>
-                <h4 className="font-semibold text-raiz-light mb-2">🍪 Cookies Essenciais:</h4>
-                <p>Necessários para o funcionamento básico (login, carrinho, segurança)</p>
-                
-                <h4 className="font-semibold text-raiz-light mb-2 mt-4">📊 Cookies de Análise:</h4>
-                <p>Ajudam a entender como você usa a plataforma (sempre anônimos)</p>
-                
-                <h4 className="font-semibold text-raiz-light mb-2 mt-4">⚙️ Cookies de Preferência:</h4>
-                <p>Lembram suas configurações e melhoram a experiência personalizada</p>
-              </div>
-
-              <p className="text-sm bg-raiz-accent/10 p-3 rounded">
-                💡 <strong>Dica:</strong> Você pode gerenciar cookies nas configurações do seu navegador, 
-                mas isso pode afetar algumas funcionalidades da plataforma.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Dados do Controlador */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold">Dados do Controlador</CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80 space-y-2">
-              <p><strong>Razão Social:</strong> Raiz Token Tecnologia LTDA</p>
-              <p><strong>CNPJ:</strong> 32.351.662/0001-00</p>
-              <p><strong>Endereço:</strong> Rua General Castrioto, 500, Barreto, Niterói-RJ</p>
-              <p><strong>E-mail:</strong> contato@raiztoken.com.br</p>
-            </CardContent>
-          </Card>
-
-          {/* DPO */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold">Encarregado de Dados (DPO)</CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80">
-              <p>A ser oficialmente nomeado. Até sua nomeação, utilize o e-mail <span className="text-raiz-gold">contato@raiztoken.com.br</span> para solicitações relacionadas à privacidade.</p>
-            </CardContent>
-          </Card>
-
-          {/* Histórico de Alterações */}
-          <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-raiz-gold">Histórico de Alterações</CardTitle>
-            </CardHeader>
-            <CardContent className="text-raiz-light/80">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-raiz-accent/20">
-                    <th className="text-left py-2 text-raiz-light">Data</th>
-                    <th className="text-left py-2 text-raiz-light">Descrição</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td className="py-2">07/12/2025</td><td className="py-2">Versão inicial publicada</td></tr>
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-
-        </div>
-
-        {/* Políticas Específicas */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-raiz-light mb-6">Políticas Específicas</h2>
-          <p className="text-xl text-raiz-light/80 mb-8">Confira as políticas de privacidade específicas para cada tipo de usuário</p>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <Link to="/privacidade-apoiadores">
-              <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20 hover:border-raiz-gold/50 transition-all cursor-pointer h-full">
-                <CardHeader><CardTitle className="text-raiz-gold">Para Apoiadores</CardTitle></CardHeader>
-                <CardContent className="text-raiz-light/80"><p>Política de privacidade específica para quem apoia projetos</p></CardContent>
-              </Card>
-            </Link>
-            <Link to="/privacidade-criadores">
-              <Card className="bg-white/10 backdrop-blur-lg border-raiz-accent/20 hover:border-raiz-gold/50 transition-all cursor-pointer h-full">
-                <CardHeader><CardTitle className="text-raiz-gold">Para Criadores</CardTitle></CardHeader>
-                <CardContent className="text-raiz-light/80"><p>Política de privacidade específica para quem cria projetos</p></CardContent>
-              </Card>
-            </Link>
+          <div className="flex flex-col justify-center gap-4 sm:flex-row">
+            <Button asChild className="rounded-full bg-white px-8 font-semibold text-home-900 hover:bg-white/90">
+              <Link to="/privacidade-apoiadores">Para Apoiadores</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full border-white/20 bg-white/10 px-8 font-semibold text-white hover:bg-white/15">
+              <Link to="/privacidade-criadores">Para Criadores</Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full border-white/20 bg-white/10 px-8 font-semibold text-white hover:bg-white/15">
+              <Link to="/terms">Termos de Uso</Link>
+            </Button>
           </div>
-        </div>
+        </LegalCTA>
+      }
+    >
+      <LegalSection title="Dados que coletamos" icon={<Database className="h-5 w-5" />}>
+        <p>Coletamos apenas os dados necessários para operar a plataforma, oferecer segurança e cumprir obrigações legais.</p>
+        <h4>Dados pessoais</h4>
+        <ul>
+          <li>Nome completo e e-mail para cadastro.</li>
+          <li>CPF, telefone e endereço quando necessários para operações, validações, saques, repasses ou obrigações legais.</li>
+        </ul>
+        <h4>Dados de transações</h4>
+        <ul>
+          <li>Histórico de apoios realizados e tokens adquiridos.</li>
+          <li>Projetos apoiados, valores correspondentes, reembolsos e devoluções.</li>
+          <li>Dados de pagamento processados por provedores especializados.</li>
+        </ul>
+        <h4>Dados de uso</h4>
+        <ul>
+          <li>Navegação na plataforma para melhoria de experiência.</li>
+          <li>Dispositivo, navegador e endereço IP para segurança e prevenção de fraudes.</li>
+        </ul>
+      </LegalSection>
 
-        {/* Contact CTA */}
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-raiz-light mb-6">Transparência Total</h2>
-          <p className="text-xl text-raiz-light/80 mb-8">Sua privacidade é nossa prioridade.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/security"><Button size="lg" className="bg-raiz-gold hover:bg-raiz-gold/90 text-black font-semibold px-8">Segurança</Button></Link>
-            <Link to="/terms"><Button variant="outline" size="lg" className="text-black bg-raiz-light border-raiz-light hover:bg-raiz-light/90 px-8">Termos de Uso</Button></Link>
-          </div>
+      <LegalSection title="Como protegemos seus dados" icon={<Lock className="h-5 w-5" />}>
+        <h4>Criptografia e segurança</h4>
+        <p>Adotamos medidas técnicas para proteger dados em trânsito e em repouso, incluindo conexões seguras, autenticação e controles de acesso.</p>
+        <h4>Infraestrutura e acesso restrito</h4>
+        <p>O acesso aos dados é restrito a pessoas autorizadas e associado a finalidades operacionais, suporte, auditoria, segurança ou obrigações legais.</p>
+        <h4>Auditoria e conformidade</h4>
+        <p>Podemos realizar revisões periódicas de segurança e conformidade para reduzir riscos e aprimorar a proteção dos usuários.</p>
+      </LegalSection>
+
+      <LegalSection title="Seus direitos — LGPD" icon={<UserCheck className="h-5 w-5" />}>
+        <p>Conforme a Lei Geral de Proteção de Dados, você pode solicitar:</p>
+        <ul>
+          <li>Acesso aos dados pessoais tratados pela plataforma.</li>
+          <li>Correção de dados incompletos, inexatos ou desatualizados.</li>
+          <li>Exclusão ou anonimização, respeitadas obrigações legais e regulatórias.</li>
+          <li>Portabilidade, quando aplicável.</li>
+          <li>Informações sobre compartilhamento e finalidade de tratamento.</li>
+          <li>Revogação de consentimento, quando o tratamento depender dessa base legal.</li>
+        </ul>
+        <p>Para exercer seus direitos, entre em contato pelo e-mail: <a href="mailto:contato@raiztoken.com.br">contato@raiztoken.com.br</a>.</p>
+      </LegalSection>
+
+      <LegalSection title="Compartilhamento de dados" icon={<Eye className="h-5 w-5" />} emphasis>
+        <p>A Raiz Token não vende dados pessoais dos usuários.</p>
+        <p>O compartilhamento pode ocorrer apenas quando necessário para:</p>
+        <ul>
+          <li>Cumprimento de obrigação legal, regulatória ou ordem judicial.</li>
+          <li>Prevenção de fraude, segurança da plataforma e proteção de direitos.</li>
+          <li>Processamento de pagamentos, reembolsos, repasses e serviços operacionais.</li>
+          <li>Suporte, auditoria e funcionamento técnico da plataforma.</li>
+        </ul>
+      </LegalSection>
+
+      <LegalSection title="Cookies e tecnologias similares" icon={<FileText className="h-5 w-5" />}>
+        <p>Utilizamos cookies para melhorar sua experiência, manter funcionalidades essenciais, reforçar segurança e compreender o uso da plataforma.</p>
+        <ul>
+          <li><strong>Cookies essenciais:</strong> login, segurança, sessão e funcionamento básico.</li>
+          <li><strong>Cookies de análise:</strong> entendimento de navegação e melhoria da experiência.</li>
+          <li><strong>Cookies de preferência:</strong> configurações e escolhas do usuário.</li>
+        </ul>
+        <p>Você pode gerenciar cookies no navegador. Algumas funcionalidades podem ser afetadas se cookies essenciais forem bloqueados.</p>
+      </LegalSection>
+
+      <LegalSection title="Dados do controlador" icon={<Shield className="h-5 w-5" />}>
+        <p><strong>Razão Social:</strong> Raiz Token Tecnologia LTDA</p>
+        <p><strong>CNPJ:</strong> 32.351.662/0001-00</p>
+        <p><strong>Endereço:</strong> Rua General Castrioto, 500, Barreto, Niterói-RJ</p>
+        <p><strong>E-mail:</strong> contato@raiztoken.com.br</p>
+      </LegalSection>
+
+      <LegalSection title="Encarregado de dados — DPO" icon={<UserCheck className="h-5 w-5" />}>
+        <p>O encarregado de dados será oficialmente nomeado. Até a nomeação, solicitações relacionadas à privacidade podem ser enviadas para <a href="mailto:contato@raiztoken.com.br">contato@raiztoken.com.br</a>.</p>
+      </LegalSection>
+
+      <LegalSection title="Histórico de alterações" icon={<FileText className="h-5 w-5" />}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-home-line">
+                <th className="py-2 text-left text-home-900">Data</th>
+                <th className="py-2 text-left text-home-900">Descrição</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-home-line/70">
+                <td className="py-2">07/12/2025</td>
+                <td className="py-2">Versão inicial publicada</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-      <Footer />
-    </div>
+        <p>Futuras alterações serão adicionadas nesta tabela com a respectiva data e descrição.</p>
+      </LegalSection>
+    </LegalPageLayout>
   );
 };
 
