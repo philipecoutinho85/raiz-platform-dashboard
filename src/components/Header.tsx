@@ -39,9 +39,9 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-home-line/80 bg-white/82 backdrop-blur-xl shadow-home-glass">
+    <header className="sticky top-0 z-50 bg-transparent">
       <div className="container mx-auto px-3 py-3 md:px-6 md:py-4">
-        <div className="flex items-center justify-between gap-3 rounded-[24px] border border-home-line/80 bg-white/78 px-3 py-2 shadow-home-glass md:rounded-full md:px-5 md:py-3">
+        <div className="flex items-center justify-between gap-3 rounded-[24px] border border-home-line/80 bg-white/90 px-3 py-2 shadow-home-glass backdrop-blur-xl md:rounded-full md:px-5 md:py-3">
           <Link to="/" className="flex shrink-0 items-center" aria-label="Raiz Token">
             <img
               src={raizLogo}
