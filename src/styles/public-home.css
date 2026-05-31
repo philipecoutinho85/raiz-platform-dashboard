@@ -81,6 +81,15 @@
       border-color: rgba(45,64,93,.9);
     }.raiz-public-home .mobile-bottom-nav, .raiz-public-home .mobile-only {
       display: none;
+    }.raiz-public-home nav picture {
+      display: block;
+      width: 156px;
+      height: 54px;
+      background: url('../assets/RaizToken-header.svg') center center / contain no-repeat;
+    }.raiz-public-home nav picture img {
+      width: 100% !important;
+      height: 100% !important;
+      opacity: 0;
     }
 
     @media (max-width: 768px)  {.raiz-public-home {
@@ -107,6 +116,9 @@
         width: 36px;
         height: 36px;
         border-radius: 14px;
+      }.raiz-public-home nav picture {
+        width: 128px;
+        height: 44px;
       }.raiz-public-home nav a[href="/criar-projeto"] {
         padding: 10px 14px;
         font-size: 12px;
