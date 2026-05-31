@@ -1,4 +1,4 @@
-﻿.raiz-public-home {
+.raiz-public-home {
       font-family: Inter, sans-serif;
       background:
         radial-gradient(circle at 82% 8%, rgba(186,218,156,.22), transparent 24%),
@@ -81,6 +81,13 @@
       border-color: rgba(45,64,93,.9);
     }.raiz-public-home .mobile-bottom-nav, .raiz-public-home .mobile-only {
       display: none;
+    }.raiz-public-home footer .grid > div:first-child > div:first-child {
+      width: 160px;
+      height: 54px;
+      margin-bottom: 1.25rem;
+      background: url('../assets/RaizToken-footer-white.svg') left center / contain no-repeat;
+    }.raiz-public-home footer .grid > div:first-child > div:first-child > * {
+      display: none !important;
     }
 
     @media (max-width: 768px)  {.raiz-public-home {
@@ -186,6 +193,9 @@
       }.raiz-public-home #cta a {
         width: 100%;
         justify-content: center;
+      }.raiz-public-home footer .grid > div:first-child > div:first-child {
+        width: 140px;
+        height: 48px;
       }.raiz-public-home .mobile-bottom-nav {
         position: fixed;
         left: 12px;
@@ -223,4 +233,3 @@
         color: #BADA9C;
       }
     }
-
