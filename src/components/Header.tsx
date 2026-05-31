@@ -11,7 +11,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useTokens } from '@/contexts/TokensContext';
 import { LogOut, User, Settings, Shield, Coins, HelpCircle } from 'lucide-react';
-import raizLogo from '@/assets/raiz-logo.png';
+import raizLogo from '@/assets/RaizToken-header.svg';
 import NotificationBell from '@/components/NotificationBell';
 
 const Header = () => {
@@ -39,121 +39,145 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <img src={raizLogo} alt="Raiz Token" className="h-12 md:h-20 w-auto object-contain transition-transform hover:scale-105" />
+    <header className="sticky top-0 z-50 border-b border-home-line/80 bg-white/82 backdrop-blur-xl shadow-home-glass">
+      <div className="container mx-auto px-3 py-3 md:px-6 md:py-4">
+        <div className="flex items-center justify-between gap-3 rounded-[24px] border border-home-line/80 bg-white/78 px-3 py-2 shadow-home-glass md:rounded-full md:px-5 md:py-3">
+          <Link to="/" className="flex shrink-0 items-center" aria-label="Raiz Token">
+            <img
+              src={raizLogo}
+              alt="Raiz Token"
+              className="h-[44px] w-[128px] object-contain transition-transform hover:scale-[1.02] md:h-[54px] md:w-[156px]"
+            />
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-6" data-tour="header-nav">
+          <nav className="hidden items-center gap-7 text-sm font-semibold text-home-muted lg:flex" data-tour="header-nav">
             {user ? (
               <>
-                <Link to="/dashboard" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/dashboard" className="transition-colors hover:text-home-800">
                   Dashboard
                 </Link>
-                <Link to="/projetos" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/projetos" className="transition-colors hover:text-home-800">
                   Projetos
                 </Link>
-                <Link to="/criar-projeto" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/criar-projeto" className="transition-colors hover:text-home-800">
                   Criar Projeto
                 </Link>
               </>
             ) : (
               <>
-                <Link to="/" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
-                  Inicio
+                <Link to="/" className="transition-colors hover:text-home-800">
+                  Início
                 </Link>
-                <Link to="/projetos" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/projetos" className="transition-colors hover:text-home-800">
                   Projetos
                 </Link>
-                <Link to="/como-funciona" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/como-funciona" className="transition-colors hover:text-home-800">
                   Como Funciona
                 </Link>
-                <Link to="/faq" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/faq" className="transition-colors hover:text-home-800">
                   FAQ
                 </Link>
-                <Link to="/contato" className="text-lg font-semibold text-raiz-dark hover:text-raiz-primary transition-colors">
+                <Link to="/contato" className="transition-colors hover:text-home-800">
                   Falar Conosco
                 </Link>
               </>
             )}
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-2 md:gap-3">
             {user ? (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 <NotificationBell />
-                <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-raiz-accent/20 to-raiz-primary/10 rounded-full border border-raiz-primary/20">
-                  <Coins className="h-6 w-6 text-raiz-accent" />
-                  <span className="text-lg font-bold text-raiz-primary">{tokens}</span>
-                  <span className="text-sm font-medium text-raiz-dark">tokens</span>
-                </div>
+
+                <Link
+                  to="/carteira"
+                  className="hidden items-center gap-2 rounded-full border border-home-line bg-home-100/80 px-3 py-2 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-white hover:shadow-home-glass sm:flex"
+                  aria-label="Minha carteira"
+                >
+                  <Coins className="h-5 w-5 text-home-800" />
+                  <span className="font-mono text-sm font-bold text-home-900">{tokens}</span>
+                  <span className="hidden text-xs font-semibold text-home-muted md:inline">tokens</span>
+                </Link>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-tour="user-menu">
+                    <Button
+                      variant="ghost"
+                      className="relative h-11 w-11 rounded-full border border-home-line bg-white p-0 shadow-sm hover:bg-home-100"
+                      data-tour="user-menu"
+                    >
                       <Avatar className="h-10 w-10">
-                        <AvatarImage 
-                          src={profile?.avatar_url || ''} 
-                          alt={`${profile?.nome || ''} ${profile?.sobrenome || ''}`} 
+                        <AvatarImage
+                          src={profile?.avatar_url || ''}
+                          alt={`${profile?.nome || ''} ${profile?.sobrenome || ''}`}
                         />
-                        <AvatarFallback className="bg-raiz-primary text-white">
+                        <AvatarFallback className="bg-home-900 text-white">
                           {getInitials(profile?.nome, profile?.sobrenome)}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      {profile?.nome && (
-                        <p className="font-medium">
-                          {profile.nome} {profile.sobrenome}
+                  <DropdownMenuContent className="w-64 rounded-2xl border-home-line p-2 shadow-home-card" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-3 rounded-xl bg-home-100/70 p-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.avatar_url || ''} />
+                        <AvatarFallback className="bg-home-900 text-white">
+                          {getInitials(profile?.nome, profile?.sobrenome)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex min-w-0 flex-col space-y-1 leading-none">
+                        {profile?.nome && (
+                          <p className="truncate font-semibold text-home-900">
+                            {profile.nome} {profile.sobrenome}
+                          </p>
+                        )}
+                        <p className="max-w-[180px] truncate text-sm text-home-muted">
+                          {profile?.email || user.email}
                         </p>
-                      )}
-                      <p className="w-[200px] truncate text-sm text-muted-foreground">
-                        {profile?.email || user.email}
-                      </p>
+                      </div>
                     </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/perfil')}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Perfil</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/carteira')}>
-                    <Coins className="mr-2 h-4 w-4" />
-                    <span>Minha Carteira</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Dashboard</span>
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      <Shield className="mr-2 h-4 w-4" />
-                      <span>Administração</span>
+                    <DropdownMenuSeparator className="my-2" />
+                    <DropdownMenuItem onClick={() => navigate('/perfil')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Perfil</span>
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={handleStartTour}>
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    <span>Tour da Plataforma</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sair</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuItem onClick={() => navigate('/carteira')}>
+                      <Coins className="mr-2 h-4 w-4" />
+                      <span>Minha Carteira</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={() => navigate('/admin')}>
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Administração</span>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={handleStartTour}>
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      <span>Tour da Plataforma</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="my-2" />
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sair</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 <Link to="/login">
-                  <Button variant="ghost" className="text-base font-semibold">Entrar</Button>
+                  <Button variant="ghost" className="rounded-full px-3 text-sm font-semibold text-home-900 hover:bg-home-100 hover:text-home-800 md:px-4">
+                    Entrar
+                  </Button>
                 </Link>
                 <Link to="/registro">
-                  <Button className="text-base font-semibold">Cadastrar</Button>
+                  <Button className="rounded-full bg-home-800 px-4 text-sm font-semibold text-white shadow-lg shadow-home-900/10 hover:bg-home-900 md:px-5">
+                    Cadastrar
+                  </Button>
                 </Link>
               </div>
             )}
