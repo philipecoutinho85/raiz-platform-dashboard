@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Cookie, X, Settings } from 'lucide-react';
+import { Cookie, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -69,28 +69,30 @@ const CookieConsent = () => {
   return (
     <>
       {/* Cookie Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/95 backdrop-blur-sm border-t shadow-lg">
+      <div className="fixed inset-x-3 bottom-[92px] z-[80] rounded-[28px] border border-home-line bg-white/95 p-4 shadow-home-card backdrop-blur-xl md:bottom-0 md:left-0 md:right-0 md:rounded-none md:border-x-0 md:border-b-0 md:bg-background/95">
         <div className="container mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-start gap-3 flex-1">
-              <Cookie className="h-6 w-6 text-raiz-primary flex-shrink-0 mt-1" />
+              <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-home-100 text-home-800 md:h-auto md:w-auto md:bg-transparent md:text-raiz-primary">
+                <Cookie className="h-5 w-5 md:h-6 md:w-6" />
+              </div>
               <div>
-                <h3 className="font-semibold text-raiz-dark mb-1">
+                <h3 className="mb-1 font-display text-base font-extrabold tracking-[-.02em] text-home-900 md:font-semibold md:text-raiz-dark">
                   Consentimento de Cookies
                 </h3>
-                <p className="text-sm text-raiz-secondary">
+                <p className="text-sm leading-relaxed text-home-muted md:text-raiz-secondary">
                   Ao continuar navegando na Raiz Token, você concorda com o uso de cookies essenciais e analíticos. 
                   Eles nos ajudam a entender como você usa a plataforma e aprimorar nossos serviços.
                 </p>
               </div>
             </div>
             
-            <div className="flex flex-wrap gap-2 md:flex-nowrap">
+            <div className="grid w-full grid-cols-1 gap-2 md:flex md:w-auto md:flex-wrap md:flex-nowrap">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={rejectNonEssential}
-                className="whitespace-nowrap"
+                className="h-10 rounded-full border-home-line whitespace-nowrap"
               >
                 Recusar não essenciais
               </Button>
@@ -98,7 +100,7 @@ const CookieConsent = () => {
                 variant="outline"
                 size="sm"
                 onClick={openPreferences}
-                className="whitespace-nowrap"
+                className="h-10 rounded-full border-home-line whitespace-nowrap"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Gerenciar preferências
@@ -106,7 +108,7 @@ const CookieConsent = () => {
               <Button
                 size="sm"
                 onClick={acceptAll}
-                className="whitespace-nowrap"
+                className="h-10 rounded-full bg-home-800 text-white hover:bg-home-900 whitespace-nowrap"
               >
                 Aceitar todos os cookies
               </Button>
@@ -117,7 +119,7 @@ const CookieConsent = () => {
 
       {/* Preferences Dialog */}
       <Dialog open={showPreferences} onOpenChange={setShowPreferences}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto rounded-[28px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-raiz-primary" />
