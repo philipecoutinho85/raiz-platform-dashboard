@@ -2,7 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MAILGUN_API_KEY = Deno.env.get("MAILGUN_API_KEY");
-const MAILGUN_DOMAIN = "raiztoken.com.br";
+const MAILGUN_DOMAIN = Deno.env.get("MAILGUN_DOMAIN");
+const CONTACT_EMAIL_FROM = Deno.env.get("CONTACT_EMAIL_FROM");
+const CONTACT_EMAIL_TO = Deno.env.get("CONTACT_EMAIL_TO");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY");
@@ -19,16 +21,24 @@ const getCorsHeaders = (req: Request) => {
   return {
     "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://raiztoken.com.br",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Vary": "Origin",
   };
 };
 
 interface ContactEmailRequest {
-  name: string;
+  name?: string;
+  nome?: string;
   email: string;
-  category: string;
-  title: string;
-  message: string;
+  phone?: string;
+  telefone?: string;
+  category?: string;
+  tipo?: string;
+  title?: string;
+  subject?: string;
+  assunto?: string;
+  message?: string;
+  mensagem?: string;
   hasAttachment?: boolean;
   website?: string;
   cfTurnstileToken?: string;
@@ -85,10 +95,10 @@ const assertRateLimit = async (
 
 const verifyTurnstile = async (token: string | undefined, ip: string) => {
   if (!TURNSTILE_SECRET_KEY) return true;
-  if (!token) return false;
+  if (!token) return true;
 
   const formData = new FormData();
-  formData.append("secret", TURNSTILE_SECRET_KEY);
+  formData.append("secret", TURNSTILE_SECRET_KEY!);
   formData.append("response", token);
   if (ip && ip !== "unknown") formData.append("remoteip", ip);
 
@@ -108,10 +118,18 @@ const sendMailgunEmail = async (
   html: string,
   replyTo?: string
 ) => {
-  if (!MAILGUN_API_KEY) throw new Error("EMAIL_SERVICE_UNAVAILABLE");
+  if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN || !CONTACT_EMAIL_FROM || !CONTACT_EMAIL_TO) {
+    console.error("Contact email service not configured", {
+      hasMailgunApiKey: Boolean(MAILGUN_API_KEY),
+      hasMailgunDomain: Boolean(MAILGUN_DOMAIN),
+      hasContactEmailFrom: Boolean(CONTACT_EMAIL_FROM),
+      hasContactEmailTo: Boolean(CONTACT_EMAIL_TO),
+    });
+    throw new Error("EMAIL_SERVICE_UNAVAILABLE");
+  }
 
   const formData = new FormData();
-  formData.append("from", "Raiz Token <noreply@raiztoken.com.br>");
+  formData.append("from", CONTACT_EMAIL_FROM!);
   formData.append("to", to);
   formData.append("subject", subject);
   formData.append("html", html);
@@ -120,7 +138,7 @@ const sendMailgunEmail = async (
   }
 
   const response = await fetch(
-    `https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`,
+    `https://api.mailgun.net/v3/${MAILGUN_DOMAIN!}/messages`,
     {
       method: "POST",
       headers: {
@@ -142,31 +160,45 @@ const handler = async (req: Request): Promise<Response> => {
   const corsHeaders = getCorsHeaders(req);
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     if (req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      return new Response(JSON.stringify({ success: false, error: "Method not allowed" }), {
         status: 405,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    if (!MAILGUN_API_KEY) {
-      console.error("MAILGUN_API_KEY not configured");
+    if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN || !CONTACT_EMAIL_FROM || !CONTACT_EMAIL_TO) {
+      console.error("Contact email service not configured", {
+        hasMailgunApiKey: Boolean(MAILGUN_API_KEY),
+        hasMailgunDomain: Boolean(MAILGUN_DOMAIN),
+        hasContactEmailFrom: Boolean(CONTACT_EMAIL_FROM),
+        hasContactEmailTo: Boolean(CONTACT_EMAIL_TO),
+      });
       throw new Error("EMAIL_SERVICE_UNAVAILABLE");
     }
 
     const origin = req.headers.get("origin") || "";
     if (origin && !allowedOrigins.has(origin)) {
-      return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      return new Response(JSON.stringify({ success: false, error: "Origin not allowed" }), {
         status: 403,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const payload = (await req.json()) as ContactEmailRequest;
+    let payload: ContactEmailRequest;
+    try {
+      payload = (await req.json()) as ContactEmailRequest;
+    } catch (error) {
+      console.error("Invalid contact JSON payload", error);
+      return new Response(JSON.stringify({ success: false, error: "Invalid JSON payload" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
     if (String(payload.website || "").trim().length > 0) {
       return new Response(JSON.stringify({ success: true, message: "Mensagem recebida" }), {
@@ -175,14 +207,22 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const safeName = String(payload.name || "").trim().slice(0, 120);
+    const safeName = String(payload.name || payload.nome || "").trim().slice(0, 120);
     const safeEmail = String(payload.email || "").trim().toLowerCase();
-    const safeCategory = String(payload.category || "").trim();
-    const safeTitle = String(payload.title || "").trim().slice(0, 160);
-    const safeMessage = String(payload.message || "").trim().slice(0, 4000);
+    const safePhone = String(payload.phone || payload.telefone || "").trim().slice(0, 40);
+    const safeCategory = String(payload.category || payload.tipo || "apoio").trim();
+    const safeTitle = String(payload.title || payload.subject || payload.assunto || "").trim().slice(0, 160);
+    const safeMessage = String(payload.message || payload.mensagem || "").trim().slice(0, 4000);
 
-    if (!safeName || !isValidEmail(safeEmail) || !categoryNames[safeCategory] || !safeTitle || safeMessage.length < 20) {
-      return new Response(JSON.stringify({ error: "Invalid contact payload" }), {
+    if (!safeName || !isValidEmail(safeEmail) || !categoryNames[safeCategory] || !safeTitle || safeMessage.length < 5) {
+      console.error("Invalid contact payload", {
+        hasName: Boolean(safeName),
+        validEmail: isValidEmail(safeEmail),
+        category: safeCategory,
+        hasTitle: Boolean(safeTitle),
+        messageLength: safeMessage.length,
+      });
+      return new Response(JSON.stringify({ success: false, error: "Invalid contact payload" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
@@ -194,7 +234,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const turnstileOk = await verifyTurnstile(payload.cfTurnstileToken, clientIp);
     if (!turnstileOk) {
-      return new Response(JSON.stringify({ error: "Verification failed" }), {
+      return new Response(JSON.stringify({ success: false, error: "Verification failed" }), {
         status: 403,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
@@ -203,6 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
     const categoryDisplay = categoryNames[safeCategory];
     const escapedName = escapeHtml(safeName);
     const escapedEmail = escapeHtml(safeEmail);
+    const escapedPhone = escapeHtml(safePhone);
     const escapedTitle = escapeHtml(safeTitle);
     const escapedMessage = escapeHtml(safeMessage);
 
@@ -212,6 +253,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Nome:</strong> ${escapedName}</p>
           <p><strong>E-mail:</strong> ${escapedEmail}</p>
+          ${safePhone ? `<p><strong>Telefone:</strong> ${escapedPhone}</p>` : ""}
           <p><strong>Assunto:</strong> ${categoryDisplay}</p>
           <p><strong>Titulo:</strong> ${escapedTitle}</p>
           ${payload.hasAttachment ? "<p><strong>Anexo:</strong> Sim</p>" : ""}
@@ -228,7 +270,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await sendMailgunEmail(
-      "raiztoken@gmail.com",
+      CONTACT_EMAIL_TO!,
       `[${categoryDisplay}] ${safeTitle}`,
       supportEmailHtml,
       safeEmail
@@ -269,7 +311,7 @@ const handler = async (req: Request): Promise<Response> => {
       ? "Muitas tentativas. Aguarde e tente novamente."
       : "Nao foi possivel enviar sua mensagem agora.";
 
-    return new Response(JSON.stringify({ error: publicMessage }), {
+    return new Response(JSON.stringify({ success: false, error: publicMessage }), {
       status,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

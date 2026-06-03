@@ -27,23 +27,51 @@ const Contact = () => {
     setLoading(true);
 
     try {
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        category: formData.category,
+        title: formData.title,
+        subject: formData.title,
+        message: formData.message,
+        hasAttachment: !!formData.attachment
+      };
+
       const { data, error } = await supabase.functions.invoke('send-contact-email', {
-        body: {
-          name: formData.name,
-          email: formData.email,
-          category: formData.category,
-          title: formData.title,
-          message: formData.message,
-          hasAttachment: !!formData.attachment
-        }
+        body: payload
       });
 
-      if (error) throw error;
+      if (error || data?.success === false) {
+        const invokeError = error as any;
+        let functionErrorBody: unknown = null;
+        if (invokeError?.context && typeof invokeError.context.clone === 'function') {
+          const clonedResponse = invokeError.context.clone();
+          functionErrorBody = await clonedResponse.json().catch(async () => clonedResponse.text().catch(() => null));
+        }
+
+        console.error('[Contact] send-contact-email failed', {
+          invokeError: error,
+          status: invokeError?.context?.status || invokeError?.status,
+          statusText: invokeError?.context?.statusText,
+          functionErrorBody,
+          response: data,
+          payload: {
+            ...payload,
+            message: `${payload.message.slice(0, 120)}${payload.message.length > 120 ? '...' : ''}`,
+          },
+        });
+        throw error || new Error(data?.error || 'Contact email function returned an unsuccessful response');
+      }
 
       toast.success('Mensagem enviada com sucesso! Responderemos em breve.');
       setFormData({ name: '', email: '', category: '', title: '', message: '', attachment: null });
     } catch (error: any) {
-      console.error('Erro ao enviar mensagem:', error);
+      console.error('[Contact] Erro ao enviar mensagem:', {
+        message: error?.message,
+        status: error?.status,
+        name: error?.name,
+        details: error?.details,
+      });
       toast.error('Erro ao enviar mensagem. Tente novamente.');
     } finally {
       setLoading(false);
