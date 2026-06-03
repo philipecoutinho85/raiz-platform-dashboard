@@ -2,9 +2,10 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MAILGUN_API_KEY = Deno.env.get("MAILGUN_API_KEY");
-const MAILGUN_DOMAIN = Deno.env.get("MAILGUN_DOMAIN");
-const CONTACT_EMAIL_FROM = Deno.env.get("CONTACT_EMAIL_FROM");
-const CONTACT_EMAIL_TO = Deno.env.get("CONTACT_EMAIL_TO");
+const MAILGUN_DOMAIN = Deno.env.get("MAILGUN_DOMAIN") || "raiztoken.com.br";
+const CONTACT_EMAIL_FROM =
+  Deno.env.get("CONTACT_EMAIL_FROM") || "Raiz Token <noreply@raiztoken.com.br>";
+const CONTACT_EMAIL_TO = Deno.env.get("CONTACT_EMAIL_TO") || "raiztoken@gmail.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const TURNSTILE_SECRET_KEY = Deno.env.get("TURNSTILE_SECRET_KEY");
@@ -118,18 +119,15 @@ const sendMailgunEmail = async (
   html: string,
   replyTo?: string
 ) => {
-  if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN || !CONTACT_EMAIL_FROM || !CONTACT_EMAIL_TO) {
+  if (!MAILGUN_API_KEY) {
     console.error("Contact email service not configured", {
       hasMailgunApiKey: Boolean(MAILGUN_API_KEY),
-      hasMailgunDomain: Boolean(MAILGUN_DOMAIN),
-      hasContactEmailFrom: Boolean(CONTACT_EMAIL_FROM),
-      hasContactEmailTo: Boolean(CONTACT_EMAIL_TO),
     });
     throw new Error("EMAIL_SERVICE_UNAVAILABLE");
   }
 
   const formData = new FormData();
-  formData.append("from", CONTACT_EMAIL_FROM!);
+  formData.append("from", CONTACT_EMAIL_FROM);
   formData.append("to", to);
   formData.append("subject", subject);
   formData.append("html", html);
@@ -138,7 +136,7 @@ const sendMailgunEmail = async (
   }
 
   const response = await fetch(
-    `https://api.mailgun.net/v3/${MAILGUN_DOMAIN!}/messages`,
+    `https://api.mailgun.net/v3/${MAILGUN_DOMAIN}/messages`,
     {
       method: "POST",
       headers: {
@@ -171,12 +169,9 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN || !CONTACT_EMAIL_FROM || !CONTACT_EMAIL_TO) {
+    if (!MAILGUN_API_KEY) {
       console.error("Contact email service not configured", {
         hasMailgunApiKey: Boolean(MAILGUN_API_KEY),
-        hasMailgunDomain: Boolean(MAILGUN_DOMAIN),
-        hasContactEmailFrom: Boolean(CONTACT_EMAIL_FROM),
-        hasContactEmailTo: Boolean(CONTACT_EMAIL_TO),
       });
       throw new Error("EMAIL_SERVICE_UNAVAILABLE");
     }
@@ -270,7 +265,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await sendMailgunEmail(
-      CONTACT_EMAIL_TO!,
+      CONTACT_EMAIL_TO,
       `[${categoryDisplay}] ${safeTitle}`,
       supportEmailHtml,
       safeEmail
@@ -296,7 +291,14 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    await sendMailgunEmail(safeEmail, "Recebemos sua mensagem!", confirmationEmailHtml);
+    try {
+      await sendMailgunEmail(safeEmail, "Recebemos sua mensagem!", confirmationEmailHtml);
+    } catch (confirmationError) {
+      console.warn(
+        "Falha ao enviar confirmacao ao usuario, mas contato foi recebido",
+        confirmationError
+      );
+    }
 
     return new Response(JSON.stringify({ success: true, message: "Mensagem enviada com sucesso" }), {
       status: 200,
