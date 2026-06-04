@@ -237,7 +237,9 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const categoryDisplay = categoryNames[safeCategory] || safeCategory || "Contato";
+    const rawCategoryDisplay = categoryNames[safeCategory] || safeCategory || "Contato";
+    const categoryDisplay = rawCategoryDisplay.slice(0, 80);
+    const escapedCategoryDisplay = escapeHtml(categoryDisplay);
     const escapedName = escapeHtml(safeName);
     const escapedEmail = escapeHtml(safeEmail);
     const escapedPhone = escapeHtml(safePhone);
@@ -251,7 +253,7 @@ const handler = async (req: Request): Promise<Response> => {
           <p><strong>Nome:</strong> ${escapedName}</p>
           <p><strong>E-mail:</strong> ${escapedEmail}</p>
           ${safePhone ? `<p><strong>Telefone:</strong> ${escapedPhone}</p>` : ""}
-          <p><strong>Assunto:</strong> ${categoryDisplay}</p>
+          <p><strong>Assunto:</strong> ${escapedCategoryDisplay}</p>
           <p><strong>Titulo:</strong> ${escapedTitle}</p>
           ${payload.hasAttachment ? "<p><strong>Anexo:</strong> Sim</p>" : ""}
         </div>
@@ -277,7 +279,7 @@ const handler = async (req: Request): Promise<Response> => {
     const confirmationEmailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #8B7355;">Ola, ${escapedName}!</h2>
-        <p>Recebemos sua mensagem sobre <strong>${categoryDisplay}</strong> e agradecemos pelo contato.</p>
+        <p>Recebemos sua mensagem sobre <strong>${escapedCategoryDisplay}</strong> e agradecemos pelo contato.</p>
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Titulo:</strong> ${escapedTitle}</p>
           <p style="color: #666; font-size: 14px; margin-top: 10px;">
