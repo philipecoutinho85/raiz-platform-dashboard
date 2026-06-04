@@ -96,10 +96,10 @@ const assertRateLimit = async (
 
 const verifyTurnstile = async (token: string | undefined, ip: string) => {
   if (!TURNSTILE_SECRET_KEY) return true;
-  if (!token) return true;
+  if (!token) return false;
 
   const formData = new FormData();
-  formData.append("secret", TURNSTILE_SECRET_KEY!);
+  formData.append("secret", TURNSTILE_SECRET_KEY);
   formData.append("response", token);
   if (ip && ip !== "unknown") formData.append("remoteip", ip);
 
