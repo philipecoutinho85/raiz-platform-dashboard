@@ -50,6 +50,8 @@ const categoryNames: Record<string, string> = {
   projeto: "Projeto",
   perfil: "Perfil",
   saque: "Saque",
+  contato: "Contato",
+  outros: "Outros",
 };
 
 const getClientIp = (req: Request) =>
@@ -205,11 +207,11 @@ const handler = async (req: Request): Promise<Response> => {
     const safeName = String(payload.name || payload.nome || "").trim().slice(0, 120);
     const safeEmail = String(payload.email || "").trim().toLowerCase();
     const safePhone = String(payload.phone || payload.telefone || "").trim().slice(0, 40);
-    const safeCategory = String(payload.category || payload.tipo || "apoio").trim();
+    const safeCategory = String(payload.category || payload.tipo || "contato").trim();
     const safeTitle = String(payload.title || payload.subject || payload.assunto || "").trim().slice(0, 160);
     const safeMessage = String(payload.message || payload.mensagem || "").trim().slice(0, 4000);
 
-    if (!safeName || !isValidEmail(safeEmail) || !categoryNames[safeCategory] || !safeTitle || safeMessage.length < 5) {
+    if (!safeName || !isValidEmail(safeEmail) || !safeTitle || safeMessage.length < 5) {
       console.error("Invalid contact payload", {
         hasName: Boolean(safeName),
         validEmail: isValidEmail(safeEmail),
@@ -235,7 +237,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const categoryDisplay = categoryNames[safeCategory];
+    const categoryDisplay = categoryNames[safeCategory] || safeCategory || "Contato";
     const escapedName = escapeHtml(safeName);
     const escapedEmail = escapeHtml(safeEmail);
     const escapedPhone = escapeHtml(safePhone);
