@@ -1,6 +1,32 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
+const COMUNIDADE_EMPREENDE_COVER = 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=900&h=600&fit=crop';
+const COMUNIDADE_EMPREENDE_FALLBACK = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Comunidade Empreende">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2D405D"/>
+      <stop offset="0.55" stop-color="#1D8C5A"/>
+      <stop offset="1" stop-color="#BADA9C"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="600" fill="url(#bg)"/>
+  <circle cx="720" cy="120" r="180" fill="#ffffff" opacity="0.12"/>
+  <circle cx="170" cy="480" r="220" fill="#ffffff" opacity="0.10"/>
+  <rect x="115" y="135" width="670" height="330" rx="44" fill="#ffffff" opacity="0.18"/>
+  <g fill="#ffffff" opacity="0.92">
+    <circle cx="280" cy="270" r="52"/>
+    <circle cx="450" cy="250" r="62"/>
+    <circle cx="620" cy="270" r="52"/>
+    <rect x="210" y="335" width="140" height="70" rx="35"/>
+    <rect x="365" y="325" width="170" height="82" rx="41"/>
+    <rect x="550" y="335" width="140" height="70" rx="35"/>
+  </g>
+  <text x="450" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="800" fill="#ffffff">Comunidade Empreende</text>
+</svg>
+`)}`;
+
 const HomeFAQController = () => {
   const location = useLocation();
 
@@ -10,6 +36,20 @@ const HomeFAQController = () => {
     const style = document.createElement('style');
     style.setAttribute('data-raiz-home-faq-accordion', 'true');
     style.textContent = `
+      .raiz-public-home {
+        padding-bottom: 0 !important;
+      }
+
+      .raiz-public-home footer {
+        margin-bottom: 0 !important;
+      }
+
+      @media (max-width: 768px) {
+        .raiz-public-home {
+          padding-bottom: 0 !important;
+        }
+      }
+
       .raiz-public-home #faq .space-y-4 > div {
         cursor: pointer;
         position: relative;
@@ -60,7 +100,38 @@ const HomeFAQController = () => {
     `;
     document.head.appendChild(style);
 
+    const ensureComunidadeEmpreendeCover = () => {
+      const projectCards = Array.from(document.querySelectorAll<HTMLElement>('.raiz-public-home #projetos article'));
+      const comunidadeCard = projectCards.find((card) => card.textContent?.includes('Comunidade Empreende'));
+      const coverImage = comunidadeCard?.querySelector<HTMLImageElement>('img');
+
+      if (!coverImage) return;
+
+      if (coverImage.src !== COMUNIDADE_EMPREENDE_COVER) {
+        coverImage.src = COMUNIDADE_EMPREENDE_COVER;
+      }
+
+      coverImage.alt = 'Projeto Comunidade Empreende';
+      coverImage.removeAttribute('srcset');
+      coverImage.loading = 'eager';
+      coverImage.decoding = 'async';
+      coverImage.style.display = 'block';
+      coverImage.style.width = '100%';
+      coverImage.style.height = '100%';
+      coverImage.style.objectFit = 'cover';
+      coverImage.style.opacity = '1';
+      coverImage.style.visibility = 'visible';
+
+      coverImage.onerror = () => {
+        coverImage.onerror = null;
+        coverImage.src = COMUNIDADE_EMPREENDE_FALLBACK;
+      };
+    };
+
     const setupFaqItems = () => {
+      ensureComunidadeEmpreendeCover();
+      const retryId = window.setTimeout(ensureComunidadeEmpreendeCover, 350);
+
       const items = Array.from(document.querySelectorAll<HTMLElement>('.raiz-public-home #faq .space-y-4 > div'));
 
       items.forEach((item, index) => {
@@ -105,6 +176,7 @@ const HomeFAQController = () => {
       document.addEventListener('keydown', handleKeyDown);
 
       return () => {
+        window.clearTimeout(retryId);
         document.removeEventListener('click', handleClick);
         document.removeEventListener('keydown', handleKeyDown);
       };
