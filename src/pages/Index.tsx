@@ -473,6 +473,35 @@ const publicHomeMarkup = String.raw`<div class="fixed inset-0 bg-grid pointer-ev
     </div>
   </footer>`;
 
+const PublicHomeMobileBottomNav = () => (
+  <nav className="mobile-bottom-nav" aria-label="Navegação mobile">
+    <a href="#projetos">
+      <i className="ph-fill ph-squares-four"></i>
+      Projetos
+    </a>
+
+    <a href="#apoiar">
+      <i className="ph-fill ph-hand-heart"></i>
+      Apoiar
+    </a>
+
+    <a href="/criar-projeto" className="active">
+      <i className="ph-fill ph-plus-circle"></i>
+      Enviar
+    </a>
+
+    <a href="#diferenciais">
+      <i className="ph-fill ph-medal"></i>
+      Confiança
+    </a>
+
+    <a href="/login">
+      <i className="ph-fill ph-user-circle"></i>
+      Entrar
+    </a>
+  </nav>
+);
+
 const Index = () => {
   useEffect(() => {
     const revealElements = document.querySelectorAll('.raiz-public-home .reveal');
@@ -522,7 +551,10 @@ const Index = () => {
         <title>Raiz Token | Crowdfunding inteligente com confiança real</title>
         <meta name="description" content="Transforme projetos independentes em campanhas confiáveis com validação humana, reputação pública, prestação de contas e regras claras." />
       </Helmet>
-      <div className="raiz-public-home font-sans" dangerouslySetInnerHTML={{ __html: publicHomeMarkup }} />
+      <div className="raiz-public-home font-sans">
+        <div dangerouslySetInnerHTML={{ __html: publicHomeMarkup }} />
+        <PublicHomeMobileBottomNav />
+      </div>
     </>
   );
 };
