@@ -12,6 +12,7 @@ import AnalyticsScripts from "./components/AnalyticsScripts";
 import GoogleAnalyticsLoader from "./components/GoogleAnalyticsLoader";
 import Header from "./components/Header";
 import MobileBottomNav from "./components/MobileBottomNav";
+import PublicHomeBottomNav from "./components/PublicHomeBottomNav";
 import HomeFAQController from "./components/HomeFAQController";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -204,6 +205,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
+      {isPublicHome && <PublicHomeBottomNav />}
       {!isPublicHome && <MobileBottomNav />}
       <AIFaqChat />
     </>

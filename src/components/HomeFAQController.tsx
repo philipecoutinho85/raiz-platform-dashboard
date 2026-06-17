@@ -36,20 +36,6 @@ const HomeFAQController = () => {
     const style = document.createElement('style');
     style.setAttribute('data-raiz-home-faq-accordion', 'true');
     style.textContent = `
-      .raiz-public-home {
-        padding-bottom: 0 !important;
-      }
-
-      .raiz-public-home footer {
-        margin-bottom: 0 !important;
-      }
-
-      @media (max-width: 768px) {
-        .raiz-public-home {
-          padding-bottom: 0 !important;
-        }
-      }
-
       .raiz-public-home #faq .space-y-4 > div {
         cursor: pointer;
         position: relative;
