@@ -471,34 +471,36 @@ const publicHomeMarkup = String.raw`<div class="fixed inset-0 bg-grid pointer-ev
       <div><h3 class="text-white font-bold mb-4">Confiança</h3><a href="/privacy" class="block mb-2 hover:text-white">Privacidade</a><a href="/terms" class="block mb-2 hover:text-white">Termos</a><a href="/contato" class="block mb-2 hover:text-white">Contato</a></div>
       <div><h3 class="text-white font-bold mb-4">Acesso</h3><a href="/login" class="block mb-2 hover:text-white">Entrar</a><a href="/registro" class="block mb-2 hover:text-white">Criar conta</a></div>
     </div>
-  </footer>
+  </footer>`;
 
-  <nav class="mobile-bottom-nav" aria-label="Navegação mobile">
+const PublicHomeMobileBottomNav = () => (
+  <nav className="mobile-bottom-nav" aria-label="Navegação mobile">
     <a href="#projetos">
-      <i class="ph-fill ph-squares-four"></i>
+      <i className="ph-fill ph-squares-four"></i>
       Projetos
     </a>
 
     <a href="#apoiar">
-      <i class="ph-fill ph-hand-heart"></i>
+      <i className="ph-fill ph-hand-heart"></i>
       Apoiar
     </a>
 
-    <a href="/criar-projeto" class="active">
-      <i class="ph-fill ph-plus-circle"></i>
+    <a href="/criar-projeto" className="active">
+      <i className="ph-fill ph-plus-circle"></i>
       Enviar
     </a>
 
     <a href="#diferenciais">
-      <i class="ph-fill ph-medal"></i>
+      <i className="ph-fill ph-medal"></i>
       Confiança
     </a>
 
     <a href="/login">
-      <i class="ph-fill ph-user-circle"></i>
+      <i className="ph-fill ph-user-circle"></i>
       Entrar
     </a>
-  </nav>`;
+  </nav>
+);
 
 const Index = () => {
   useEffect(() => {
@@ -549,7 +551,10 @@ const Index = () => {
         <title>Raiz Token | Crowdfunding inteligente com confiança real</title>
         <meta name="description" content="Transforme projetos independentes em campanhas confiáveis com validação humana, reputação pública, prestação de contas e regras claras." />
       </Helmet>
-      <div className="raiz-public-home font-sans" dangerouslySetInnerHTML={{ __html: publicHomeMarkup }} />
+      <div className="raiz-public-home font-sans">
+        <div dangerouslySetInnerHTML={{ __html: publicHomeMarkup }} />
+        <PublicHomeMobileBottomNav />
+      </div>
     </>
   );
 };
