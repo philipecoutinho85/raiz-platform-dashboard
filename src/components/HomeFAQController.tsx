@@ -27,6 +27,14 @@ const COMUNIDADE_EMPREENDE_FALLBACK = `data:image/svg+xml;charset=UTF-8,${encode
 </svg>
 `)}`;
 
+const HOME_MOBILE_NAV_ITEMS = [
+  { href: '#projetos', icon: 'ph ph-squares-four', label: 'Projetos', active: true },
+  { href: '#como', icon: 'ph ph-path', label: 'Como' },
+  { href: '#apoiar', icon: 'ph ph-hand-heart', label: 'Apoiar' },
+  { href: '/criar-projeto', icon: 'ph ph-plus-circle', label: 'Criar' },
+  { href: '/login', icon: 'ph ph-user-circle', label: 'Entrar' },
+];
+
 const HomeFAQController = () => {
   const location = useLocation();
 
@@ -36,20 +44,6 @@ const HomeFAQController = () => {
     const style = document.createElement('style');
     style.setAttribute('data-raiz-home-faq-accordion', 'true');
     style.textContent = `
-      .raiz-public-home {
-        padding-bottom: 0 !important;
-      }
-
-      .raiz-public-home footer {
-        margin-bottom: 0 !important;
-      }
-
-      @media (max-width: 768px) {
-        .raiz-public-home {
-          padding-bottom: 0 !important;
-        }
-      }
-
       .raiz-public-home #faq .space-y-4 > div {
         cursor: pointer;
         position: relative;
@@ -100,6 +94,34 @@ const HomeFAQController = () => {
     `;
     document.head.appendChild(style);
 
+    const ensureHomeMobileBottomNav = () => {
+      const homeRoot = document.querySelector<HTMLElement>('.raiz-public-home');
+      if (!homeRoot) return null;
+
+      const existingNav = homeRoot.querySelector<HTMLElement>('.mobile-bottom-nav');
+      if (existingNav) {
+        existingNav.removeAttribute('hidden');
+        existingNav.style.removeProperty('display');
+        existingNav.style.removeProperty('visibility');
+        existingNav.style.removeProperty('opacity');
+        return existingNav;
+      }
+
+      const nav = document.createElement('nav');
+      nav.className = 'mobile-bottom-nav';
+      nav.dataset.raizInjectedHomeNav = 'true';
+      nav.setAttribute('aria-label', 'Menu inferior mobile');
+      nav.innerHTML = HOME_MOBILE_NAV_ITEMS.map((item) => `
+        <a href="${item.href}"${item.active ? ' class="active"' : ''}>
+          <i class="${item.icon}" aria-hidden="true"></i>
+          <span>${item.label}</span>
+        </a>
+      `).join('');
+
+      homeRoot.appendChild(nav);
+      return nav;
+    };
+
     const ensureComunidadeEmpreendeCover = () => {
       const projectCards = Array.from(document.querySelectorAll<HTMLElement>('.raiz-public-home #projetos article'));
       const comunidadeCard = projectCards.find((card) => card.textContent?.includes('Comunidade Empreende'));
@@ -129,8 +151,12 @@ const HomeFAQController = () => {
     };
 
     const setupFaqItems = () => {
+      const injectedMobileNav = ensureHomeMobileBottomNav();
       ensureComunidadeEmpreendeCover();
-      const retryId = window.setTimeout(ensureComunidadeEmpreendeCover, 350);
+      const retryId = window.setTimeout(() => {
+        ensureHomeMobileBottomNav();
+        ensureComunidadeEmpreendeCover();
+      }, 350);
 
       const items = Array.from(document.querySelectorAll<HTMLElement>('.raiz-public-home #faq .space-y-4 > div'));
 
@@ -177,6 +203,9 @@ const HomeFAQController = () => {
 
       return () => {
         window.clearTimeout(retryId);
+        if (injectedMobileNav?.dataset.raizInjectedHomeNav === 'true') {
+          injectedMobileNav.remove();
+        }
         document.removeEventListener('click', handleClick);
         document.removeEventListener('keydown', handleKeyDown);
       };
