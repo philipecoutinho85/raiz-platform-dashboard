@@ -1,11 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { Shield, Lock, Eye, UserCheck, Database, FileText } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { LegalCTA, LegalPageLayout, LegalSection } from '@/components/legal/LegalPageLayout';
 
 const Privacy = () => {
   return (
-    <LegalPageLayout
+    <>
+      <Helmet>
+        <title>Política de Privacidade | Raiz Token</title>
+        <meta name="description" content="Veja como a Raiz Token trata dados pessoais de criadores e apoiadores de campanhas de crowdfunding na plataforma." />
+        <link rel="canonical" href="https://raiztoken.com.br/privacy" />
+      </Helmet>
+
+      <LegalPageLayout
       badge="Privacidade"
       title="Política de Privacidade."
       subtitle="A Raiz Token respeita sua privacidade e adota práticas alinhadas à LGPD para proteger dados pessoais tratados na plataforma."
@@ -123,7 +131,8 @@ const Privacy = () => {
         </div>
         <p>Futuras alterações serão adicionadas nesta tabela com a respectiva data e descrição.</p>
       </LegalSection>
-    </LegalPageLayout>
+      </LegalPageLayout>
+    </>
   );
 };
 

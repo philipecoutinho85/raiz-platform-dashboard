@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, CreditCard, Eye, Server, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import Footer from '@/components/Footer';
 
@@ -29,7 +30,14 @@ const Security = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-raiz-primary via-raiz-primary/95 to-raiz-secondary">
+    <>
+      <Helmet>
+        <title>Segurança | Raiz Token</title>
+        <meta name="description" content="Saiba como a Raiz Token protege dados e pagamentos de quem cria e apoia campanhas de crowdfunding na plataforma." />
+        <link rel="canonical" href="https://raiztoken.com.br/security" />
+      </Helmet>
+
+      <div className="min-h-screen bg-gradient-to-br from-raiz-primary via-raiz-primary/95 to-raiz-secondary">
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="text-center mb-16">
@@ -296,7 +304,8 @@ const Security = () => {
         </div>
       </div>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

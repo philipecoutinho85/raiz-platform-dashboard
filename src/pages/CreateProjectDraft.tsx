@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Controller, useForm } from 'react-hook-form';
 import { AlertTriangle, Clock, FileCheck, ShieldCheck, Upload, X, Plus } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -544,7 +545,14 @@ const CreateProjectDraft = () => {
   }
 
   return (
-    <div className="min-h-screen bg-raiz-light py-8">
+    <>
+      <Helmet>
+        <title>Crie sua Campanha de Crowdfunding | Raiz Token</title>
+        <meta name="description" content="Envie seu projeto para análise e crie uma campanha de crowdfunding na Raiz Token. Criar é gratuito e a validação acontece antes da publicação." />
+        <link rel="canonical" href="https://raiztoken.com.br/criar-projeto" />
+      </Helmet>
+
+      <div className="min-h-screen bg-raiz-light py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-raiz-dark mb-2">
@@ -897,7 +905,8 @@ const CreateProjectDraft = () => {
         </Card>
       </div>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -336,9 +337,20 @@ const ProjectDetail = () => {
   const embedUrl = getYouTubeEmbedUrl(project.youtube_url);
   const progressPercentage = getProgressPercentage();
   const daysLeft = getDaysLeft();
+  const seoDescriptionSource = project.description?.trim();
+  const seoDescription = seoDescriptionSource
+    ? seoDescriptionSource.slice(0, 155)
+    : 'Conheça este projeto de crowdfunding validado na Raiz Token e apoie com segurança e transparência.';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20">
+    <>
+      <Helmet>
+        <title>{`${project.title} | Crowdfunding na Raiz Token`}</title>
+        <meta name="description" content={seoDescription} />
+        <link rel="canonical" href={`https://raiztoken.com.br/projeto/${id || project.id}`} />
+      </Helmet>
+
+      <div className="min-h-screen bg-gradient-to-br from-raiz-light to-raiz-accent/20">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -811,7 +823,8 @@ const ProjectDetail = () => {
       />
 
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 
