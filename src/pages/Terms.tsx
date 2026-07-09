@@ -1,11 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { FileText, Shield, Users, AlertTriangle } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { LegalCTA, LegalPageLayout, LegalSection } from '@/components/legal/LegalPageLayout';
 
 const Terms = () => {
   return (
-    <LegalPageLayout
+    <>
+      <Helmet>
+        <title>Termos de Uso | Raiz Token</title>
+        <meta name="description" content="Consulte os termos de uso da Raiz Token, plataforma de crowdfunding para projetos independentes no Brasil." />
+        <link rel="canonical" href="https://raiztoken.com.br/terms" />
+      </Helmet>
+
+      <LegalPageLayout
       badge="Termos"
       title="Termos de Uso."
       subtitle="Ao usar a plataforma Raiz Token, você concorda com as regras de funcionamento, apoio, tokens, reembolsos e responsabilidades descritas nesta página."
@@ -100,7 +108,8 @@ const Terms = () => {
         </div>
         <p>Futuras alterações serão adicionadas nesta tabela com a respectiva data e descrição.</p>
       </LegalSection>
-    </LegalPageLayout>
+      </LegalPageLayout>
+    </>
   );
 };
 

@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, Send, Paperclip, Shield, Zap, Heart, MessageCircle, FileQuestion, BadgeCheck } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -109,7 +110,14 @@ const Contact = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)]">
+    <>
+      <Helmet>
+        <title>Fale com a Raiz Token</title>
+        <meta name="description" content="Entre em contato com a equipe da Raiz Token para tirar dúvidas sobre projetos, campanhas de crowdfunding ou sua conta na plataforma." />
+        <link rel="canonical" href="https://raiztoken.com.br/contato" />
+      </Helmet>
+
+      <div className="min-h-screen bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)]">
       <main className="relative overflow-hidden px-4 py-14 md:py-20">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(45,64,93,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(45,64,93,.035)_1px,transparent_1px)] bg-[size:56px_56px] opacity-70" />
 
@@ -303,7 +311,8 @@ const Contact = () => {
         </div>
       </main>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

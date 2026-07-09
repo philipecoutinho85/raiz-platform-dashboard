@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, Coins, Target, Shield, RefreshCw, CheckCircle2, BadgeCheck, FileText, Wallet } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import Footer from '@/components/Footer';
 
@@ -57,7 +58,14 @@ const HowItWorks = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)]">
+    <>
+      <Helmet>
+        <title>Como Funciona o Crowdfunding na Raiz Token</title>
+        <meta name="description" content="Entenda o passo a passo do crowdfunding na Raiz Token, da validação humana do projeto até a prestação de contas para quem apoiou." />
+        <link rel="canonical" href="https://raiztoken.com.br/como-funciona" />
+      </Helmet>
+
+      <div className="min-h-screen bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)]">
       <main className="relative overflow-hidden px-4 py-14 md:py-20">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(45,64,93,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(45,64,93,.035)_1px,transparent_1px)] bg-[size:56px_56px] opacity-70" />
 
@@ -169,7 +177,8 @@ const HowItWorks = () => {
         </div>
       </main>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter, Heart, Users, Clock, MapPin, Target, Flame, Trophy, Hash, ShieldCheck, BadgeCheck, FileText } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
@@ -185,7 +186,14 @@ const Marketplace = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)]">
+    <>
+      <Helmet>
+        <title>Projetos de Crowdfunding em Andamento | Raiz Token</title>
+        <meta name="description" content="Descubra e apoie campanhas de crowdfunding validadas no Brasil. Projetos reais, com prestação de contas e regras claras do início ao fim." />
+        <link rel="canonical" href="https://raiztoken.com.br/projetos" />
+      </Helmet>
+
+      <div className="min-h-screen bg-[radial-gradient(circle_at_82%_8%,rgba(186,218,156,.22),transparent_24%),radial-gradient(circle_at_12%_14%,rgba(45,64,93,.10),transparent_28%),linear-gradient(180deg,#FBFCF8_0%,#F4F7F2_48%,#FFFFFF_100%)]">
       <main className="relative overflow-hidden px-4 py-14 md:py-20">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(45,64,93,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(45,64,93,.035)_1px,transparent_1px)] bg-[size:56px_56px] opacity-70" />
 
@@ -456,7 +464,8 @@ const Marketplace = () => {
         </div>
       </main>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

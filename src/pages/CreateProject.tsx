@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Upload, X, Plus, Coins, Info, AlertTriangle, ShieldAlert, FileCheck, Clock } from 'lucide-react';
+import { Helmet } from 'react-helmet';
 import { PlatformRulesModal, CONSENT_VERSION, CONSENT_TEXT } from '@/components/forms/PlatformRulesModal';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -484,7 +485,14 @@ const CreateProject = () => {
   }
 
   return (
-    <div className="min-h-screen bg-raiz-light py-8">
+    <>
+      <Helmet>
+        <title>Crie sua Campanha de Crowdfunding | Raiz Token</title>
+        <meta name="description" content="Envie seu projeto para análise e crie uma campanha de crowdfunding na Raiz Token. Criar é gratuito e a validação acontece antes da publicação." />
+        <link rel="canonical" href="https://raiztoken.com.br/criar-projeto" />
+      </Helmet>
+
+      <div className="min-h-screen bg-raiz-light py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-raiz-dark mb-2">Criar Novo Projeto</h1>
@@ -1102,7 +1110,8 @@ const CreateProject = () => {
         </Card>
       </div>
       <Footer />
-    </div>
+      </div>
+    </>
   );
 };
 

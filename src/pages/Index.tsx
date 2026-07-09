@@ -521,6 +521,7 @@ const Index = () => {
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css" />
         <title>Raiz Token | Crowdfunding inteligente com confiança real</title>
         <meta name="description" content="Transforme projetos independentes em campanhas confiáveis com validação humana, reputação pública, prestação de contas e regras claras." />
+        <link rel="canonical" href="https://raiztoken.com.br/" />
       </Helmet>
       <div className="raiz-public-home font-sans" dangerouslySetInnerHTML={{ __html: publicHomeMarkup }} />
     </>
