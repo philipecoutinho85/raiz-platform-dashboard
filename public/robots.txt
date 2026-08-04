@@ -1,7 +1,15 @@
 User-agent: *
-Disallow: /login
-Disallow: /registro
-Disallow: /register
 Allow: /
+
+# Áreas privadas e operacionais: não devem competir por indexação
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /carteira
+Disallow: /checkout-pagamento
+Disallow: /meus-projetos
+Disallow: /perfil
+Disallow: /editar-projeto/
+Disallow: /criar-projeto
+Disallow: /criar-projeto-legado
 
 Sitemap: https://raiztoken.com.br/sitemap.xml
