@@ -67,7 +67,10 @@ function validateIndexHtml(html) {
     '<meta property="og:title"',
     '<meta property="og:description"',
     '<meta property="og:image"',
+    '<link rel="preconnect" href="https://oefkzjyqjjfzfrmovfdt.supabase.co"',
+    '<link rel="preconnect" href="https://images.unsplash.com"',
     '<script type="application/ld+json">',
+    '<script src="/legacy-route-redirect.js"></script>',
     '<script src="/seo-route-meta.js"></script>',
   ];
 
@@ -91,18 +94,36 @@ function validateIndexHtml(html) {
   return jsonLdBlocks.length;
 }
 
+function validate404Html(html) {
+  const requiredFragments = [
+    '<title>404 | Raiz Token</title>',
+    '<meta name="robots" content="noindex, nofollow, noarchive" />',
+    '<meta name="googlebot" content="noindex, nofollow, noarchive" />',
+  ];
+
+  for (const fragment of requiredFragments) {
+    if (!html.includes(fragment)) fail(`404.html sem requisito: ${fragment}`);
+  }
+
+  if (html.includes('<script src="/seo-route-meta.js"></script>')) {
+    fail('404.html não pode carregar o controlador SEO que reativa indexação');
+  }
+}
+
 async function main() {
-  const [sitemapXml, indexHtml] = await Promise.all([
+  const [sitemapXml, indexHtml, fallback404Html] = await Promise.all([
     readFile(path.join(DIST_DIR, 'sitemap.xml'), 'utf8'),
     readFile(path.join(DIST_DIR, 'index.html'), 'utf8'),
+    readFile(path.join(DIST_DIR, '404.html'), 'utf8'),
   ]);
 
   const urlCount = validateSitemap(sitemapXml);
   const jsonLdCount = validateIndexHtml(indexHtml);
+  validate404Html(fallback404Html);
 
   console.log(
-    `[seo:validate] aprovado: ${urlCount} URLs canônicas no sitemap e ` +
-      `${jsonLdCount} bloco(s) JSON-LD válido(s).`,
+    `[seo:validate] aprovado: ${urlCount} URLs canônicas no sitemap, ` +
+      `${jsonLdCount} bloco(s) JSON-LD válido(s), redirect legado e fallback 404 noindex.`,
   );
 }
 
