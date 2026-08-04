@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,7 +11,7 @@ const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL || 'https://oefkzjyqjjfzfrmovfdt.supabase.co';
 const SUPABASE_KEY =
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZmt6anlxampmemZybW92ZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyOTQ0MDYsImV4cCI6MjA2NTg3MDQwNn0.e2pJAbPn3Y6tmut2ClBDeRUHTr-pqYt5Mqc2B_wKGOU';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZmt6anlxampmemZybW92ZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyOTQ0MDYsImV4cCI6MjA2NTg3MDQwNn0.e2pJAbPn3Y6tmut2ClBDeRUHTr-pqYt5Mqc2B_wKGOU';
 
 const STATIC_ROUTES = [
   '/',
@@ -171,6 +171,25 @@ function buildSitemap(entries) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
 }
 
+function build404Fallback(indexHtml) {
+  const noindexMeta = [
+    '    <meta name="robots" content="noindex, nofollow, noarchive" />',
+    '    <meta name="googlebot" content="noindex, nofollow, noarchive" />',
+  ].join('\n');
+
+  return indexHtml
+    .replace(/<title>[\s\S]*?<\/title>/, '<title>404 | Raiz Token</title>')
+    .replace(
+      /<meta name="description"[^>]*>/,
+      '<meta name="description" content="Página não encontrada na Raiz Token." />',
+    )
+    .replace(
+      '    <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+      `    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n${noindexMeta}`,
+    )
+    .replace('    <script src="/seo-route-meta.js"></script>\n', '');
+}
+
 async function main() {
   await mkdir(DIST_DIR, { recursive: true });
 
@@ -181,8 +200,10 @@ async function main() {
   ];
 
   const sitemap = buildSitemap(entries);
-  const destination = path.join(DIST_DIR, 'sitemap.xml');
-  await writeFile(destination, sitemap, 'utf8');
+  await writeFile(path.join(DIST_DIR, 'sitemap.xml'), sitemap, 'utf8');
+
+  const indexHtml = await readFile(path.join(DIST_DIR, 'index.html'), 'utf8');
+  await writeFile(path.join(DIST_DIR, '404.html'), build404Fallback(indexHtml), 'utf8');
 
   const dynamicBlogCount = dynamicEntries.filter((entry) => entry.path.startsWith('/blog/')).length;
   const dynamicProjectCount = dynamicEntries.filter((entry) => entry.path.startsWith('/projeto/')).length;
@@ -191,6 +212,7 @@ async function main() {
     `[seo] sitemap.xml gerado com ${STATIC_ROUTES.length} rotas estáticas, ` +
       `${dynamicBlogCount} artigos e ${dynamicProjectCount} projetos aprovados.`,
   );
+  console.log('[seo] 404.html gerado com diretivas noindex como fallback de hospedagem estática.');
 }
 
 main().catch((error) => {
