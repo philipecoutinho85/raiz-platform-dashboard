@@ -2,6 +2,200 @@
   publish = "dist"
   command = "npm run build"
 
+[build.environment]
+  NODE_VERSION = "20.20.2"
+
+[build.processing.html]
+  pretty_urls = false
+
+# Permanent canonical redirect for the legacy English route.
+[[redirects]]
+  from = "/how-it-works"
+  to = "/como-funciona"
+  status = 301
+  force = true
+
+# Public and authenticated React routes. These rewrites preserve direct access
+# and refreshes without turning every unknown URL into a 200 response.
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/registro"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/esqueci-senha"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/projetos"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/criar-projeto"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/editar-projeto/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/criar-projeto-legado"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/meus-projetos"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/projeto/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/perfil"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/usuario/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/blog"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/blog/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/carteira"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/checkout-pagamento"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/blog"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/blog/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/como-funciona"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/faq"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacidade-apoiadores"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacidade-criadores"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/security"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/politica-de-cookies"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/contato"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/avaliar-suporte"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/c/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/campanha/*"
+  to = "/index.html"
+  status = 200
+
+# Any path not declared above and not backed by a deployed static file returns
+# the generated noindex page with a genuine HTTP 404 response.
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"
+    Content-Type = "application/xml; charset=UTF-8"
+
+[[headers]]
+  for = "/404.html"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
 [[headers]]
   for = "/*"
   [headers.values]
