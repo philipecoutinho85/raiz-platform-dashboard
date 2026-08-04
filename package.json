@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node scripts/generate-seo-artifacts.mjs && node scripts/validate-seo-artifacts.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seo:generate": "node scripts/generate-seo-artifacts.mjs",
+    "seo:validate": "node scripts/validate-seo-artifacts.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
