@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -10,6 +9,7 @@
     <title>Raiz Token: Conectando pessoas a projetos que transformam o Brasil</title>
     <meta name="description" content="Transforme seu apoio em legado. Na Raiz Token, cada contribuição financia ideias autênticas e cria impacto de verdade. Faça parte de algo que vai além do investimento." />
     <meta name="author" content="$RAIZ Platform" />
+    <meta name="application-name" content="Raiz Token" />
 
     <meta property="og:title" content="Raiz Token: Conectando pessoas a projetos que transformam o Brasil" />
     <meta property="og:description" content="Transforme seu apoio em legado. Na Raiz Token, cada contribuição financia ideias autênticas e cria impacto de verdade. Faça parte de algo que vai além do investimento." />
@@ -20,34 +20,55 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Raiz Token - Plataforma de Crowdfunding" />
     <meta property="og:site_name" content="Raiz Token" />
+    <meta property="og:locale" content="pt_BR" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@raiz_platform" />
     <meta name="twitter:title" content="Raiz Token: Conectando pessoas a projetos que transformam o Brasil" />
     <meta name="twitter:description" content="Transforme seu apoio em legado. Na Raiz Token, cada contribuição financia ideias autênticas e cria impacto de verdade." />
     <meta name="twitter:image" content="https://raiztoken.com.br/og-image.png" />
-    
-    <!-- Structured Data para SEO -->
+
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Raiz Token",
-      "url": "https://raiztoken.com.br",
-      "logo": "https://oefkzjyqjjfzfrmovfdt.supabase.co/storage/v1/object/public/project-images/raiz-logo.png",
-      "description": "Plataforma de crowdfunding que transforma ideias em realidade através do poder da comunidade",
-      "sameAs": [
-        "https://www.linkedin.com/company/raiztoken",
-        "https://www.instagram.com/raiztoken",
-        "https://twitter.com/raiz_platform"
-      ],
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "Customer Service",
-        "email": "contato@raiztoken.com.br"
-      }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://raiztoken.com.br/#organization",
+          "name": "Raiz Token",
+          "url": "https://raiztoken.com.br/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://oefkzjyqjjfzfrmovfdt.supabase.co/storage/v1/object/public/project-images/raiz-logo.png"
+          },
+          "description": "Plataforma de crowdfunding que transforma ideias em realidade através do poder da comunidade",
+          "sameAs": [
+            "https://www.linkedin.com/company/raiztoken",
+            "https://www.instagram.com/raiztoken",
+            "https://twitter.com/raiz_platform"
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Customer Service",
+            "email": "contato@raiztoken.com.br"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://raiztoken.com.br/#website",
+          "url": "https://raiztoken.com.br/",
+          "name": "Raiz Token",
+          "alternateName": "$RAIZ",
+          "publisher": {
+            "@id": "https://raiztoken.com.br/#organization"
+          },
+          "inLanguage": "pt-BR"
+        }
+      ]
     }
     </script>
+
+    <script src="/seo-route-meta.js"></script>
   </head>
 
   <body>
