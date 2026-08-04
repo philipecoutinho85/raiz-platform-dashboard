@@ -11,7 +11,7 @@ const SUPABASE_URL =
   process.env.VITE_SUPABASE_URL || 'https://oefkzjyqjjfzfrmovfdt.supabase.co';
 const SUPABASE_KEY =
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZmt6anlxampmemZybW92ZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyOTQ0MDYsImV4cCI6MjA2NTg3MDQwNn0.e2pJAbPn3Y6tmut2ClBDeRUHTr-pqYt5Mqc2B_wKGOU';
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lZmt6anlxampmemZybW92ZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyOTQ0MDYsImV4cCI6MjA2NTg3MDQwNn0.e2pJAbPn3Y6tmut2ClBDeRUHTr-pqYt5Mqc2B_wKGOU';
 
 const STATIC_ROUTES = [
   '/',
