@@ -4,6 +4,8 @@
   var BASE_URL = 'https://raiztoken.com.br';
   var SITE_NAME = 'Raiz Token';
   var DEFAULT_IMAGE = BASE_URL + '/og-image.png';
+  var dynamicTimer = null;
+  var rootObserver = null;
 
   var ROUTES = {
     '/': {
@@ -66,6 +68,16 @@
     return pathname.replace(/\/+$/, '') || '/';
   }
 
+  function cleanText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function truncate(value, maxLength) {
+    var text = cleanText(value);
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength - 1).replace(/\s+\S*$/, '') + '…';
+  }
+
   function upsertMeta(selector, attributes) {
     var el = document.head.querySelector(selector);
     if (!el) {
@@ -76,6 +88,11 @@
       el.setAttribute(key, attributes[key]);
     });
     return el;
+  }
+
+  function getMeta(selector) {
+    var el = document.head.querySelector(selector);
+    return el ? cleanText(el.getAttribute('content')) : '';
   }
 
   function setCanonical(url) {
@@ -90,10 +107,29 @@
     canonical.setAttribute('href', url);
   }
 
+  function removeCanonicals() {
+    Array.prototype.slice.call(document.head.querySelectorAll('link[rel="canonical"]')).forEach(function (el) {
+      el.remove();
+    });
+  }
+
+  function setRobots(indexable) {
+    var value = indexable
+      ? 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
+      : 'noindex, nofollow, noarchive';
+
+    upsertMeta('meta[name="robots"]', { name: 'robots', content: value });
+    upsertMeta('meta[name="googlebot"]', { name: 'googlebot', content: value });
+  }
+
   function routeIsNoindex(path) {
     return NOINDEX_PREFIXES.some(function (prefix) {
       return path === prefix || path.indexOf(prefix) === 0;
     });
+  }
+
+  function isDynamicContentRoute(path) {
+    return path.indexOf('/blog/') === 0 || path.indexOf('/projeto/') === 0;
   }
 
   function routeConfig(path) {
@@ -108,7 +144,7 @@
     return CANONICAL_ALIASES[path] || path;
   }
 
-  function breadcrumbItems(path) {
+  function breadcrumbItems(path, leafName) {
     var items = [{ name: 'Raiz Token', url: BASE_URL + '/' }];
     if (path === '/') return items;
 
@@ -125,9 +161,9 @@
     }
 
     if (path.indexOf('/projeto/') === 0) {
-      items.push({ name: 'Projeto', url: BASE_URL + path });
+      items.push({ name: leafName || 'Projeto', url: BASE_URL + path });
     } else if (path.indexOf('/blog/') === 0) {
-      items.push({ name: 'Artigo', url: BASE_URL + path });
+      items.push({ name: leafName || 'Artigo', url: BASE_URL + path });
     }
 
     return items;
@@ -144,7 +180,33 @@
     script.textContent = JSON.stringify(data);
   }
 
-  function updateStructuredData(path, config, canonicalUrl) {
+  function removeJsonLd(id) {
+    var el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function updateBreadcrumbs(path, leafName) {
+    var crumbs = breadcrumbItems(path, leafName);
+    if (crumbs.length <= 1) {
+      removeJsonLd('seo-breadcrumb-jsonld');
+      return;
+    }
+
+    setJsonLd('seo-breadcrumb-jsonld', {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: crumbs.map(function (item, index) {
+        return {
+          '@type': 'ListItem',
+          position: index + 1,
+          name: item.name,
+          item: item.url
+        };
+      })
+    });
+  }
+
+  function updateStructuredData(path, config, canonicalUrl, leafName) {
     var webPage = {
       '@context': 'https://schema.org',
       '@type': config.type || 'WebPage',
@@ -156,36 +218,41 @@
       inLanguage: 'pt-BR'
     };
 
-    var description = document.head.querySelector('meta[name="description"]');
-    if (description && description.content) webPage.description = description.content;
+    var description = getMeta('meta[name="description"]');
+    if (description) webPage.description = description;
 
     setJsonLd('seo-webpage-jsonld', webPage);
+    updateBreadcrumbs(path, leafName);
+  }
 
-    var crumbs = breadcrumbItems(path);
-    if (crumbs.length > 1) {
-      setJsonLd('seo-breadcrumb-jsonld', {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: crumbs.map(function (item, index) {
-          return {
-            '@type': 'ListItem',
-            position: index + 1,
-            name: item.name,
-            item: item.url
-          };
-        })
-      });
-    } else {
-      var oldBreadcrumb = document.getElementById('seo-breadcrumb-jsonld');
-      if (oldBreadcrumb) oldBreadcrumb.remove();
+  function updateSocialMeta(canonicalUrl, type) {
+    upsertMeta('meta[property="og:locale"]', { property: 'og:locale', content: 'pt_BR' });
+    upsertMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: SITE_NAME });
+    upsertMeta('meta[property="og:url"]', { property: 'og:url', content: canonicalUrl });
+    upsertMeta('meta[property="og:type"]', { property: 'og:type', content: type || 'website' });
+    upsertMeta('meta[property="og:title"]', { property: 'og:title', content: document.title || SITE_NAME });
+
+    var description = getMeta('meta[name="description"]');
+    if (description) {
+      upsertMeta('meta[property="og:description"]', { property: 'og:description', content: description });
+      upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
     }
+
+    if (!document.head.querySelector('meta[property="og:image"]')) {
+      upsertMeta('meta[property="og:image"]', { property: 'og:image', content: DEFAULT_IMAGE });
+    }
+
+    upsertMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' });
+    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: document.title || SITE_NAME });
   }
 
   function applySeo() {
     var path = normalizePath(window.location.pathname);
     var config = routeConfig(path);
-    var noindex = routeIsNoindex(path);
+    var protectedRoute = routeIsNoindex(path);
+    var dynamicPending = isDynamicContentRoute(path);
     var canonical = BASE_URL + canonicalPath(path);
+
     if (canonical.endsWith('/') && canonical !== BASE_URL + '/') canonical = canonical.slice(0, -1);
 
     if (config.title) document.title = config.title;
@@ -197,51 +264,248 @@
       });
     }
 
-    var robotsValue = noindex
-      ? 'noindex, nofollow, noarchive'
-      : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+    setRobots(!protectedRoute && !dynamicPending);
 
-    upsertMeta('meta[name="robots"]', { name: 'robots', content: robotsValue });
-    upsertMeta('meta[name="googlebot"]', { name: 'googlebot', content: robotsValue });
+    if (!protectedRoute && !dynamicPending) setCanonical(canonical);
+    else removeCanonicals();
 
-    if (!noindex) setCanonical(canonical);
-    else {
-      Array.prototype.slice.call(document.head.querySelectorAll('link[rel="canonical"]')).forEach(function (el) { el.remove(); });
+    updateSocialMeta(canonical, path.indexOf('/blog/') === 0 ? 'article' : 'website');
+
+    if (!protectedRoute && !dynamicPending) {
+      updateStructuredData(path, config, canonical);
+    } else {
+      removeJsonLd('seo-webpage-jsonld');
+      removeJsonLd('seo-breadcrumb-jsonld');
+      removeJsonLd('seo-dynamic-content-jsonld');
+    }
+  }
+
+  function pageTextContains(value) {
+    if (!document.body) return false;
+    return document.body.innerText.indexOf(value) !== -1;
+  }
+
+  function findProjectTitle() {
+    var preferred = document.querySelector('h3.text-2xl');
+    if (preferred && cleanText(preferred.textContent)) return cleanText(preferred.textContent);
+
+    var headings = Array.prototype.slice.call(document.querySelectorAll('h1, h2, h3'));
+    var blocked = ['Projeto não encontrado', 'Prestação de contas', 'Atualizações', 'Apoiadores', 'Comentários'];
+
+    for (var i = 0; i < headings.length; i += 1) {
+      var text = cleanText(headings[i].textContent);
+      if (text.length < 4) continue;
+      if (blocked.indexOf(text) !== -1) continue;
+      return text;
     }
 
-    upsertMeta('meta[property="og:locale"]', { property: 'og:locale', content: 'pt_BR' });
-    upsertMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: SITE_NAME });
-    upsertMeta('meta[property="og:url"]', { property: 'og:url', content: canonical });
-    upsertMeta('meta[property="og:type"]', { property: 'og:type', content: path.indexOf('/blog/') === 0 ? 'article' : 'website' });
-    upsertMeta('meta[property="og:title"]', { property: 'og:title', content: document.title || SITE_NAME });
+    return '';
+  }
 
-    var descriptionMeta = document.head.querySelector('meta[name="description"]');
-    if (descriptionMeta && descriptionMeta.content) {
-      upsertMeta('meta[property="og:description"]', { property: 'og:description', content: descriptionMeta.content });
+  function findLongParagraph() {
+    var paragraphs = Array.prototype.slice.call(document.querySelectorAll('p'));
+    var candidates = paragraphs
+      .map(function (el) { return cleanText(el.textContent); })
+      .filter(function (text) { return text.length >= 80; })
+      .sort(function (a, b) { return b.length - a.length; });
+
+    return candidates.length ? candidates[0] : '';
+  }
+
+  function findProjectImage(title) {
+    var images = Array.prototype.slice.call(document.images || []);
+    for (var i = 0; i < images.length; i += 1) {
+      var alt = cleanText(images[i].getAttribute('alt'));
+      if (alt === title || alt === 'Projeto ' + title) {
+        return images[i].currentSrc || images[i].src || '';
+      }
+    }
+    return getMeta('meta[property="og:image"]') || DEFAULT_IMAGE;
+  }
+
+  function hydrateBlogPost(path, canonicalUrl) {
+    if (pageTextContains('Artigo não encontrado')) {
+      setRobots(false);
+      removeCanonicals();
+      removeJsonLd('seo-dynamic-content-jsonld');
+      return;
     }
 
-    var ogImage = document.head.querySelector('meta[property="og:image"]');
-    if (!ogImage) upsertMeta('meta[property="og:image"]', { property: 'og:image', content: DEFAULT_IMAGE });
+    var headlineEl = document.querySelector('article h1') || document.querySelector('h1');
+    var headline = headlineEl ? cleanText(headlineEl.textContent) : '';
+    if (!headline) return;
 
-    upsertMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' });
-    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: document.title || SITE_NAME });
-    if (descriptionMeta && descriptionMeta.content) {
-      upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: descriptionMeta.content });
+    var description = getMeta('meta[name="description"]');
+    var image = getMeta('meta[property="og:image"]') || DEFAULT_IMAGE;
+    var published = getMeta('meta[property="article:published_time"]');
+    var modified = getMeta('meta[property="article:modified_time"]');
+
+    setCanonical(canonicalUrl);
+    setRobots(true);
+    updateSocialMeta(canonicalUrl, 'article');
+    updateStructuredData(path, { type: 'WebPage' }, canonicalUrl, headline);
+
+    var article = {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      '@id': canonicalUrl + '#article',
+      headline: headline,
+      mainEntityOfPage: { '@id': canonicalUrl + '#webpage' },
+      url: canonicalUrl,
+      inLanguage: 'pt-BR',
+      publisher: { '@id': BASE_URL + '/#organization' }
+    };
+
+    if (description) article.description = description;
+    if (image) article.image = image;
+    if (published) article.datePublished = published;
+    if (modified) article.dateModified = modified;
+
+    setJsonLd('seo-dynamic-content-jsonld', article);
+  }
+
+  function hydrateProject(path, canonicalUrl) {
+    if (pageTextContains('Projeto não encontrado')) {
+      setRobots(false);
+      removeCanonicals();
+      removeJsonLd('seo-dynamic-content-jsonld');
+      return;
     }
 
-    if (!noindex) updateStructuredData(path, config, canonical);
-    else {
-      ['seo-webpage-jsonld', 'seo-breadcrumb-jsonld'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.remove();
+    var title = findProjectTitle();
+    if (!title) return;
+
+    var approved = pageTextContains('Aprovado');
+    if (!approved) {
+      setRobots(false);
+      removeCanonicals();
+      removeJsonLd('seo-dynamic-content-jsonld');
+      return;
+    }
+
+    var description = findLongParagraph();
+    var image = findProjectImage(title);
+
+    document.title = title + ' | Raiz Token';
+    if (description) {
+      upsertMeta('meta[name="description"]', {
+        name: 'description',
+        content: truncate(description, 160)
       });
     }
+
+    setCanonical(canonicalUrl);
+    setRobots(true);
+    upsertMeta('meta[property="og:image"]', { property: 'og:image', content: image || DEFAULT_IMAGE });
+    upsertMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: image || DEFAULT_IMAGE });
+    updateSocialMeta(canonicalUrl, 'website');
+    updateStructuredData(path, { type: 'WebPage' }, canonicalUrl, title);
+
+    var project = {
+      '@context': 'https://schema.org',
+      '@type': 'CreativeWork',
+      '@id': canonicalUrl + '#project',
+      name: title,
+      url: canonicalUrl,
+      mainEntityOfPage: { '@id': canonicalUrl + '#webpage' },
+      inLanguage: 'pt-BR',
+      publisher: { '@id': BASE_URL + '/#organization' }
+    };
+
+    if (description) project.description = description;
+    if (image) project.image = image;
+
+    setJsonLd('seo-dynamic-content-jsonld', project);
+  }
+
+  function updateCollectionItemList(path) {
+    var prefix = path === '/projetos' ? '/projeto/' : path === '/blog' ? '/blog/' : '';
+    if (!prefix) {
+      removeJsonLd('seo-itemlist-jsonld');
+      return;
+    }
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('a[href]'));
+    var seen = {};
+    var items = [];
+
+    links.forEach(function (link) {
+      var href = link.getAttribute('href') || '';
+      var absolute = '';
+
+      if (href.indexOf(prefix) === 0) absolute = BASE_URL + href;
+      else if (href.indexOf(BASE_URL + prefix) === 0) absolute = href;
+      else return;
+
+      if (path === '/blog' && absolute === BASE_URL + '/blog') return;
+      if (seen[absolute]) return;
+
+      var name = cleanText(link.textContent);
+      if (!name) return;
+
+      seen[absolute] = true;
+      items.push({
+        '@type': 'ListItem',
+        position: items.length + 1,
+        name: truncate(name, 120),
+        url: absolute
+      });
+    });
+
+    if (!items.length) {
+      removeJsonLd('seo-itemlist-jsonld');
+      return;
+    }
+
+    setJsonLd('seo-itemlist-jsonld', {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: items.slice(0, 50)
+    });
+  }
+
+  function hydrateDynamicContent() {
+    var path = normalizePath(window.location.pathname);
+    var canonical = BASE_URL + canonicalPath(path);
+    if (canonical.endsWith('/') && canonical !== BASE_URL + '/') canonical = canonical.slice(0, -1);
+
+    if (path.indexOf('/blog/') === 0) hydrateBlogPost(path, canonical);
+    else if (path.indexOf('/projeto/') === 0) hydrateProject(path, canonical);
+    else removeJsonLd('seo-dynamic-content-jsonld');
+
+    updateCollectionItemList(path);
+  }
+
+  function scheduleDynamicHydration() {
+    if (dynamicTimer) window.clearTimeout(dynamicTimer);
+    dynamicTimer = window.setTimeout(function () {
+      hydrateDynamicContent();
+    }, 180);
   }
 
   function scheduleApply() {
     window.requestAnimationFrame(function () {
       applySeo();
+      scheduleDynamicHydration();
     });
+  }
+
+  function observeRoot() {
+    var root = document.getElementById('root');
+    if (!root || typeof MutationObserver === 'undefined') return;
+
+    if (rootObserver) rootObserver.disconnect();
+    rootObserver = new MutationObserver(function () {
+      scheduleDynamicHydration();
+    });
+
+    rootObserver.observe(root, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    scheduleDynamicHydration();
   }
 
   var originalPushState = history.pushState;
@@ -260,6 +524,12 @@
   };
 
   window.addEventListener('popstate', scheduleApply);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', observeRoot, { once: true });
+  } else {
+    observeRoot();
+  }
 
   applySeo();
 })();
