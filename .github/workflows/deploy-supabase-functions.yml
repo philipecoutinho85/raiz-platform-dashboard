@@ -61,6 +61,7 @@ jobs:
             "stripe-risk-webhook"
             "retry-scheduled-withdrawals"
             "admin-reconcile-token-purchase"
+            "generate-backup"
             "send-welcome-email"
             "send-contact-email"
           )
