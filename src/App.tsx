@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,42 +15,47 @@ import MobileBottomNav from "./components/MobileBottomNav";
 import PublicHomeBottomNav from "./components/PublicHomeBottomNav";
 import HomeFAQController from "./components/HomeFAQController";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Marketplace from "./pages/Marketplace";
-import CreateProject from "./pages/CreateProject";
-import CreateProjectDraft from "./pages/CreateProjectDraft";
-import MyProjects from "./pages/MyProjects";
-import ProjectDetail from "./pages/ProjectDetail";
-import UserProfile from "./pages/UserProfile";
-import PublicProfile from "./pages/PublicProfile";
-import AdminPanel from "./pages/AdminPanel";
-import AdminBlog from "./pages/AdminBlog";
-import AdminBlogEditor from "./pages/AdminBlogEditor";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
-import NotFound from "./pages/NotFound";
-import HowItWorks from "./pages/HowItWorks";
-import FAQ from "./pages/FAQ";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import PrivacySupporters from "./pages/PrivacySupporters";
-import PrivacyCreators from "./pages/PrivacyCreators";
-import Security from "./pages/Security";
-import Contact from "./pages/Contact";
-import Wallet from "./pages/Wallet";
-import CheckoutPayment from "./pages/CheckoutPayment";
-import CookiePolicy from "./pages/CookiePolicy";
-import RateSupportPage from "./pages/RateSupportPage";
-import ShortUrlRedirect from "./pages/ShortUrlRedirect";
 import CookieConsent from "./components/CookieConsent";
 import AIFaqChat from "./components/AIFaqChat";
 import { supabase } from "@/integrations/supabase/client";
 
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const CreateProject = lazy(() => import("./pages/CreateProject"));
+const CreateProjectDraft = lazy(() => import("./pages/CreateProjectDraft"));
+const MyProjects = lazy(() => import("./pages/MyProjects"));
+const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const AdminBlog = lazy(() => import("./pages/AdminBlog"));
+const AdminBlogEditor = lazy(() => import("./pages/AdminBlogEditor"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const HowItWorks = lazy(() => import("./pages/HowItWorks"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const PrivacySupporters = lazy(() => import("./pages/PrivacySupporters"));
+const PrivacyCreators = lazy(() => import("./pages/PrivacyCreators"));
+const Security = lazy(() => import("./pages/Security"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Wallet = lazy(() => import("./pages/Wallet"));
+const CheckoutPayment = lazy(() => import("./pages/CheckoutPayment"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
+const RateSupportPage = lazy(() => import("./pages/RateSupportPage"));
+const ShortUrlRedirect = lazy(() => import("./pages/ShortUrlRedirect"));
+
 const queryClient = new QueryClient();
 const OPTIONAL_VIDEO_DRAFT_PLACEHOLDER = "https://youtu.be/raiz-token-rascunho-video-opcional";
+
+const RouteFallback = () => (
+  <div className="flex-1 min-h-[40vh] bg-background" aria-hidden="true" />
+);
 
 const CreateProjectDraftMode = () => {
   useEffect(() => {
@@ -168,42 +173,44 @@ const AppContent = () => {
       {isPublicHome && <HomeFAQController />}
       <div className="min-h-screen flex flex-col">
         {!isPublicHome && <Header />}
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/registro" element={<Register />} />
-          <Route path="/esqueci-senha" element={<ForgotPassword />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/projetos" element={<Marketplace />} />
-          <Route path="/criar-projeto" element={<ProtectedRoute><CreateProjectDraft /></ProtectedRoute>} />
-          <Route path="/editar-projeto/:projectId" element={<ProtectedRoute><CreateProjectDraft /></ProtectedRoute>} />
-          <Route path="/criar-projeto-legado" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
-          <Route path="/meus-projetos" element={<ProtectedRoute><MyProjects /></ProtectedRoute>} />
-          <Route path="/projeto/:id" element={<ProjectDetail />} />
-          <Route path="/perfil" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-          <Route path="/usuario/:userId" element={<PublicProfile />} />
-          <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminPanel /></ProtectedRoute>} />
-          <Route path="/admin/blog" element={<ProtectedRoute requireAdmin={true}><AdminBlog /></ProtectedRoute>} />
-          <Route path="/admin/blog/:id" element={<ProtectedRoute requireAdmin={true}><AdminBlogEditor /></ProtectedRoute>} />
-          <Route path="/carteira" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/checkout-pagamento" element={<ProtectedRoute><CheckoutPayment /></ProtectedRoute>} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/como-funciona" element={<HowItWorks />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/privacidade-apoiadores" element={<PrivacySupporters />} />
-          <Route path="/privacidade-criadores" element={<PrivacyCreators />} />
-          <Route path="/security" element={<Security />} />
-          <Route path="/politica-de-cookies" element={<CookiePolicy />} />
-          <Route path="/contato" element={<Contact />} />
-          <Route path="/avaliar-suporte" element={<RateSupportPage />} />
-          <Route path="/c/:shortId" element={<ShortUrlRedirect />} />
-          <Route path="/campanha/:shortId" element={<ShortUrlRedirect />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/registro" element={<Register />} />
+            <Route path="/esqueci-senha" element={<ForgotPassword />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/projetos" element={<Marketplace />} />
+            <Route path="/criar-projeto" element={<ProtectedRoute><CreateProjectDraft /></ProtectedRoute>} />
+            <Route path="/editar-projeto/:projectId" element={<ProtectedRoute><CreateProjectDraft /></ProtectedRoute>} />
+            <Route path="/criar-projeto-legado" element={<ProtectedRoute><CreateProject /></ProtectedRoute>} />
+            <Route path="/meus-projetos" element={<ProtectedRoute><MyProjects /></ProtectedRoute>} />
+            <Route path="/projeto/:id" element={<ProjectDetail />} />
+            <Route path="/perfil" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/usuario/:userId" element={<PublicProfile />} />
+            <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminPanel /></ProtectedRoute>} />
+            <Route path="/admin/blog" element={<ProtectedRoute requireAdmin={true}><AdminBlog /></ProtectedRoute>} />
+            <Route path="/admin/blog/:id" element={<ProtectedRoute requireAdmin={true}><AdminBlogEditor /></ProtectedRoute>} />
+            <Route path="/carteira" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+            <Route path="/checkout-pagamento" element={<ProtectedRoute><CheckoutPayment /></ProtectedRoute>} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/como-funciona" element={<HowItWorks />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/privacidade-apoiadores" element={<PrivacySupporters />} />
+            <Route path="/privacidade-criadores" element={<PrivacyCreators />} />
+            <Route path="/security" element={<Security />} />
+            <Route path="/politica-de-cookies" element={<CookiePolicy />} />
+            <Route path="/contato" element={<Contact />} />
+            <Route path="/avaliar-suporte" element={<RateSupportPage />} />
+            <Route path="/c/:shortId" element={<ShortUrlRedirect />} />
+            <Route path="/campanha/:shortId" element={<ShortUrlRedirect />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </div>
       {isPublicHome && <PublicHomeBottomNav />}
       {!isPublicHome && <MobileBottomNav />}
